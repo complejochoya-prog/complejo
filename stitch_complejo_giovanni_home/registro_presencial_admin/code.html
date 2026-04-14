@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Registro Presencial - Complejo Giovanni</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f2b90d",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#221e10",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #221e10; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #493f22; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f2b90d; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-slate-100">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-[#493f22] px-6 py-4 bg-white/50 dark:bg-[#231e10]/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 flex items-center justify-center bg-primary rounded-full text-background-dark">
+<span class="material-symbols-outlined">sports_soccer</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-black leading-tight tracking-[-0.015em]">COMPLEJO GIOVANNI</h2>
+</div>
+<div class="hidden md:flex flex-1 justify-end gap-8 items-center">
+<nav class="flex items-center gap-6">
+<a class="text-slate-500 dark:text-[#cbbc90] hover:text-primary dark:hover:text-primary text-sm font-bold tracking-wide transition-colors" href="#">DASHBOARD</a>
+<a class="text-slate-500 dark:text-[#cbbc90] hover:text-primary dark:hover:text-primary text-sm font-bold tracking-wide transition-colors" href="#">CALENDARIO</a>
+<a class="text-primary text-sm font-bold tracking-wide border-b-2 border-primary pb-0.5" href="#">CAJA</a>
+<a class="text-slate-500 dark:text-[#cbbc90] hover:text-primary dark:hover:text-primary text-sm font-bold tracking-wide transition-colors" href="#">CLIENTES</a>
+</nav>
+<div class="h-6 w-px bg-slate-300 dark:bg-[#493f22]"></div>
+<button class="flex items-center justify-center overflow-hidden rounded-full h-10 px-5 bg-primary text-background-dark hover:bg-yellow-400 transition-colors text-sm font-bold leading-normal tracking-[0.015em] shadow-lg shadow-primary/20">
+<span class="truncate">NUEVO CLIENTE</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-primary/50" data-alt="Admin user profile photo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCwzf6EOGwiNBbPkzsIQrWsAMCMdL1FpTKk9bd8YbW6lqbLjGyEVJw7CsH-BmsT2vSZOdE8URabNhf5mJol61KnPFnO-HwshIsU3eW_eToS-1EYWYwH-vuD_BbwS4SlqElcIlh5gDEjsPQU5jedHA_J10roj0fTTjGNEmhm3mXx4pYA6ceZEGw9qTJHrSY520IF5HvaJsLTkIPrvvufkmI_2i6y7bnOhVNvQ1AjrPBWwoTHgfZDCEoIbxutGGRtTqfDV0u78IPdZsU");'></div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex flex-1 justify-center py-8 px-4 md:px-8">
+<div class="layout-content-container flex flex-col max-w-[1200px] w-full gap-8">
+<!-- Page Title Area -->
+<div class="flex flex-wrap items-end justify-between gap-4">
+<div class="flex flex-col gap-1">
+<h1 class="text-slate-900 dark:text-white text-4xl md:text-5xl font-black leading-tight tracking-[-0.033em] uppercase">Registro Presencial</h1>
+<p class="text-slate-500 dark:text-[#cbbc90] text-lg font-normal">Ingreso rápido de clientes sin reserva previa</p>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-200 dark:bg-[#493f22]/50 border border-slate-300 dark:border-[#493f22]">
+<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+<span class="text-xs font-bold text-slate-600 dark:text-[#cbbc90] uppercase tracking-wider">Sistema Online</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Form -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<!-- Resource Selector -->
+<div class="bg-white dark:bg-[#2d281a] p-6 rounded-[2rem] shadow-xl border border-slate-100 dark:border-[#493f22]">
+<h3 class="text-slate-900 dark:text-white text-sm font-bold tracking-widest mb-4 uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">stadium</span>
+                                Seleccionar Cancha / Espacio
+                            </h3>
+<div class="flex flex-wrap gap-2">
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="resource" type="radio" value="futbol1"/>
+<div class="px-5 py-3 rounded-xl bg-slate-100 dark:bg-[#231e10] border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary text-slate-500 dark:text-[#cbbc90] font-bold text-sm transition-all hover:bg-slate-200 dark:hover:bg-[#38301d]">
+                                        FÚTBOL 5 (A)
+                                    </div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="resource" type="radio" value="futbol2"/>
+<div class="px-5 py-3 rounded-xl bg-slate-100 dark:bg-[#231e10] border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary text-slate-500 dark:text-[#cbbc90] font-bold text-sm transition-all hover:bg-slate-200 dark:hover:bg-[#38301d]">
+                                        FÚTBOL 5 (B)
+                                    </div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="resource" type="radio" value="voley"/>
+<div class="px-5 py-3 rounded-xl bg-slate-100 dark:bg-[#231e10] border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary text-slate-500 dark:text-[#cbbc90] font-bold text-sm transition-all hover:bg-slate-200 dark:hover:bg-[#38301d]">
+                                        VOLEY INDOOR
+                                    </div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="resource" type="radio" value="padel"/>
+<div class="px-5 py-3 rounded-xl bg-slate-100 dark:bg-[#231e10] border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary text-slate-500 dark:text-[#cbbc90] font-bold text-sm transition-all hover:bg-slate-200 dark:hover:bg-[#38301d]">
+                                        PADEL
+                                    </div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="resource" type="radio" value="pileta"/>
+<div class="px-5 py-3 rounded-xl bg-slate-100 dark:bg-[#231e10] border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary text-slate-500 dark:text-[#cbbc90] font-bold text-sm transition-all hover:bg-slate-200 dark:hover:bg-[#38301d]">
+                                        PILETA / QUINCHO
+                                    </div>
+</label>
+</div>
+</div>
+<!-- Main Form -->
+<div class="bg-white dark:bg-[#2d281a] p-6 md:p-8 rounded-[2rem] shadow-xl border border-slate-100 dark:border-[#493f22]">
+<h3 class="text-slate-900 dark:text-white text-sm font-bold tracking-widest mb-6 uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">person_add</span>
+                                Datos del Cliente
+                            </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<label class="flex flex-col gap-2">
+<span class="text-xs font-bold text-slate-500 dark:text-[#cbbc90] uppercase ml-1">Nombre Completo</span>
+<div class="relative">
+<input class="w-full bg-slate-50 dark:bg-[#231e10] border border-slate-200 dark:border-[#493f22] rounded-xl px-4 py-3.5 pl-11 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#cbbc90]/50 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="Ej: Juan Pérez" type="text"/>
+<span class="material-symbols-outlined absolute left-3.5 top-3.5 text-slate-400 dark:text-[#cbbc90]/50">person</span>
+</div>
+</label>
+<label class="flex flex-col gap-2">
+<span class="text-xs font-bold text-slate-500 dark:text-[#cbbc90] uppercase ml-1">WhatsApp</span>
+<div class="relative">
+<input class="w-full bg-slate-50 dark:bg-[#231e10] border border-slate-200 dark:border-[#493f22] rounded-xl px-4 py-3.5 pl-11 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#cbbc90]/50 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="+54 9 11..." type="tel"/>
+<span class="material-symbols-outlined absolute left-3.5 top-3.5 text-slate-400 dark:text-[#cbbc90]/50">call</span>
+</div>
+</label>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+<label class="flex flex-col gap-2">
+<span class="text-xs font-bold text-slate-500 dark:text-[#cbbc90] uppercase ml-1">Duración</span>
+<div class="relative">
+<select class="w-full appearance-none bg-slate-50 dark:bg-[#231e10] border border-slate-200 dark:border-[#493f22] rounded-xl px-4 py-3.5 pl-11 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all cursor-pointer">
+<option>1 Hora</option>
+<option>1.5 Horas</option>
+<option>2 Horas</option>
+<option>3 Horas</option>
+</select>
+<span class="material-symbols-outlined absolute left-3.5 top-3.5 text-slate-400 dark:text-[#cbbc90]/50">schedule</span>
+<span class="material-symbols-outlined absolute right-4 top-3.5 pointer-events-none text-slate-400 dark:text-[#cbbc90]/50">expand_more</span>
+</div>
+</label>
+<label class="flex flex-col gap-2">
+<span class="text-xs font-bold text-slate-500 dark:text-[#cbbc90] uppercase ml-1">Personas</span>
+<div class="relative">
+<input class="w-full bg-slate-50 dark:bg-[#231e10] border border-slate-200 dark:border-[#493f22] rounded-xl px-4 py-3.5 pl-11 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#cbbc90]/50 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" min="1" type="number" value="10"/>
+<span class="material-symbols-outlined absolute left-3.5 top-3.5 text-slate-400 dark:text-[#cbbc90]/50">groups</span>
+</div>
+</label>
+</div>
+<div class="border-t border-slate-100 dark:border-[#493f22] my-6"></div>
+<h3 class="text-slate-900 dark:text-white text-sm font-bold tracking-widest mb-4 uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">payments</span>
+                                Método de Pago
+                            </h3>
+<div class="grid grid-cols-3 gap-3 mb-8">
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="payment" type="radio" value="cash"/>
+<div class="h-full flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-50 dark:bg-[#231e10] border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary text-slate-500 dark:text-[#cbbc90] hover:bg-slate-100 dark:hover:bg-[#38301d] transition-all">
+<span class="material-symbols-outlined text-3xl">payments</span>
+<span class="text-xs font-bold uppercase">Efectivo</span>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="payment" type="radio" value="transfer"/>
+<div class="h-full flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-50 dark:bg-[#231e10] border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary text-slate-500 dark:text-[#cbbc90] hover:bg-slate-100 dark:hover:bg-[#38301d] transition-all">
+<span class="material-symbols-outlined text-3xl">account_balance</span>
+<span class="text-xs font-bold uppercase">Transferencia</span>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="payment" type="radio" value="card"/>
+<div class="h-full flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-50 dark:bg-[#231e10] border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary text-slate-500 dark:text-[#cbbc90] hover:bg-slate-100 dark:hover:bg-[#38301d] transition-all">
+<span class="material-symbols-outlined text-3xl">credit_card</span>
+<span class="text-xs font-bold uppercase">Tarjeta</span>
+</div>
+</label>
+</div>
+<button class="w-full bg-primary hover:bg-yellow-400 text-background-dark font-black text-lg py-5 rounded-2xl shadow-lg shadow-primary/25 transition-all transform active:scale-[0.99] flex items-center justify-center gap-3">
+<span class="material-symbols-outlined text-2xl">check_circle</span>
+                                REGISTRAR TURNO
+                            </button>
+</div>
+</div>
+<!-- Right Column: Active Status -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Mini List Active -->
+<div class="bg-white dark:bg-[#2d281a] p-6 rounded-[2rem] shadow-xl border border-slate-100 dark:border-[#493f22] flex flex-col h-full">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-slate-900 dark:text-white text-sm font-bold tracking-widest uppercase flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                    Turnos Activos Ahora
+                                </h3>
+<span class="text-xs font-bold text-slate-400 dark:text-[#cbbc90]/60 bg-slate-100 dark:bg-[#231e10] px-2 py-1 rounded-md">3 TOTAL</span>
+</div>
+<div class="flex flex-col gap-4 overflow-y-auto max-h-[600px] pr-2">
+<!-- Card 1 -->
+<div class="group flex flex-col bg-slate-50 dark:bg-[#231e10] rounded-2xl p-4 border border-slate-100 dark:border-[#493f22] hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-primary uppercase tracking-wider mb-1">Fútbol 5 (A)</span>
+<span class="text-slate-900 dark:text-white font-bold text-lg">Grupo Los Pibes</span>
+</div>
+<div class="text-right">
+<span class="block text-2xl font-black text-slate-900 dark:text-white">45:12</span>
+<span class="text-[10px] text-slate-500 dark:text-gray-400 uppercase font-bold">Tiempo transcurrido</span>
+</div>
+</div>
+<div class="flex items-center justify-between mt-2 pt-3 border-t border-slate-200 dark:border-[#493f22]">
+<span class="text-xs text-slate-500 dark:text-gray-400 font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                                            Fin: 19:00 hs
+                                        </span>
+<button class="text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors uppercase">
+                                            Finalizar
+                                        </button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group flex flex-col bg-slate-50 dark:bg-[#231e10] rounded-2xl p-4 border border-slate-100 dark:border-[#493f22] hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-primary uppercase tracking-wider mb-1">Padel</span>
+<span class="text-slate-900 dark:text-white font-bold text-lg">Maria Gomez</span>
+</div>
+<div class="text-right">
+<span class="block text-2xl font-black text-slate-900 dark:text-white">12:05</span>
+<span class="text-[10px] text-slate-500 dark:text-gray-400 uppercase font-bold">Tiempo transcurrido</span>
+</div>
+</div>
+<div class="flex items-center justify-between mt-2 pt-3 border-t border-slate-200 dark:border-[#493f22]">
+<span class="text-xs text-slate-500 dark:text-gray-400 font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                                            Fin: 19:30 hs
+                                        </span>
+<button class="text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors uppercase">
+                                            Finalizar
+                                        </button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group flex flex-col bg-slate-50 dark:bg-[#231e10] rounded-2xl p-4 border border-slate-100 dark:border-[#493f22] hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-primary uppercase tracking-wider mb-1">Quincho</span>
+<span class="text-slate-900 dark:text-white font-bold text-lg">Cumple Santi</span>
+</div>
+<div class="text-right">
+<span class="block text-2xl font-black text-slate-900 dark:text-white">02:30:15</span>
+<span class="text-[10px] text-slate-500 dark:text-gray-400 uppercase font-bold">Tiempo transcurrido</span>
+</div>
+</div>
+<div class="flex items-center justify-between mt-2 pt-3 border-t border-slate-200 dark:border-[#493f22]">
+<span class="text-xs text-slate-500 dark:text-gray-400 font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                                            Fin: 22:00 hs
+                                        </span>
+<button class="text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors uppercase">
+                                            Finalizar
+                                        </button>
+</div>
+</div>
+<!-- Empty State Placeholder (Visual only) -->
+<div class="border-2 border-dashed border-slate-200 dark:border-[#493f22] rounded-2xl p-6 flex flex-col items-center justify-center text-center opacity-50">
+<span class="material-symbols-outlined text-3xl text-slate-400 mb-2">event_available</span>
+<p class="text-sm font-medium text-slate-500 dark:text-[#cbbc90]">Canchas Libres: 2</p>
+</div>
+</div>
+</div>
+<!-- Stats or Info Box -->
+<div class="bg-gradient-to-br from-[#231e10] to-[#1a160d] dark:from-primary dark:to-yellow-500 p-6 rounded-[2rem] shadow-xl text-white dark:text-[#231e10] relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="font-black text-2xl uppercase italic mb-1">Promo del Día</h3>
+<p class="text-sm opacity-90 mb-4 font-medium">20% OFF en bebidas si reservan 2hs de cancha.</p>
+<button class="text-xs font-bold bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-full uppercase transition-colors">
+                                    Aplicar Descuento
+                                </button>
+</div>
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl opacity-10 rotate-12">local_activity</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

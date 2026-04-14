@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Menú Digital - Complejo Giovanni</title>
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#22c55e", // Verde Giovanni
+                        "gold": "#fbbf24",    // Dorado Giovanni
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        .glass-card {
+            background: rgba(34, 54, 73, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #101922; }
+        ::-webkit-scrollbar-thumb { background: #223649; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #22c55e; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+    <div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+        
+        <header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-primary/20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 lg:px-40 py-4">
+            <div class="max-w-[1200px] mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-8">
+                    <div class="flex items-center gap-3 text-primary">
+                        <span class="material-symbols-outlined text-3xl">sports_soccer</span>
+                        <h2 class="text-slate-900 dark:text-white text-xl font-extrabold tracking-tight uppercase italic">GIOVANNI</h2>
+                    </div>
+                    <nav class="hidden md:flex items-center gap-8">
+                        <a class="text-slate-600 dark:text-slate-300 hover:text-primary text-sm font-bold transition-colors" href="#">INICIO</a>
+                        <a class="text-primary text-sm font-bold transition-colors underline decoration-2 underline-offset-8 decoration-primary" href="#">MENÚ</a>
+                        <a class="text-slate-600 dark:text-slate-300 hover:text-primary text-sm font-bold transition-colors" href="#">RESERVAS</a>
+                    </nav>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <div class="relative hidden sm:block">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+                        <input class="bg-slate-100 dark:bg-primary/10 border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary w-64" placeholder="Buscar plato o trago..." type="text" />
+                    </div>
+                    <div class="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary cursor-pointer">
+                        <span class="material-symbols-outlined">person</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 w-full max-w-[1200px] mx-auto px-6 lg:px-10 py-8">
+            <div class="mb-10">
+                <h1 class="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter mb-2 italic uppercase">MENÚ DIGITAL</h1>
+                <p class="text-slate-500 dark:text-primary/60 font-medium uppercase tracking-widest text-sm">Premium Sports Bar Experience</p>
+            </div>
+
+            <div class="sticky top-20 z-40 mb-8 overflow-x-auto no-scrollbar py-2">
+                <div class="flex gap-4 min-w-max border-b border-slate-200 dark:border-primary/10">
+                    <button class="px-6 py-4 text-sm font-bold border-b-4 border-primary text-primary transition-all">PLATOS</button>
+                    <button class="px-6 py-4 text-sm font-bold border-b-4 border-transparent text-slate-500 dark:text-slate-400 hover:text-primary transition-all">TRAGOS</button>
+                    <button class="px-6 py-4 text-sm font-bold border-b-4 border-transparent text-slate-500 dark:text-slate-400 hover:text-primary transition-all">BEBIDAS</button>
+                    <button class="px-6 py-4 text-sm font-bold border-b-4 border-transparent text-slate-500 dark:text-slate-400 hover:text-primary transition-all">POSTRES</button>
+                </div>
+            </div>
+
+            <section class="mb-12">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight italic uppercase">LOMITOS Y PIZZAS</h2>
+                    <div class="h-[1px] flex-1 bg-slate-200 dark:bg-primary/20"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card rounded-xl overflow-hidden flex flex-col sm:flex-row group transition-all hover:border-primary/50">
+                        <div class="w-full sm:w-48 h-48 sm:h-auto bg-center bg-cover bg-slate-800" style="background-image: url('https://images.unsplash.com/photo-1529003646604-189915118499?w=400');"></div>
+                        <div class="flex-1 p-6 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-lg font-extrabold text-white">LOMITO COMPLETO</h3>
+                                    <span class="text-primary font-bold text-xl">$9.500</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-4">Carne premium, huevo frito, jamón, queso y papas fritas.</p>
+                            </div>
+                            <button class="w-full sm:w-fit px-6 py-2.5 bg-primary text-white text-xs font-black rounded-full hover:bg-primary/80 transition-colors uppercase flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm">shopping_cart</span> PEDIR AHORA
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-xl overflow-hidden flex flex-col sm:flex-row group transition-all hover:border-primary/50">
+                        <div class="w-full sm:w-48 h-48 sm:h-auto bg-center bg-cover bg-slate-800" style="background-image: url('https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400');"></div>
+                        <div class="flex-1 p-6 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-lg font-extrabold text-white">PIZZA NAPOLITANA</h3>
+                                    <span class="text-primary font-bold text-xl">$7.900</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-4">Tomate fresco, ajo, perejil y muzzarella de primera.</p>
+                            </div>
+                            <button class="w-full sm:w-fit px-6 py-2.5 bg-primary text-white text-xs font-black rounded-full hover:bg-primary/80 transition-colors uppercase flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm">shopping_cart</span> PEDIR AHORA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div class="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50">
+            <button class="flex items-center gap-3 px-6 py-4 bg-primary text-white rounded-full shadow-2xl hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined">shopping_basket</span>
+                <span class="font-black text-sm uppercase tracking-widest hidden sm:inline">Ver Pedido</span>
+                <span class="bg-white text-primary text-[10px] font-black size-5 rounded-full flex items-center justify-center">2</span>
+            </button>
+        </div>
+
+        <footer class="bg-slate-100 dark:bg-primary/5 px-6 lg:px-40 py-12 mt-auto">
+            <div class="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div>
+                    <div class="flex items-center gap-3 text-primary mb-6 italic">
+                        <span class="material-symbols-outlined text-3xl">sports_soccer</span>
+                        <h2 class="dark:text-white text-xl font-extrabold uppercase">GIOVANNI</h2>
+                    </div>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                        El mejor complejo deportivo y gastronómico de la ciudad. Calidad premium en cada detalle.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="dark:text-white font-black text-sm uppercase tracking-widest mb-6">HORARIOS BAR</h4>
+                    <ul class="space-y-3 text-slate-500 dark:text-slate-400 text-sm">
+                        <li class="flex justify-between"><span>Lunes a Jueves:</span> <span class="font-bold">18:00 - 01:00</span></li>
+                        <li class="flex justify-between"><span>Viernes y Sábados:</span> <span class="font-bold">18:00 - 03:00</span></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="dark:text-white font-black text-sm uppercase tracking-widest mb-6">UBICACIÓN</h4>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Choya, Santiago del Estero, Argentina</p>
+                    <div class="h-32 rounded-xl bg-slate-200 dark:bg-primary/10 flex items-center justify-center text-slate-500 text-xs font-bold uppercase tracking-widest">
+                        Mapa del Complejo
+                    </div>
+                </div>
+            </div>
+            <div class="max-w-[1200px] mx-auto mt-12 pt-8 border-t border-slate-200 dark:border-primary/10 text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest">
+                © 2026 Complejo Giovanni - Choya, SDE.
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

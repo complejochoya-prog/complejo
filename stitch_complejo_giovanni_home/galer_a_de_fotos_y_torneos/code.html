@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d7ff2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#020617", // Slate-950 as requested
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .masonry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-auto-rows: 200px;
+            gap: 1.5rem;
+        }
+        .masonry-item-tall {
+            grid-row: span 2;
+        }
+        .masonry-item-wide {
+            grid-column: span 2;
+        }
+        @media (max-width: 768px) {
+            .masonry-item-wide {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen selection:bg-primary/30">
+<div class="relative flex flex-col min-h-screen w-full overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 md:px-10 py-4">
+<div class="max-w-7xl mx-auto flex items-center justify-between">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1">sports_soccer</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight">COMPLEJO GIOVANNI</h2>
+</div>
+<nav class="hidden lg:flex items-center gap-8">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-semibold tracking-wider" href="#">INICIO</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-semibold tracking-wider" href="#">RESERVAS</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-semibold tracking-wider" href="#">TORNEOS</a>
+<a class="text-primary text-sm font-semibold tracking-wider border-b-2 border-primary pb-1" href="#">GALERÍA</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center bg-slate-100 dark:bg-slate-900 rounded-full px-4 py-2 border border-slate-200 dark:border-slate-800">
+<span class="material-symbols-outlined text-slate-400 text-xl">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48 text-slate-200 placeholder:text-slate-500" placeholder="Buscar fotos..." type="text"/>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-full font-bold text-sm tracking-wide transition-all shadow-lg shadow-primary/20">
+                        RESERVAR AHORA
+                    </button>
+<div class="size-10 rounded-full bg-slate-800 border-2 border-primary/50 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Avatar of the user profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPHL7zZ6THEa48BeA67vwZqJf1yJNbbJh2gZinpctGIJB2vCKhTv9Z0o802SPppxRA7n7VPkJXr1gT5GTarENT6lOOrVkyaKJRxCbXwqMZubX1eAgbvasSorINb6dgbIZTAkKxoUnpjyK8e_67U9rFiSQoaTez1xVmG99KaO3M9v8-AhQNoOkw-tt3dSsyhP1I2M2i2pg0YT-16KWgR_PCAiUUXNrYNRcdq_Y6oqSnwlsyjtQio4Ok8zlo72yK8zixLClqYITzrTo"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 w-full max-w-7xl mx-auto px-6 md:px-10 py-12 pb-32">
+<!-- Hero Title -->
+<div class="mb-12">
+<h1 class="text-4xl md:text-6xl font-black italic tracking-tighter text-slate-900 dark:text-white mb-4">
+                    GALERÍA DE FOTOS Y TORNEOS
+                </h1>
+<p class="text-slate-500 dark:text-slate-400 text-lg max-w-2xl">
+                    Reviví los mejores momentos de cada competencia, la pasión del juego y las celebraciones de los campeones.
+                </p>
+</div>
+<!-- Categories Filter -->
+<div class="flex flex-wrap items-center gap-3 mb-12 scrollbar-hide overflow-x-auto pb-2">
+<button class="px-8 py-3 rounded-full bg-primary text-white font-bold text-sm tracking-widest transition-all">
+                    TODOS
+                </button>
+<button class="px-8 py-3 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 font-bold text-sm tracking-widest transition-all border border-slate-200 dark:border-slate-800">
+                    FÚTBOL 5
+                </button>
+<button class="px-8 py-3 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 font-bold text-sm tracking-widest transition-all border border-slate-200 dark:border-slate-800">
+                    VÓLEY
+                </button>
+<button class="px-8 py-3 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 font-bold text-sm tracking-widest transition-all border border-slate-200 dark:border-slate-800">
+                    TORNEO VERANO
+                </button>
+<button class="px-8 py-3 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 font-bold text-sm tracking-widest transition-all border border-slate-200 dark:border-slate-800">
+                    POOL PARTY
+                </button>
+</div>
+<!-- Masonry Grid -->
+<div class="masonry-grid">
+<!-- Large Item -->
+<div class="masonry-item-tall masonry-item-wide relative group rounded-lg overflow-hidden glass-card">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Action shot of a soccer match at night" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgsBdsM4IzeBASLNbgsCGH51Fsxz8djqVQ4-txW3D5OJoSxzCNhVssQswswj4_WY7_WtxsKfh1JteFVQE4dsz-UcZ6jBSXRG09B_icYhv1OdqOyg3UYNFH0FkAfSFRAk2A8abFv5sivqWmGFiWfUN_EIhQmR_T5Be4QcIFB7UcfInI_dExo9KOm-J9fRjBW7OK3P9spmISboeCVzQw3z0Kples8LpkLF1k5pdSVNrnEilQRz0PtlZX9VI-56d1VQA-bTN73HDmOR4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
+<h3 class="text-white font-black italic text-2xl mb-2 uppercase tracking-tighter">FINAL TORNEO APERTURA</h3>
+<div class="flex justify-between items-center">
+<span class="text-slate-300 text-sm font-medium">15 de Marzo, 2024</span>
+<button class="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-4 py-2 rounded-full text-white text-xs font-bold tracking-widest uppercase transition-all">
+<span class="material-symbols-outlined text-sm">share</span> COMPARTIR
+                            </button>
+</div>
+</div>
+</div>
+<!-- Regular Item -->
+<div class="relative group rounded-lg overflow-hidden glass-card">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="High quality volleyball game action" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpWVxLoJ0w5IlggsRcBAtKu88JUqOr3uc8vFUfvAcb0xdGg9NH1pSndLDXGIrziVbV3_8wnL3ObsXIL2Z3KuNzZxhNkIyJwkpOonoikOuczPDgFzHt4UVhYxrQhMDWxUh6h3pMVyo6fuBREvJYqeBAv-9YHZIAU-Mni7ZwSMaDBdX6ndyUCpGWpJl6CvHoCvBNIWbE58QAy7bbc8VxcSdyl8VNfsbzHu2rqfeJezg_5RllZOhZux4DIk1xpVZ6zElBmUJ8AfZ-jFY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
+<h3 class="text-white font-black italic text-lg mb-1 uppercase tracking-tighter">MIXTO VÓLEY</h3>
+<button class="w-fit flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-[10px] font-bold tracking-widest uppercase transition-all">
+<span class="material-symbols-outlined text-xs">share</span>
+</button>
+</div>
+</div>
+<!-- Tall Item -->
+<div class="masonry-item-tall relative group rounded-lg overflow-hidden glass-card">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Summer pool party event atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOV9CEPcjH6UO7Ad-ch5YDmOqKkN6dvY0uo3-1kRaT7LkdA71q6MmO85gH8q4jJi5kLv4Wi6BNtcxlKk_N6RGP6Uq5y4C3Ysw7u3CWRc1P211_YUuEgGVTPygb7s_lTdcgzH4qeyHGII64HwfcBIyImRuCiAbJFnW6OeCM1Y8ucWtXxTAsZEP_qBw2TjKyexn215RIEi92VUEWPJihVKqCBE8YCSRdcvNLeRqEF9DAJkd8mACyuSTbSTJotJAkWJ0ILswII8pONdg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
+<h3 class="text-white font-black italic text-lg mb-1 uppercase tracking-tighter">POOL PARTY EXCLUSIVE</h3>
+<button class="w-fit flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-[10px] font-bold tracking-widest uppercase transition-all">
+<span class="material-symbols-outlined text-xs">share</span>
+</button>
+</div>
+</div>
+<!-- Regular Item -->
+<div class="relative group rounded-lg overflow-hidden glass-card">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Football players celebrating a goal" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcZmSD_jwAyvqLCDCNe7APr8cRSCvOQ0-bXyH8N7O1qdWUpQuNTLMtggmG97RuysI1IvdH5pXQM3hs0P_EG9S5mNzEqOackVdDmqJtc79YeDM5NdKuSCpJH_OYy6f0fWewJ582zQVlRCpWKYsDb7DMO2gFnAcYA5I1h7EI7eW9_sSMVeY9GVc1P2zYKJUrZ9zW_lO7C36TPzQzVoZhnSff5LNLZYmrd9bxyyvZ9TsJWEOebligVJWAOxLVLWKzqYL4ngljhfo_H9g"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
+<h3 class="text-white font-black italic text-lg mb-1 uppercase tracking-tighter">CELEBRACIÓN CAMPEÓN</h3>
+<button class="w-fit flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-[10px] font-bold tracking-widest uppercase transition-all">
+<span class="material-symbols-outlined text-xs">share</span>
+</button>
+</div>
+</div>
+<!-- Regular Item -->
+<div class="relative group rounded-lg overflow-hidden glass-card">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Night soccer match under bright stadium lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPnrFTDzaDPKP6aNAr8Nqbd3zav-XGIG5RVlKXfVpW7VseAY0r87-oj66HGAjJP-r5J01Dhjql2KMusjenm1liK0zLGEgilr0QfoPFWFonpK6TTtOeDMvYR7dY8dv6Jc2bHE0aJ4CSfH7QPjnw0Dd4T-c0EH_060QkLg_ftY8HrVb9ZRy8y4QYxRRSY11QvRh30Bzs76zb3vozBhMcKy6zVLHpDVLMyMufo3PsQcrMrpqgipI7fM4uU10aG5SeOw_oCm2isnQ81e0"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
+<h3 class="text-white font-black italic text-lg mb-1 uppercase tracking-tighter">NIGHT CUP</h3>
+<button class="w-fit flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-[10px] font-bold tracking-widest uppercase transition-all">
+<span class="material-symbols-outlined text-xs">share</span>
+</button>
+</div>
+</div>
+<!-- Wide Item -->
+<div class="masonry-item-wide relative group rounded-lg overflow-hidden glass-card">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Aerial view of sports complex during tournament" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1mZ8hnAs5kGRvOXdL1qQtfajbhKZyqxQvyPVOP4llOQQHB378P7xIQfMpnCI3gbEeEsEKWfEQ2743RNI24EXanEvPfT9K2dbOtkZNJegAFzBaqAVElPCmf6JsB9aJ6Kof4TsEYlAEyOWKTObliYW97WNoilPVe8R6FeBhsoSvo_3jdJ8kqDx_UsO-EP_pWfE21U0NbrRipgPC1JypqUxQ5_hQMk-ge6gmNHEQBhZFJlskcBfuuAOfqQvu2VGu6z2TzaUauW-R0cE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
+<h3 class="text-white font-black italic text-2xl mb-2 uppercase tracking-tighter">MASTER VISTA COMPLEJO</h3>
+<button class="w-fit flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-4 py-2 rounded-full text-white text-xs font-bold tracking-widest uppercase transition-all">
+<span class="material-symbols-outlined text-sm">share</span> COMPARTIR
+                        </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+<div class="flex items-center gap-2 p-2 bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-full shadow-2xl">
+<a class="p-4 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl">dashboard</span>
+</a>
+<a class="p-4 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl">trophy</span>
+</a>
+<a class="p-4 rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1">image</span>
+</a>
+<a class="p-4 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl">group</span>
+</a>
+<a class="p-4 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl">settings</span>
+</a>
+</div>
+</nav>
+<!-- Lightbox Placeholder (Visible when triggered in real app) -->
+<div class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center hidden">
+<button class="absolute top-10 right-10 text-white/50 hover:text-white">
+<span class="material-symbols-outlined text-4xl">close</span>
+</button>
+<div class="max-w-5xl w-full p-4">
+<img class="w-full h-auto rounded-lg shadow-2xl" data-alt="Full screen expanded sports photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIWeTOOtiEzLEt6t1Bz1vZp6y1fY6R1JXdjdhMD8RuKCOgZTvmBtSGHdI4ACS0l4tdammWBFU0qT17cL-rTcZGVa1ZYVf696lSWOXP3Qkdr9qqCaHZsOTLV-yItUyQ1bOTznCp8DizMipDq_DFoGfxdMNmtOlHlvBmB4XPyfZqXG5m2E5wm9zoa4wDugnSrOubSK6o9blo65ciN2K_HEgy_Ae0o8yoz7YWpWaVtkZRxn_9ZmQReTLckSGGmc93zr_fmUhIts2RVZA"/>
+<div class="mt-6 flex justify-between items-center px-4">
+<div>
+<h2 class="text-white text-3xl font-black italic tracking-tighter uppercase">FINAL TORNEO APERTURA</h2>
+<p class="text-slate-400">Capturado por Giovanni Media Team</p>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-full font-bold tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined">share</span> COMPARTIR
+                    </button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

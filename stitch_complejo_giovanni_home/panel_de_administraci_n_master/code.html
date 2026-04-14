@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#258cf4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<title>Panel de Administración Master - Complejo Giovanni</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-primary/20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 lg:px-10 py-3">
+<div class="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl">sports_soccer</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight">Complejo Giovanni</h2>
+</div>
+<div class="hidden md:flex items-center bg-slate-100 dark:bg-primary/10 rounded-full px-4 py-2 border border-transparent focus-within:border-primary transition-all">
+<span class="material-symbols-outlined text-slate-500">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 placeholder:text-slate-500" placeholder="Buscar reservas, socios..." type="text"/>
+</div>
+</div>
+<nav class="hidden xl:flex items-center gap-8">
+<a class="text-primary font-semibold text-sm" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm" href="#">Reservas</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm" href="#">Torneos</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm" href="#">Bar</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm" href="#">Usuarios</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full bg-slate-100 dark:bg-primary/10 text-slate-600 dark:text-slate-300 hover:bg-primary/20 transition-all relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+</button>
+<button class="p-2 rounded-full bg-slate-100 dark:bg-primary/10 text-slate-600 dark:text-slate-300 hover:bg-primary/20 transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary overflow-hidden">
+<img alt="Admin Avatar" class="w-full h-full object-cover" data-alt="Profile picture of a professional admin user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1J3X5g-DaouuCrsDDFAtQJvE5kOGUiwznaKvwlIQJT0kKmoPukAQ44jCm2Ulfv9nS7enYDMm-7ic72Fc6_UEu4CgHmWyFBOzGfdcXd48hA06kAY4RlDeeks2Hr7tmDQ6IrLxCKIQJF-6FVyRsRvTTp6WwRHPZBJfLcjFyJU4gOCef0KMa_oHfDBFniwgGO5WcoadcbqMlhoXL6isOgTfQ9y_aunOjmrl8jr5zE0v2F9Kmd-FXTBiH5M0atA5WJoS77tWScHBfNDM"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-[1440px] mx-auto w-full p-6 lg:p-10 grid grid-cols-1 xl:grid-cols-12 gap-8">
+<!-- Sidebar Navigation (Desktop) -->
+<aside class="hidden xl:flex xl:col-span-2 flex-col gap-6">
+<div class="flex items-center gap-3 p-2">
+<div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white">
+<span class="material-symbols-outlined">shield_person</span>
+</div>
+<div>
+<p class="font-bold text-sm">Admin Master</p>
+<p class="text-xs text-slate-500">Premium Giovanni</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary text-white shadow-lg shadow-primary/20" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-medium">Inicio</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">grid_view</span>
+<span class="font-medium">Canchas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">emoji_events</span>
+<span class="font-medium">Torneos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">liquor</span>
+<span class="font-medium">Inventario</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">analytics</span>
+<span class="font-medium">Reportes</span>
+</a>
+</nav>
+<!-- Quick Maintenance Lock -->
+<div class="mt-auto p-4 rounded-2xl bg-slate-100 dark:bg-primary/5 border border-slate-200 dark:border-primary/20">
+<h3 class="text-sm font-bold flex items-center gap-2 mb-3 text-red-500">
+<span class="material-symbols-outlined text-lg">lock</span>
+                    Bloqueo Rápido
+                </h3>
+<p class="text-xs text-slate-500 mb-4">Cierre preventivo de canchas por mantenimiento.</p>
+<div class="space-y-2">
+<button class="w-full py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold transition-colors">Cancha de Fútbol 5</button>
+<button class="w-full py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold transition-colors">Pista de Pádel 1</button>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<div class="xl:col-span-10 space-y-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-4xl font-black tracking-tight mb-2">Panel de Administración Master</h1>
+<p class="text-slate-500 font-medium">Resumen de actividad para hoy — <span class="text-primary">Jueves, 24 de Octubre</span></p>
+</div>
+<div class="flex gap-3">
+<button class="px-5 py-2.5 rounded-full bg-slate-200 dark:bg-slate-800 font-bold text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">calendar_today</span>
+                        Ver Calendario
+                    </button>
+<button class="px-5 py-2.5 rounded-full bg-primary text-white font-bold text-sm shadow-xl shadow-primary/30 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">add</span>
+                        Nueva Reserva
+                    </button>
+</div>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="p-6 rounded-3xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-primary/5 relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-4">
+<span class="text-slate-500 font-medium">Reservas Hoy</span>
+<span class="bg-green-500/10 text-green-500 text-xs font-bold px-2 py-1 rounded-full">+15% vs ayer</span>
+</div>
+<p class="text-4xl font-black mb-1">42</p>
+<p class="text-sm text-slate-400">8 slots aún disponibles</p>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-slate-100 dark:text-primary/5 select-none">event_available</span>
+</div>
+<div class="p-6 rounded-3xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-primary/5 relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-4">
+<span class="text-slate-500 font-medium">Retos Sociales</span>
+<span class="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-full">+2 nuevos</span>
+</div>
+<p class="text-4xl font-black mb-1">12</p>
+<p class="text-sm text-slate-400">Jugadores buscando equipo</p>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-slate-100 dark:text-primary/5 select-none">groups</span>
+</div>
+<div class="p-6 rounded-3xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-primary/5 relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-4">
+<span class="text-slate-500 font-medium">Alertas del Bar</span>
+<span class="bg-red-500/10 text-red-500 text-xs font-bold px-2 py-1 rounded-full">Atención</span>
+</div>
+<p class="text-4xl font-black mb-1">5</p>
+<p class="text-sm text-slate-400">Productos con stock bajo</p>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-slate-100 dark:text-primary/5 select-none">shopping_cart_checkout</span>
+</div>
+</div>
+<!-- Dashboard Content Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Upcoming Bookings List -->
+<div class="lg:col-span-2 space-y-6">
+<div class="flex items-center justify-between">
+<h2 class="text-2xl font-bold">Próximas Reservas</h2>
+<a class="text-primary text-sm font-bold hover:underline" href="#">Ver todas</a>
+</div>
+<div class="space-y-4">
+<!-- Booking Item 1 -->
+<div class="p-4 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex flex-col items-center justify-center text-primary">
+<span class="text-xs font-bold">16:00</span>
+<span class="text-[10px] uppercase opacity-60">Hoy</span>
+</div>
+<div>
+<p class="font-bold">Cancha Fútbol 7</p>
+<p class="text-sm text-slate-500">Cliente: Ricardo Arjona (Socio #452)</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-bold">Pagado</div>
+<button class="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-full text-sm font-bold hover:scale-105 transition-transform shadow-lg shadow-green-500/20">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.412-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.309 1.656zm6.224-3.82c1.516.903 3.033 1.381 4.631 1.382 5.256.001 9.53-4.273 9.532-9.531.001-2.546-.992-4.937-2.793-6.741s-4.194-2.794-6.741-2.793c-5.257 0-9.532 4.274-9.533 9.532 0 1.696.446 3.178 1.291 4.614l-.955 3.486 3.568-.949zm10.758-7.58c-.296-.148-1.748-.862-2.02-.962-.27-.099-.467-.148-.663.149-.197.296-.764.962-.936 1.16-.172.198-.344.223-.64.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.148-.663-1.595-.91-2.189-.241-.58-.485-.502-.663-.51l-.564-.01c-.198 0-.52.074-.791.371s-1.037 1.015-1.037 2.477 1.063 2.871 1.211 3.07c.149.198 2.092 3.2 5.066 4.488.707.306 1.259.489 1.689.626.711.226 1.358.194 1.87.118.571-.085 1.748-.714 1.995-1.403.247-.689.247-1.28.173-1.403-.074-.124-.272-.198-.57-.347z"></path></svg>
+                                    WhatsApp
+                                </button>
+<button class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Booking Item 2 -->
+<div class="p-4 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex flex-col items-center justify-center text-primary">
+<span class="text-xs font-bold">17:30</span>
+<span class="text-[10px] uppercase opacity-60">Hoy</span>
+</div>
+<div>
+<p class="font-bold">Pádel Pista 2</p>
+<p class="text-sm text-slate-500">Cliente: Lucía Méndez</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-xs font-bold">Pendiente</div>
+<button class="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-full text-sm font-bold hover:scale-105 transition-transform">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.412-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.309 1.656zm6.224-3.82c1.516.903 3.033 1.381 4.631 1.382 5.256.001 9.53-4.273 9.532-9.531.001-2.546-.992-4.937-2.793-6.741s-4.194-2.794-6.741-2.793c-5.257 0-9.532 4.274-9.533 9.532 0 1.696.446 3.178 1.291 4.614l-.955 3.486 3.568-.949zm10.758-7.58c-.296-.148-1.748-.862-2.02-.962-.27-.099-.467-.148-.663.149-.197.296-.764.962-.936 1.16-.172.198-.344.223-.64.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.148-.663-1.595-.91-2.189-.241-.58-.485-.502-.663-.51l-.564-.01c-.198 0-.52.074-.791.371s-1.037 1.015-1.037 2.477 1.063 2.871 1.211 3.07c.149.198 2.092 3.2 5.066 4.488.707.306 1.259.489 1.689.626.711.226 1.358.194 1.87.118.571-.085 1.748-.714 1.995-1.403.247-.689.247-1.28.173-1.403-.074-.124-.272-.198-.57-.347z"></path></svg>
+                                    Recordar
+                                </button>
+<button class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Booking Item 3 -->
+<div class="p-4 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-4 opacity-75">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex flex-col items-center justify-center text-slate-400">
+<span class="text-xs font-bold">14:00</span>
+<span class="text-[10px] uppercase">Final</span>
+</div>
+<div>
+<p class="font-bold">Cancha Fútbol 5</p>
+<p class="text-sm text-slate-500">Cliente: Mateo Silva</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 text-xs font-bold">Terminado</div>
+<button class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+<span class="material-symbols-outlined">description</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Content -->
+<div class="space-y-8">
+<!-- Quick Actions / Maintenance Section -->
+<div class="space-y-4">
+<h2 class="text-xl font-bold">Acciones Rápidas</h2>
+<div class="grid grid-cols-1 gap-3">
+<button class="w-full flex items-center justify-between p-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20">
+<span class="flex items-center gap-3">
+<span class="material-symbols-outlined">error</span>
+                                    Cierre de Emergencia
+                                </span>
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">campaign</span>
+                                    Broadcast General
+                                </span>
+<span class="material-symbols-outlined opacity-40">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Social Challenges -->
+<div class="space-y-4">
+<h2 class="text-xl font-bold">Retos en Espera</h2>
+<div class="space-y-3">
+<div class="p-4 rounded-2xl bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary">
+<div class="flex items-center justify-between mb-2">
+<p class="font-bold text-sm">Buscan +2 (Nivel Pro)</p>
+<span class="text-[10px] text-primary font-bold uppercase">Urgente</span>
+</div>
+<div class="flex -space-x-2 mb-3">
+<img class="w-8 h-8 rounded-full border-2 border-background-dark" data-alt="User avatar 1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBR5wD9AOdDFzIExnd8S48RHekmFb4lqNECqZ7unBjZEUeKxJQTEyRbrimNhH_7KLAxh-M623QSb8T2YeZ23jeynVWazaJWpvty0GjAoCJQJy53vuaNZ4cApYgred4jjt7vnzurkqrqZhU92tg0GoIBz_LJ4dHA2X6L5ei3WgYBLodQqCagN3dnt_GIS1-JfhgEafUnv3pAIdMHXuL5OIwkZvnok5ikmPe4UH50__QVYhyK_IcaZAWDjkDM5nzS3QZi2r1ZrVvBtVo"/>
+<img class="w-8 h-8 rounded-full border-2 border-background-dark" data-alt="User avatar 2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACl_dnMBTKFpcbJGmenIeafLx72XitAJW7BUSDKd7oBG1-eJvu7v311ka9HEyJk_qPTcBVLU0x0oEBxMlb0z6g8m7E-5FYuoRFKIQxbLWASWNi4DYUKLs0ZymZyVh8JnRMtR0GH1T11BKSyo1Kka8yPA-3Pu6Xpol_hpuj4DHnIdWFsEVw_DLCff-KQHPt5fzbrAvRqgpgElmjD6vHt-RbETPPwpDeMLlBUkqIlY4cTi4ptE4gnpVjOfdrA56o4DcGEw-6eUBDCR8"/>
+<img class="w-8 h-8 rounded-full border-2 border-background-dark" data-alt="User avatar 3" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAByQFkP6io9SA3yfc3__nXnLJNJ1IhQ1geLkGLcXTpom1by4tiy3sM4fV7X3msRvSyLVe1LpjDg741WpejGCO5dwp--HWVP55Zwe_y613NK1ynMh_ysKKL9bnnDgKmcTj25ch2h0KhYL8Wp13EYkY05QxVZze3tRHgYrmAGL_7Y9_z--T5VrUCLPdbcrORnLshHL_szkjBRlWkzHQhrJRPGM6aLP7UXXxOH3AG4YUmX54cYjXtOudCzeo-SEdInd6jVmZ_wWkgbRc"/>
+<div class="w-8 h-8 rounded-full bg-slate-700 border-2 border-background-dark flex items-center justify-center text-[10px] font-bold">+5</div>
+</div>
+<button class="w-full py-2 bg-primary rounded-xl text-white text-xs font-bold">Completar Equipo</button>
+</div>
+</div>
+</div>
+<!-- Bar Alerts -->
+<div class="space-y-4">
+<h2 class="text-xl font-bold">Estado del Bar</h2>
+<div class="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+<ul class="space-y-3">
+<li class="flex items-center justify-between text-sm">
+<span class="text-slate-400">Cerveza Nacional</span>
+<span class="text-amber-500 font-bold">Stock Crítico (12u)</span>
+</li>
+<li class="flex items-center justify-between text-sm">
+<span class="text-slate-400">Agua Mineral 500ml</span>
+<span class="text-amber-500 font-bold">Quedan 5 cajas</span>
+</li>
+<li class="flex items-center justify-between text-sm">
+<span class="text-slate-400">Bebidas Energéticas</span>
+<span class="text-green-500 font-bold">OK</span>
+</li>
+</ul>
+<button class="mt-4 w-full py-2 border border-amber-500/50 text-amber-500 rounded-xl text-xs font-bold hover:bg-amber-500/10 transition-colors">Hacer Pedido</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Mobile Nav (Visible only on mobile) -->
+<nav class="xl:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-primary/20 px-6 py-3 flex items-center justify-between z-50">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold uppercase">Inicio</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="text-[10px] font-bold uppercase">Reservas</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px] font-bold uppercase">Social</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="text-[10px] font-bold uppercase">Bar</span>
+</button>
+</nav>
+</body></html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#258cf4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0a1016",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .italic-accent {
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Header Section -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 lg:px-20 py-4 glass-card sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="text-primary size-8">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M24 4C25.7818 14.2173 33.7827 22.2182 44 24C33.7827 25.7818 25.7818 33.7827 24 44C22.2182 33.7827 14.2173 25.7818 4 24C14.2173 22.2182 22.2182 14.2173 24 4Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-black leading-tight tracking-tight uppercase">COMPLEJO <span class="text-primary italic-accent">GIOVANNI</span></h2>
+</div>
+<div class="flex flex-1 justify-end gap-8 items-center">
+<nav class="hidden md:flex items-center gap-9">
+<a class="text-slate-600 dark:text-slate-300 text-sm font-semibold hover:text-primary transition-colors" href="#">RESERVAS</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-semibold hover:text-primary transition-colors" href="#">MIS TURNOS</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-semibold hover:text-primary transition-colors" href="#">PERFIL</a>
+</nav>
+<button class="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center rounded-full h-10 px-6 bg-primary text-white text-sm font-bold tracking-wide hover:brightness-110 transition-all">
+                        Cerrar Sesión
+                    </button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-primary/20" data-alt="User profile avatar photo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAa1IRsm0MflqSLaXJCXVNxWd64djmEWfcD_ZFKP33zyIxfVGC8oCjrJgI-MMTmTIMtUPufyE42-MooBdxIFkSLYiySbHGNlM2kfw8VGi7HREFgdNTHg07GXyrupnFKVuCgDyKlVOUlgXNxFddh_IzCWxAJu-86WfvPIVTEu0nDs7KOCVpftIdzR32IxthbpBJLNmrg01kGuUiunTiqlzKEICQsuunMbEElRbN11K959GBEGy5_Pjn_cE8HK3mMiNMc2qTBAYqusUg");'></div>
+</div>
+</header>
+<main class="flex-1 px-4 lg:px-20 py-8 max-w-7xl mx-auto w-full">
+<!-- Hero Intro -->
+<div class="mb-10">
+<h1 class="text-slate-900 dark:text-white text-5xl font-black leading-tight tracking-tighter uppercase">RESERVA TU <span class="text-primary italic-accent">LUGAR</span></h1>
+<p class="text-slate-500 dark:text-slate-400 text-lg mt-2">Gestioná tus actividades de forma simple y rápida.</p>
+</div>
+<!-- STEP 1: RESOURCE SELECTION -->
+<section class="mb-16">
+<div class="flex items-center gap-3 mb-6">
+<span class="bg-primary text-white size-8 flex items-center justify-center rounded-full font-bold">1</span>
+<h2 class="text-slate-900 dark:text-white text-2xl font-bold uppercase tracking-wide">SELECCIONÁ UN <span class="text-primary italic-accent">RECURSO</span></h2>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Resource Card 1 -->
+<div class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-[4/5] cursor-pointer ring-2 ring-transparent hover:ring-primary transition-all duration-300">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Soccer field green grass top view" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBKawy7DxzZaWV9I_AksKtmNlNSaKLfxUzEm1zrFehUIdAOeaJZUS7vmEPqs6N8h3A1XOvGAVVTNNpdJHSM6WsY2TmiU3r9kipMt2A0CQfsyu8xUazKVR61aJyuHLgDtfJSjcorqTAfAmuTZH3a_jjuEf8_aX_kkreF_z5vxsWPOkvoostLiyZ2F_Ravo-oZ9aa9rb4hhDPqWeSCOJ8ReWTyncj4FhkAHcIDgYAnzvBCQfePhhPzwjiUryhoUHKkdRp4zdbv_UJL2Y');"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-6 w-full">
+<span class="material-symbols-outlined text-primary mb-2">sports_soccer</span>
+<p class="text-white text-xl font-bold uppercase">Fútbol 5</p>
+<p class="text-slate-300 text-xs mt-1">Césped sintético premium</p>
+</div>
+</div>
+<!-- Resource Card 2 -->
+<div class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-[4/5] cursor-pointer ring-2 ring-primary transition-all duration-300">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Indoor volleyball court with net" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDAoG4HYj2br_WBBUutUNfLY2-QVi4heerHF02seEm2eHcI3C4rTeD2Zr_lAyeOMNn534ZS6kISU2HCIo1nzTAXy7tcs8zaTsM1-Q3IZId-NPuYWsuHzS16iNR6BB3tiFbptfj48dU1qVIAgg64Te-HrQr5EW39riiySLmevG4ih2zYhNpbXQe6qpwoRRWOHEpwsKUI0jC4zwSEropxBJfKN_M8ZDiBIdqsVPSE-lOsPgKwWccrBBym1ZveN80JSK4nXLUV6xtbA2I');"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+<div class="absolute top-4 right-4 bg-primary text-white text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider">Seleccionado</div>
+<div class="absolute bottom-0 left-0 p-6 w-full">
+<span class="material-symbols-outlined text-primary mb-2">sports_volleyball</span>
+<p class="text-white text-xl font-bold uppercase">Vóley</p>
+<p class="text-slate-300 text-xs mt-1">Cancha profesional techada</p>
+</div>
+</div>
+<!-- Resource Card 3 -->
+<div class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-[4/5] cursor-pointer ring-2 ring-transparent hover:ring-primary transition-all duration-300">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Crystal clear blue swimming pool" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC9LrT0fMnGph6xjvf-Q1Z2j35Wv5iAdQWvMk1r5ubdSISXuYI_v9h-y2uKnrGOkDCyBO-3KmMunFtNc38VS-HfkexU5aaC3dBnU5LiLx0SZcrs5kSMG5RQqt4Cl-tMszGS0J28tn12Bm5s-yZl9KQFuwh8j6LzP0uAnpWYO_dd5K751yd2UMc9df-DUUMAv03lJaMZppgXOvqjUKrJlMO6hXStFZP0ecEoa5FD4oO67BqSEqgfaA0UhyMBlt0U6Ji-5-ecPUFADKQ');"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-6 w-full">
+<span class="material-symbols-outlined text-primary mb-2">pool</span>
+<p class="text-white text-xl font-bold uppercase">Piscina</p>
+<p class="text-slate-300 text-xs mt-1">Climatizada con solarium</p>
+</div>
+</div>
+<!-- Resource Card 4 -->
+<div class="group relative overflow-hidden rounded-xl bg-slate-800 aspect-[4/5] cursor-pointer ring-2 ring-transparent hover:ring-primary transition-all duration-300">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Outdoor barbecue area with dining table" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD-L69H96ZfJaNOy_AmpNrbn_V5G5X6uSOCJYdWaLetOzXYiGlwJhwS-IE4A9JHJQwoS-oBaYvAaa8t_jZu32B5IphMfhK5J1KEzV-2eML2DR95TcksRyNXE4comCAjmfJ61fWH-pkUlprOIIl2Geyu5POgcatCfoRdleGq2LOe30bSnD_ifJ8xmw1jO98-pagzIdL0Nf7kR09w-xKf11vzl6c2Db11MTwuUqaYKWQJdZ9d9QZDjyuKHG4wp6_UJCu-m08Q3BA26fU');"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-6 w-full">
+<span class="material-symbols-outlined text-primary mb-2">outdoor_grill</span>
+<p class="text-white text-xl font-bold uppercase">Quincho</p>
+<p class="text-slate-300 text-xs mt-1">Parrilla y vajilla completa</p>
+</div>
+</div>
+</div>
+</section>
+<!-- STEP 2: DATE & TIME SELECTION -->
+<section class="glass-card p-8 rounded-xl">
+<div class="flex items-center gap-3 mb-8">
+<span class="bg-primary text-white size-8 flex items-center justify-center rounded-full font-bold">2</span>
+<h2 class="text-slate-900 dark:text-white text-2xl font-bold uppercase tracking-wide">SELECCIONÁ FECHA Y <span class="text-primary italic-accent">HORA</span></h2>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+<!-- Mini Calendar Sidebar -->
+<div class="lg:col-span-4 border-r border-slate-700/50 pr-8">
+<div class="flex items-center justify-between mb-4">
+<p class="text-white font-bold">Octubre 2023</p>
+<div class="flex gap-2">
+<button class="p-1 hover:bg-slate-700 rounded transition-colors"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="p-1 hover:bg-slate-700 rounded transition-colors"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+<div class="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-500 font-bold uppercase mb-2">
+<div>Do</div><div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div>Sa</div>
+</div>
+<div class="grid grid-cols-7 gap-1">
+<!-- Calendar Grid (Simplified) -->
+<div class="p-2 text-slate-600">28</div><div class="p-2 text-slate-600">29</div><div class="p-2 text-slate-600">30</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">1</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">2</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">3</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">4</div>
+<div class="p-2 bg-primary text-white font-bold rounded-lg shadow-lg shadow-primary/20">5</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">6</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">7</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">8</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">9</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">10</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">11</div>
+<div class="p-2 text-slate-300 cursor-pointer hover:bg-slate-700 rounded-lg transition-colors">12</div>
+</div>
+<div class="mt-8 space-y-3">
+<p class="text-xs text-slate-400 font-bold uppercase tracking-widest border-b border-slate-700 pb-2">Referencias</p>
+<div class="flex items-center gap-2 text-xs">
+<div class="size-3 rounded-full bg-emerald-500"></div> <span class="text-slate-400">Disponible</span>
+</div>
+<div class="flex items-center gap-2 text-xs">
+<div class="size-3 rounded-full bg-rose-500"></div> <span class="text-slate-400">Ocupado</span>
+</div>
+<div class="flex items-center gap-2 text-xs">
+<div class="size-3 rounded-full bg-amber-500"></div> <span class="text-slate-400">Capacidad Parcial (Pileta)</span>
+</div>
+<div class="flex items-center gap-2 text-xs">
+<div class="size-3 rounded-full bg-slate-600"></div> <span class="text-slate-400">Bloqueado Admin</span>
+</div>
+</div>
+</div>
+<!-- Time Grid -->
+<div class="lg:col-span-8">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-white font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">schedule</span>
+                                    Turnos Disponibles: Jueves 5 de Octubre
+                                </h3>
+<div class="text-slate-400 text-sm">Zona Horaria: UTC-3</div>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+<!-- Morning -->
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+<span class="text-white font-bold">08:00</span>
+<span class="text-emerald-500 text-[10px] font-bold uppercase">Disponible</span>
+</button>
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+<span class="text-white font-bold">09:00</span>
+<span class="text-emerald-500 text-[10px] font-bold uppercase">Disponible</span>
+</button>
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-all">
+<span class="text-white font-bold">10:00</span>
+<span class="text-amber-500 text-[10px] font-bold uppercase">4 Lugares (Pileta)</span>
+</button>
+<div class="relative flex flex-col items-center justify-center p-4 rounded-xl border border-slate-700 bg-slate-800/50 cursor-not-allowed opacity-60">
+<span class="text-slate-500 font-bold">11:00</span>
+<span class="material-symbols-outlined text-slate-500 text-sm">lock</span>
+</div>
+<!-- Afternoon -->
+<div class="relative flex flex-col items-center justify-center p-4 rounded-xl border border-rose-500/20 bg-rose-500/10 cursor-not-allowed">
+<span class="text-white/60 font-bold">12:00</span>
+<span class="text-rose-500 text-[10px] font-bold uppercase">Ocupado</span>
+</div>
+<div class="relative flex flex-col items-center justify-center p-4 rounded-xl border border-rose-500/20 bg-rose-500/10 cursor-not-allowed">
+<span class="text-white/60 font-bold">13:00</span>
+<span class="text-rose-500 text-[10px] font-bold uppercase">Ocupado por Quincho</span>
+</div>
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-primary bg-primary/20 transition-all ring-2 ring-primary ring-offset-2 ring-offset-background-dark">
+<span class="text-white font-bold">14:00</span>
+<span class="text-primary text-[10px] font-bold uppercase">Seleccionado</span>
+</button>
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+<span class="text-white font-bold">15:00</span>
+<span class="text-emerald-500 text-[10px] font-bold uppercase">Disponible</span>
+</button>
+<!-- Evening -->
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+<span class="text-white font-bold">16:00</span>
+<span class="text-emerald-500 text-[10px] font-bold uppercase">Disponible</span>
+</button>
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-all">
+<span class="text-white font-bold">17:00</span>
+<span class="text-amber-500 text-[10px] font-bold uppercase">2 Lugares (Pileta)</span>
+</button>
+<div class="relative flex flex-col items-center justify-center p-4 rounded-xl border border-rose-500/20 bg-rose-500/10 cursor-not-allowed">
+<span class="text-white/60 font-bold">18:00</span>
+<span class="text-rose-500 text-[10px] font-bold uppercase">Ocupado</span>
+</div>
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+<span class="text-white font-bold">19:00</span>
+<span class="text-emerald-500 text-[10px] font-bold uppercase">Disponible</span>
+</button>
+<!-- Night -->
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+<span class="text-white font-bold">20:00</span>
+<span class="text-emerald-500 text-[10px] font-bold uppercase">Disponible</span>
+</button>
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+<span class="text-white font-bold">21:00</span>
+<span class="text-emerald-500 text-[10px] font-bold uppercase">Disponible</span>
+</button>
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+<span class="text-white font-bold">22:00</span>
+<span class="text-emerald-500 text-[10px] font-bold uppercase">Disponible</span>
+</button>
+<button class="group relative flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+<span class="text-white font-bold">23:00</span>
+<span class="text-emerald-500 text-[10px] font-bold uppercase">Disponible</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Summary Action -->
+<div class="mt-12 flex flex-col md:flex-row items-center justify-between border-t border-slate-700/50 pt-8 gap-6">
+<div class="flex items-center gap-4">
+<div class="bg-primary/20 p-3 rounded-lg">
+<span class="material-symbols-outlined text-primary">event_available</span>
+</div>
+<div>
+<p class="text-slate-400 text-xs uppercase font-bold tracking-widest">Resumen de Selección</p>
+<p class="text-white text-lg font-bold">Vóley • Jueves 05/10 • 14:00 HS</p>
+</div>
+</div>
+<button class="w-full md:w-auto min-w-[200px] h-14 bg-primary hover:brightness-110 text-white font-bold rounded-xl shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                            Continuar a Confirmación
+                            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</section>
+</main>
+<footer class="mt-20 border-t border-slate-800 py-10 px-6 lg:px-20 text-center text-slate-500 text-sm">
+<p>© 2023 Complejo Giovanni. Todos los derechos reservados.</p>
+<div class="flex justify-center gap-6 mt-4">
+<a class="hover:text-primary transition-colors" href="#">Términos y Condiciones</a>
+<a class="hover:text-primary transition-colors" href="#">Privacidad</a>
+<a class="hover:text-primary transition-colors" href="#">Contacto</a>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

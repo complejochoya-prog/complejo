@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df20d",
+                        "background-light": "#f5f8f5",
+                        "background-dark": "#102210",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        .glass-card {
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(13, 242, 13, 0.2);
+        }
+        .italic-accent {
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-full grow flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/20 px-6 lg:px-40 py-4 bg-background-dark/50 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-4 text-primary">
+<span class="material-symbols-outlined text-3xl">star_half</span>
+<h2 class="text-slate-100 text-lg font-black leading-tight tracking-tighter italic-accent">COMPLEJO GIOVANNI</h2>
+</div>
+<div class="hidden md:flex flex-1 justify-end gap-8">
+<nav class="flex items-center gap-9">
+<a class="text-slate-300 hover:text-primary text-xs font-bold leading-normal tracking-widest transition-colors" href="#">INICIO</a>
+<a class="text-slate-300 hover:text-primary text-xs font-bold leading-normal tracking-widest transition-colors" href="#">RESERVAS</a>
+<a class="text-slate-300 hover:text-primary text-xs font-bold leading-normal tracking-widest transition-colors" href="#">TORNEOS</a>
+<a class="text-slate-300 hover:text-primary text-xs font-bold leading-normal tracking-widest transition-colors" href="#">BENEFICIOS</a>
+</nav>
+<div class="flex items-center gap-4 border-l border-primary/20 pl-8">
+<button class="flex items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary text-background-dark text-xs font-black leading-normal tracking-widest uppercase hover:scale-105 transition-transform">
+<span>MI PERFIL</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary/50" data-alt="Portrait of a male club member" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDnmgnYl9ZVnuxpFWMkurXW4ZFJ6LUb5lW9-R-fKu_LhVWgt_RupcJ1J4LHU_2McjSMBya3BFZGIPKorvvMmbbAjJHxiSGfDQbKGHxM5VocOdISp_BDZSmWnYwm0Y8xTCYLU1SjvU0n8AhkKgcwqqHYjnfG6Rz1LKx1AmsVjA--gCrqer4QVFJwkKYxvt3O4oKwAXoeUiysfAn2R_G9vzOBjTvJzY06sYY0WXPE-0zIIugfcuV9BZNJjwsTiUjLN2IrRiHjt6XoHAE");'></div>
+</div>
+</div>
+<div class="md:hidden">
+<span class="material-symbols-outlined text-primary">menu</span>
+</div>
+</header>
+<main class="px-6 lg:px-40 py-10 max-w-[1400px] mx-auto w-full">
+<!-- Premium Profile Header Card -->
+<div class="glass-card rounded-xl p-8 mb-10 relative overflow-hidden flex flex-col md:flex-row items-center gap-8 shadow-2xl">
+<!-- Abstract Background Ornament -->
+<div class="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+<div class="relative z-10">
+<div class="size-32 md:size-40 rounded-xl border-4 border-primary/30 overflow-hidden shadow-lg transform -rotate-2">
+<img alt="Juan Perez" class="w-full h-full object-cover" data-alt="Close up portrait of Juan Perez" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJ7iJVGsJmktB4FhjZADhfDinyneMBgPE8BZCRJPYXs7JyoU3TKqiz4qSK3M1J-8HgPUV2R1NgmdkRcJX4Zm_ipxNl_PunDylkz6hRORZyJ1fl1WGeRhJ9we5nNphWI97qIyf0ydhBOKob-bOAdlE6bpBbDNrwluuERRUtVXv1zjUjTgonk2eJzTQ9iJK0ltTm1E8m5PvTsV8Dz25tJspckyS-3SRdVS8DuAC9kbk8FGQBpPu17UQFA_H9mzhfBUoRjc-b22sFP68"/>
+</div>
+</div>
+<div class="flex-1 text-center md:text-left relative z-10">
+<div class="flex flex-col md:flex-row md:items-end gap-2 md:gap-4 mb-2">
+<h1 class="text-4xl md:text-5xl font-black text-white italic-accent tracking-tighter uppercase">JUAN PÉREZ</h1>
+<span class="bg-primary/20 text-primary px-3 py-1 rounded text-xs font-bold tracking-widest border border-primary/30 inline-block mb-2">SOCIO GOLD</span>
+</div>
+<p class="text-slate-400 font-mono tracking-widest text-sm mb-6 uppercase">ID: #GIO-99283-2024</p>
+<div class="flex flex-wrap gap-4 justify-center md:justify-start">
+<button class="bg-primary text-background-dark font-black px-6 py-2 rounded-full text-xs tracking-widest hover:bg-white transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">edit</span> EDITAR PERFIL
+                        </button>
+<button class="bg-transparent border border-slate-700 text-slate-400 font-black px-6 py-2 rounded-full text-xs tracking-widest hover:bg-slate-800 transition-colors">
+                            CERRAR SESIÓN
+                        </button>
+</div>
+</div>
+<!-- Stats Summary inside glass card -->
+<div class="grid grid-cols-2 md:grid-cols-1 gap-4 w-full md:w-48 relative z-10">
+<div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800">
+<p class="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase">PUNTOS G</p>
+<p class="text-2xl font-black text-primary italic-accent">2,450</p>
+</div>
+<div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800">
+<p class="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase">RANKING</p>
+<p class="text-2xl font-black text-white italic-accent">#12</p>
+</div>
+</div>
+</div>
+<!-- Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- MIS RESERVAS Section -->
+<div class="lg:col-span-2 space-y-6">
+<div class="flex items-center justify-between px-2">
+<h2 class="text-xl font-black italic-accent tracking-widest uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">calendar_month</span> MIS RESERVAS
+                        </h2>
+<a class="text-primary text-xs font-bold uppercase tracking-widest hover:underline" href="#">VER TODAS</a>
+</div>
+<div class="bg-slate-900/30 rounded-lg border border-primary/10 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-primary/5">
+<th class="px-6 py-4 text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">FECHA &amp; HORA</th>
+<th class="px-6 py-4 text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">ACTIVIDAD</th>
+<th class="px-6 py-4 text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">ESTADO</th>
+<th class="px-6 py-4 text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase text-right">ACCIÓN</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-primary/10">
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-6">
+<p class="text-primary font-bold text-sm">24 OCT - 19:00</p>
+</td>
+<td class="px-6 py-6">
+<p class="text-white font-bold text-sm uppercase italic-accent">PADEL CANCHA 1</p>
+</td>
+<td class="px-6 py-6">
+<span class="bg-primary/20 text-primary text-[10px] font-black px-3 py-1 rounded-full uppercase">PRÓXIMA</span>
+</td>
+<td class="px-6 py-6 text-right">
+<button class="text-slate-500 hover:text-red-500 text-[10px] font-black tracking-widest uppercase transition-colors">CANCELAR</button>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-6">
+<p class="text-slate-400 font-bold text-sm">20 OCT - 21:00</p>
+</td>
+<td class="px-6 py-6">
+<p class="text-white font-bold text-sm uppercase italic-accent">FÚTBOL 5 - SINTÉTICO</p>
+</td>
+<td class="px-6 py-6">
+<span class="bg-slate-800 text-slate-400 text-[10px] font-black px-3 py-1 rounded-full uppercase">COMPLETADA</span>
+</td>
+<td class="px-6 py-6 text-right">
+<button class="text-primary hover:text-white text-[10px] font-black tracking-widest uppercase transition-colors">REPETIR</button>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group border-b-0">
+<td class="px-6 py-6">
+<p class="text-slate-400 font-bold text-sm">18 OCT - 18:30</p>
+</td>
+<td class="px-6 py-6">
+<p class="text-white font-bold text-sm uppercase italic-accent">CLASE ENTRENAMIENTO</p>
+</td>
+<td class="px-6 py-6">
+<span class="bg-slate-800 text-slate-400 text-[10px] font-black px-3 py-1 rounded-full uppercase">COMPLETADA</span>
+</td>
+<td class="px-6 py-6 text-right">
+<button class="text-primary hover:text-white text-[10px] font-black tracking-widest uppercase transition-colors">REPETIR</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- MIS LOGROS Section -->
+<div class="pt-8">
+<h2 class="text-xl font-black italic-accent tracking-widest uppercase flex items-center gap-2 mb-6 px-2">
+<span class="material-symbols-outlined text-primary">emoji_events</span> MIS LOGROS
+                        </h2>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+<div class="bg-slate-900/40 p-6 rounded-lg border border-primary/10 flex flex-col items-center text-center group hover:border-primary/40 transition-all">
+<div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">local_fire_department</span>
+</div>
+<p class="text-white font-black text-[10px] uppercase tracking-widest mb-1">RACHA 7 DÍAS</p>
+<p class="text-slate-500 text-[10px] leading-tight">Asistencia perfecta semanal</p>
+</div>
+<div class="bg-slate-900/40 p-6 rounded-lg border border-primary/10 flex flex-col items-center text-center group hover:border-primary/40 transition-all">
+<div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">military_tech</span>
+</div>
+<p class="text-white font-black text-[10px] uppercase tracking-widest mb-1">CAMPEÓN PADEL</p>
+<p class="text-slate-500 text-[10px] leading-tight">Torneo Primavera 2023</p>
+</div>
+<div class="bg-slate-900/40 p-6 rounded-lg border border-primary/10 flex flex-col items-center text-center group hover:border-primary/40 transition-all">
+<div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">groups</span>
+</div>
+<p class="text-white font-black text-[10px] uppercase tracking-widest mb-1">CAPITÁN</p>
+<p class="text-slate-500 text-[10px] leading-tight">Líder de equipo Fútbol 5</p>
+</div>
+<div class="bg-slate-900/20 p-6 rounded-lg border border-slate-800 flex flex-col items-center text-center grayscale opacity-50">
+<div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-slate-500 text-3xl">workspace_premium</span>
+</div>
+<p class="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1">SOCIO PLATINUM</p>
+<p class="text-slate-600 text-[10px] leading-tight">Bloqueado</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar: MIS BENEFICIOS -->
+<div class="space-y-6">
+<h2 class="text-xl font-black italic-accent tracking-widest uppercase flex items-center gap-2 px-2">
+<span class="material-symbols-outlined text-primary">redeem</span> MIS BENEFICIOS
+                    </h2>
+<div class="space-y-4">
+<!-- Benefit Card -->
+<div class="bg-gradient-to-br from-slate-900 to-slate-950 p-6 rounded-lg border border-primary/20 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-2 bg-primary text-background-dark font-black text-[10px] tracking-widest italic-accent rounded-bl-lg">EXCLUSIVO GOLD</div>
+<div class="flex items-start gap-4 mb-4">
+<span class="material-symbols-outlined text-primary text-4xl">restaurant</span>
+<div>
+<h3 class="text-white font-black italic-accent text-lg leading-tight uppercase">20% OFF LOMITOS</h3>
+<p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Giovanni Bar &amp; Grill</p>
+</div>
+</div>
+<p class="text-slate-500 text-[11px] mb-4">Válido de Lunes a Jueves presentando tu ID digital en caja.</p>
+<button class="w-full py-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-md transition-colors">GENERAR CÓDIGO</button>
+</div>
+<!-- Benefit Card -->
+<div class="bg-gradient-to-br from-slate-900 to-slate-950 p-6 rounded-lg border border-primary/20 relative overflow-hidden group">
+<div class="flex items-start gap-4 mb-4">
+<span class="material-symbols-outlined text-primary text-4xl">sports_tennis</span>
+<div>
+<h3 class="text-white font-black italic-accent text-lg leading-tight uppercase">CLASE CORTESÍA</h3>
+<p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Academia Padel</p>
+</div>
+</div>
+<p class="text-slate-500 text-[11px] mb-4">1 clase de técnica individual por mes incluida en tu membresía.</p>
+<button class="w-full py-3 bg-primary text-background-dark text-[10px] font-black uppercase tracking-[0.2em] rounded-md transition-colors hover:scale-[1.02]">RESERVAR AHORA</button>
+</div>
+<!-- Benefit Card -->
+<div class="bg-gradient-to-br from-slate-900 to-slate-950 p-6 rounded-lg border border-primary/20 relative overflow-hidden group">
+<div class="flex items-start gap-4 mb-4">
+<span class="material-symbols-outlined text-primary text-4xl">local_mall</span>
+<div>
+<h3 class="text-white font-black italic-accent text-lg leading-tight uppercase">15% OFF STORE</h3>
+<p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Indumentaria Oficial</p>
+</div>
+</div>
+<p class="text-slate-500 text-[11px] mb-4">Descuento en toda la línea de ropa deportiva Giovanni.</p>
+<button class="w-full py-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-md transition-colors">VER CATÁLOGO</button>
+</div>
+</div>
+<!-- Promo Banner -->
+<div class="rounded-lg overflow-hidden relative aspect-[4/5] group cursor-pointer shadow-xl">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Close up of sports equipment in a gym" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzuSQH-b9U13eSOP78CYfz_OPPCtar0tkK0nbtyveyd10Gl2PjRzRnYWVsiu515MxSE6C5TK_e5dNd1qZdURlbrdyTMlcP97i0niW3rFQPTypeiXTDRejyOH4GWNxi1grUtfBWRAvuj30pCHKJDHUvM3zBQ6SY7LqScMAqcNcWe0C7gvQE53u1jOU29uZ0P0xpsB9aHvUhub597_7fvuYIhr3vxi9OdsvRLkxbDK_gGTHSY550ZZhmbWKes59zqxxK2GQO4GPfjqI"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-6">
+<h4 class="text-white font-black italic-accent text-2xl uppercase leading-tight mb-2">PRÓXIMO TORNEO:<br/>OPEN VERANO</h4>
+<p class="text-primary font-bold text-sm tracking-widest mb-4">INSCRIPCIONES ABIERTAS</p>
+<button class="bg-white text-background-dark font-black px-4 py-2 rounded-full text-[10px] tracking-widest uppercase">MÁS INFO</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Mobile -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-background-dark border-t border-primary/20 px-6 py-4 flex justify-between items-center z-50">
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[8px] font-bold uppercase tracking-widest">INICIO</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary" href="#">
+<span class="material-symbols-outlined">event_available</span>
+<span class="text-[8px] font-bold uppercase tracking-widest">RESERVAS</span>
+</a>
+<div class="bg-primary p-3 rounded-full -mt-10 border-4 border-background-dark shadow-lg">
+<span class="material-symbols-outlined text-background-dark">add</span>
+</div>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary" href="#">
+<span class="material-symbols-outlined">trophy</span>
+<span class="text-[8px] font-bold uppercase tracking-widest">TORNEOS</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[8px] font-bold uppercase tracking-widest">PERFIL</span>
+</a>
+</nav>
+</div>
+</body></html>

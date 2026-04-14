@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df259",
+                        "background-light": "#f5f8f6",
+                        "background-dark": "#102216",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-header {
+            background: rgba(16, 34, 22, 0.8);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(13, 242, 89, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+<!-- Premium Header -->
+<header class="sticky top-0 z-50 glass-header px-6 lg:px-20 py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary/20 rounded-lg">
+<span class="material-symbols-outlined text-primary">sports_soccer</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">Complejo Giovanni</h1>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Inicio</a>
+<a class="text-sm font-medium text-primary" href="#">Escuela</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Canchas</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Torneos</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="hidden sm:flex items-center justify-center rounded-full px-5 py-2 bg-primary text-background-dark text-sm font-bold">
+                    Mi Cuenta
+                </button>
+<div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile avatar portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjzf0VUpSRVJHtX7A9RjGOtRPPB_fdYkq1kKHfrLqv4CsZd5AOdVeB9k7qjOOGnUlI5ys7DxltWgRsUOyMIseCxhYerqDERL6e7QZg7qeYT6gr1hO4RDz2gS_sXaW0EoiXsxO5webQjCUAaUj8MfNAVC_CsEzDWcK5gZIdh2wzNRi4b-9InnujfedNmQc9vpRnzQpxpzk5yKlRqmtKa6ivE--XbJHG7UI_ND-dTnOoSlQ1eMJOHKFbFuxXUfEvuJoKVqFTX05zEd8"/>
+</div>
+</div>
+</header>
+<main class="flex-1 w-full max-w-7xl mx-auto px-4 lg:px-20 py-10 space-y-12">
+<!-- Hero Title -->
+<section class="relative rounded-xl overflow-hidden min-h-[300px] flex flex-col justify-end p-8 lg:p-12 bg-slate-900">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover opacity-40" data-alt="Wide angle shot of professional green football field" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvwy0WpEAWtV1M1nlftYaaLEF6FlY1gxqLVsVW0JdhGkmM1gAkEI3nT_8WMgvv0d7SwLu0wZtONs-21QA-oqOjf3_U9Mvgobus_0WLx0qe94RWYmgVMCi6pbqd-_5rAa-U37Oz6xCPSb9-F6OO3RZ6f74a6Fs7gHNKvs81Vec8UPaaPaOl92x9Lu5xDVA12aNW0x30yfYVLxxSdzhESS3cnPD00PT9TRLLEHWcqKnxtb2GJIatWrhQbHmsW0pLwLX7v7es3Z1mfW0"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent"></div>
+</div>
+<div class="relative z-10">
+<h2 class="text-4xl lg:text-6xl font-black italic tracking-tighter uppercase text-white">
+                        ESCUELA DE DEPORTES
+                    </h2>
+<p class="mt-4 text-slate-300 max-w-2xl text-lg">
+                        Formamos a los campeones del mañana con profesionalismo, valores y la mejor infraestructura de la ciudad.
+                    </p>
+</div>
+</section>
+<!-- Sports Sections -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Football Section -->
+<div class="group relative overflow-hidden rounded-xl bg-slate-900 aspect-[4/3] flex flex-col justify-end">
+<img class="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" data-alt="Kids playing football on grass field training" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQK0YXSHM866BW3E_QZCuPZwZckBnP91aaz_qTCRZYBH-y_YRPP-S60NZf17bbUgUHTqpPqQCZKC6pIuh_OcDzHnlcG8xv4jX5MW9IS3wgLaTZVJxtUYZM7xL12O8e25XMieOi9VkXoEtA36ZAWdQwQmAqfHDjpXWHRiz7i2kQGj3JsUKzbcfh6o1PNAieAG8SQ2voCMPcPyj_czEf672Jib0g62oWhwOJ5U1tgf9zbElnyDBZL_ZuHuXLpVU6NaPC5-3qQaxY8SQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent"></div>
+<div class="relative p-8 space-y-4">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm">sports_soccer</span> Fútbol Infantil
+                        </div>
+<h3 class="text-3xl font-bold text-white">Escuelita de Fútbol</h3>
+<div class="grid grid-cols-2 gap-4 text-slate-200 text-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">calendar_month</span>
+                                Lun y Mié 17:00 hs
+                            </div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">group</span>
+                                Edades: 5-12 años
+                            </div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">payments</span>
+                                Mensual: $4.500
+                            </div>
+</div>
+</div>
+</div>
+<!-- Volleyball Section -->
+<div class="group relative overflow-hidden rounded-xl bg-slate-900 aspect-[4/3] flex flex-col justify-end">
+<img class="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" data-alt="Action shot of a volleyball match indoors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpV0rkoi4el6ADhDoNmLE8kRE53Pjhcz-cOqm9TLpCExWY2F96qEuu402uT6Wu6xpm2thzLxcutU2wYZztqFvJPhZkGgYKQP5dmMlT2iOmeKqxM5sYVTXBbY82vjqryekU_pLhSlviN2BP1p-9s649vKhNdZ3k7BnMcP9SFwGBDs2OP89B0Qdi1j1N4qvVYDRYL78Gix5125eab18x-Dm2V_kDjY8-T5W6jN2ogv68LcbHPyOwCROhscqfo2vMOxFOgOO8Q2mpcTA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent"></div>
+<div class="relative p-8 space-y-4">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm">sports_volleyball</span> Vóley Mixto
+                        </div>
+<h3 class="text-3xl font-bold text-white">Vóley Juvenil y Adultos</h3>
+<div class="grid grid-cols-2 gap-4 text-slate-200 text-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">calendar_month</span>
+                                Mar y Jue 19:00 hs
+                            </div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">group</span>
+                                +13 años
+                            </div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">payments</span>
+                                Mensual: $4.000
+                            </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Registration Form Section -->
+<section class="max-w-4xl mx-auto py-12">
+<div class="glass-panel rounded-xl p-8 lg:p-12 shadow-2xl relative overflow-hidden">
+<!-- Decorative element -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+<div class="relative z-10 text-center mb-10">
+<h2 class="text-3xl font-bold mb-2">Inscribirse Ahora</h2>
+<p class="text-slate-400">Completa el formulario para reservar tu lugar. Te contactaremos por WhatsApp.</p>
+</div>
+<form action="#" class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+<div class="space-y-2">
+<label class="text-sm font-medium text-slate-300 ml-1">Nombre del Alumno/a</label>
+<input class="w-full bg-slate-900/50 border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-white p-3" placeholder="Nombre completo" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-medium text-slate-300 ml-1">Edad</label>
+<input class="w-full bg-slate-900/50 border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-white p-3" placeholder="Ej: 8" type="number"/>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-medium text-slate-300 ml-1">WhatsApp (Padre/Tutor)</label>
+<input class="w-full bg-slate-900/50 border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-white p-3" placeholder="+54 9..." type="tel"/>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-medium text-slate-300 ml-1">Deporte de Interés</label>
+<select class="w-full bg-slate-900/50 border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-white p-3 appearance-none">
+<option>Fútbol Infantil</option>
+<option>Vóley Mixto</option>
+<option>Entrenamiento Funcional</option>
+</select>
+</div>
+<div class="md:col-span-2 mt-4">
+<button class="w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-4 rounded-lg flex items-center justify-center gap-3 transition-all transform hover:scale-[1.01] active:scale-[0.99]" type="submit">
+<span class="material-symbols-outlined font-bold">send</span>
+                                ENVIAR INSCRIPCIÓN (WHATSAPP)
+                            </button>
+</div>
+</form>
+</div>
+</section>
+</main>
+<!-- Persistent Bottom Navigation -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 glass-header px-6 py-3 flex justify-around items-center border-t border-slate-800 z-50">
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium">Inicio</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="text-[10px] font-medium">Escuela</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">stadium</span>
+<span class="text-[10px] font-medium">Canchas</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Perfil</span>
+</a>
+</nav>
+<!-- Spacer for mobile nav -->
+<div class="h-20 md:hidden"></div>
+<footer class="hidden md:block py-12 px-20 border-t border-slate-800 text-slate-500 text-sm">
+<div class="max-w-7xl mx-auto flex justify-between items-center">
+<p>© 2024 Complejo Giovanni. Todos los derechos reservados.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Términos</a>
+<a class="hover:text-primary transition-colors" href="#">Privacidad</a>
+<a class="hover:text-primary transition-colors" href="#">Contacto</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

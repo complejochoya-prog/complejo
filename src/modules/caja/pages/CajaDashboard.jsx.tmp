@@ -1,0 +1,25 @@
+import React, { useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import useCaja from '../hooks/useCaja';
+import CajaResumen from '../components/CajaResumen';
+import MovimientoCard from '../components/MovimientoCard';
+import MovimientoForm from '../components/MovimientoForm';
+import {
+    Plus,
+    Lock,
+    Unlock,
+    RefreshCcw,
+    Search,
+    History,
+    Loader2,
+    CalendarCheck,
+    Coffee,
+    Truck,
+    Banknote,
+    CreditCard,
+    Smartphone,
+    TrendingUp,
+    X,
+    Utensils,
+    ChevronRight,
+} from 'lucide-react';

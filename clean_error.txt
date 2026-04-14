@@ -1,0 +1,30 @@
+
+> complejo@0.0.0 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 41 modules transformed.
+
+[31m✗[39m Build failed in 903ms
+[31merror during build:
+[31msrc/modules/clientes/index.js (3:7): Identifier "Home" has already been declared[31m
+file: [36mD:/USUARIO/Desktop/complejo/src/modules/clientes/index.js:3:7[31m
+[33m
+1: // Módulo clientes
+2: import Home from './pages/Home';
+3: import Home from './pages/Home';
+          ^
+4: import Progress from './pages/Progress';
+5: import School from './pages/School';
+[31m
+    at getRollupError (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+    at error (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+    at Module.error (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/node-entry.js:17040:16)
+    at Module.addImport (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/node-entry.js:17567:22)
+    at ImportDeclaration.initialise (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/node-entry.js:13090:28)
+    at convertNode (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/node-entry.js:16437:10)
+    at convertNodeList (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/node-entry.js:16447:38)
+    at Array.program (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/node-entry.js:16297:21)
+    at convertNode (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/node-entry.js:16436:28)
+    at convertProgram (file:///D:/USUARIO/Desktop/complejo/node_modules/rollup/dist/es/shared/node-entry.js:15677:12)[39m

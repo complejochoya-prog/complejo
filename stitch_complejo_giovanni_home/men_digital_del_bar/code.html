@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Menú Digital - Complejo Giovanni</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#258cf4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(34, 54, 73, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101922;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #223649;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #258cf4;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Navigation Bar -->
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-primary/20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 lg:px-40 py-4">
+<div class="max-w-[1200px] mx-auto flex items-center justify-between">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl" data-icon="sports_soccer">sports_soccer</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-extrabold tracking-tight">COMPLEJO GIOVANNI</h2>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-bold transition-colors" href="#">INICIO</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-bold transition-colors underline decoration-2 underline-offset-8 decoration-primary" href="#">MENÚ</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-bold transition-colors" href="#">RESERVAS</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-bold transition-colors" href="#">CONTACTO</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+<input class="bg-slate-100 dark:bg-primary/10 border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary w-64" placeholder="Buscar plato o trago..." type="text"/>
+</div>
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">person</span>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 w-full max-w-[1200px] mx-auto px-6 lg:px-10 py-8">
+<!-- Hero Section -->
+<div class="mb-10">
+<h1 class="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter mb-2">MENÚ DIGITAL</h1>
+<p class="text-slate-500 dark:text-primary/60 font-medium uppercase tracking-widest text-sm">Premium Sports Bar Experience</p>
+</div>
+<!-- Categories Tabs -->
+<div class="sticky top-20 z-40 mb-8 overflow-x-auto no-scrollbar py-2">
+<div class="flex gap-4 min-w-max border-b border-slate-200 dark:border-primary/10">
+<button class="px-6 py-4 text-sm font-bold border-b-4 border-primary text-primary transition-all">PLATOS</button>
+<button class="px-6 py-4 text-sm font-bold border-b-4 border-transparent text-slate-500 dark:text-slate-400 hover:text-primary transition-all">TRAGOS</button>
+<button class="px-6 py-4 text-sm font-bold border-b-4 border-transparent text-slate-500 dark:text-slate-400 hover:text-primary transition-all">BEBIDAS</button>
+<button class="px-6 py-4 text-sm font-bold border-b-4 border-transparent text-slate-500 dark:text-slate-400 hover:text-primary transition-all">POSTRES</button>
+</div>
+</div>
+<!-- Menu Section: Platos -->
+<section class="mb-12">
+<div class="flex items-center gap-4 mb-8">
+<h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">LOMITOS Y PIZZAS</h2>
+<div class="h-[1px] flex-1 bg-slate-200 dark:bg-primary/20"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Item 1 -->
+<div class="glass-card rounded-xl overflow-hidden flex flex-col sm:flex-row group transition-all hover:border-primary/50">
+<div class="w-full sm:w-48 h-48 sm:h-auto bg-center bg-cover" data-alt="Delicioso lomito completo con papas fritas" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAphac4yPW_mJLUSXrcsIUzSIshfk0UDxrX8CMBNvy4fIa-2HAWdjAtgVFWqezy9Vg8uUmO623y01-3iuVTAxpFfdToTqtBxmusAB4jH--52MEJOGH4TKHduuzTYtoHXfdR0VzZS6N_b5rGFjCqAO-tuGOuYDLU3VNy0_uQsjPXLfdX7FDaemRkx9RjbrzNQCnjDdS0v_Oufzbssh20q5uBtJ9CCrrle9JSO7uBa757cpL-sV0totdzryDLTAdpsA6aYS9_AptzpEs');">
+</div>
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-lg font-extrabold text-white">LOMITO COMPLETO</h3>
+<span class="text-primary font-bold text-xl">$9.500</span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed mb-4">Carne de ternera premium, huevo frito, jamón, queso, lechuga, tomate y mayonesa casera. Incluye papas.</p>
+</div>
+<button class="w-full sm:w-fit px-6 py-2.5 bg-primary text-white text-xs font-black rounded-full hover:bg-primary/80 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">shopping_cart</span>
+                            PEDIR AHORA
+                        </button>
+</div>
+</div>
+<!-- Item 2 (Out of Stock Example) -->
+<div class="glass-card rounded-xl overflow-hidden flex flex-col sm:flex-row relative opacity-60">
+<div class="absolute inset-0 z-10 flex items-center justify-center bg-background-dark/40 backdrop-blur-[2px]">
+<span class="px-4 py-1.5 bg-red-600 text-white text-xs font-black rounded-full uppercase tracking-tighter">SIN STOCK</span>
+</div>
+<div class="w-full sm:w-48 h-48 sm:h-auto bg-center bg-cover grayscale" data-alt="Pizza de muzzarella artesanal" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC8R6pafBgdKoBKtTLjsAw8Akthy7Z_2GYkYTL9Eig8XMlyJqEcWWnzNJQ9TsZncNEql54cUj1vQA4jlsRSCGz8Wd4EE47wyUsoAg5jndGEtJVy9RFoXrS76zgp8Qx8g00ij96O553fo95mgbWr4FeNpEqXe9UaRXov1_hi0y4TQlJFIxR7EJHGjTReMEPARbmg6UBK_ulwDTsj3Hu7Q838oqukuNjOHMJ_LIpWyL65V0y1jeEfHiKhrHIeBhSvTNmIiVuHbyNj0yo');">
+</div>
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-lg font-extrabold text-white">PIZZA ESPECIAL</h3>
+<span class="text-slate-500 font-bold text-xl">$8.200</span>
+</div>
+<p class="text-slate-500 text-sm leading-relaxed mb-4">Salsa de tomate natural, muzzarella, jamón cocido, morrones asados y aceitunas verdes.</p>
+</div>
+<button class="w-full sm:w-fit px-6 py-2.5 bg-slate-700 text-slate-400 text-xs font-black rounded-full uppercase tracking-widest cursor-not-allowed" disabled="">
+                            AGOTADO
+                        </button>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="glass-card rounded-xl overflow-hidden flex flex-col sm:flex-row group transition-all hover:border-primary/50">
+<div class="w-full sm:w-48 h-48 sm:h-auto bg-center bg-cover" data-alt="Empanadas de carne salteña" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAvF7giX9OOSL7yF-pwz3qH_fmgXZ0oEWNHsJdU4gUJfS-Y345yV8QoWUr8MeI-rlusU-N_It7UvXpgcjwU08-iXGJ9U4mOe7iTdkDX0_1SUUmx5rnZsLsZp42SmG40uPgRM7gyJ9ETTj0Emtn1jnoUfNn0hKOhXLR3zV9X7fZCJIAQysXovi396rXuvLovT5C5twNWCEPXkdwustcjPAJXteefL9yonvlJDkSZvdT3wDD7LOqntJsTA_El4VcY6Ceos80WaDXGAJU');">
+</div>
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-lg font-extrabold text-white">DOCENA EMPANADAS</h3>
+<span class="text-primary font-bold text-xl">$12.000</span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed mb-4">Carne cortada a cuchillo, jamón y queso, o pollo. Fritas o al horno de barro.</p>
+</div>
+<button class="w-full sm:w-fit px-6 py-2.5 bg-primary text-white text-xs font-black rounded-full hover:bg-primary/80 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">shopping_cart</span>
+                            PEDIR AHORA
+                        </button>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="glass-card rounded-xl overflow-hidden flex flex-col sm:flex-row group transition-all hover:border-primary/50">
+<div class="w-full sm:w-48 h-48 sm:h-auto bg-center bg-cover" data-alt="Pizza napolitana con albahaca" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDb1qEVbqiH2yS5C2KC8X2XyTE-j1dG4GyR3L55n4fMLp4prTkxb7WGfUb4YYi3jBqcVfZ3xZreOWyC4Ii6Fsb8l-Sqx_H_NaLTB5o1pWwU0C9eMl1RdTxfTKSvOOgbs12ygvT2yzWf4b5pAXzWoU3GR7ZYvlQa2y2sT9mmxagsKHbrsVjwsxMyUKMtbP_MhTHQfEdbgJqHYkbi_NYb5CJH5UWBiBaOXrhvcbaFjtNo-ZY_dfSYz-M4Qt2waA0wzjFXyMmGk0jDO34');">
+</div>
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-lg font-extrabold text-white">PIZZA NAPOLITANA</h3>
+<span class="text-primary font-bold text-xl">$7.900</span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed mb-4">Rodajas de tomate fresco, ajo, perejil y abundante muzzarella de primera calidad.</p>
+</div>
+<button class="w-full sm:w-fit px-6 py-2.5 bg-primary text-white text-xs font-black rounded-full hover:bg-primary/80 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">shopping_cart</span>
+                            PEDIR AHORA
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Menu Section: Tragos -->
+<section class="mb-12">
+<div class="flex items-center gap-4 mb-8">
+<h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">TRAGOS Y COCTELERÍA</h2>
+<div class="h-[1px] flex-1 bg-slate-200 dark:bg-primary/20"></div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+<!-- Drink 1 -->
+<div class="glass-card rounded-xl p-4 flex flex-col gap-3 group">
+<div class="aspect-square rounded-lg bg-center bg-cover" data-alt="Vaso de fernet con coca cola y hielo" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCIMhkXWzUdRFV3b-t_QHk77_Vv8b8NzvSmsxYbPgqZLF80dEfr38sgBK6vpQR-E311wauUU_a3R8vL11FStSy_U2VxniymV1oJeLgllPtNhXRvq-OYKSaJQOh5ZY8nHpadtbbl3-dYAqv-Zj07Kz1hF-S0_fVSfxq7wq3pQDhuKLGbgTOzB6wCOavask1ABfPB6rTfmXiQtLuovsYjPQGktikkEVVrKZYblLv1jURhwlMBthaOWzdC_GrvYxtmxGkPsxaKeaWJcms');">
+</div>
+<h3 class="text-sm font-bold text-white uppercase tracking-tight">FERNET BRANCA 70/30</h3>
+<div class="flex justify-between items-center">
+<span class="text-primary font-bold">$4.500</span>
+<button class="size-8 rounded-full bg-primary/20 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+</div>
+<!-- Drink 2 -->
+<div class="glass-card rounded-xl p-4 flex flex-col gap-3 group">
+<div class="aspect-square rounded-lg bg-center bg-cover" data-alt="Copa de gancia con limon" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBUOfVKrp55TkfokrxYfw7VH7e52fTigMrewgmC_1iZhtp3JnS8Zgp63bkSbpx9kZlsAdDptzi5K2_1MWCWQDbSRZJZykLJTix4pJXVpLPEWQ9p781SkbbBRurK25-oXOE-GIiBDghsfOSSifCMeKMWOzjd6cz9vj6vV_xZFDaOFgg8l7aP41AbZTBew9yTQqBvuE4ZeE61hd8uTglVluIxqYSXvCLygj1b5ZT-vJMzaOFATjC4tZjvVpE29T0mNWDcBZKKI_e8jsg');">
+</div>
+<h3 class="text-sm font-bold text-white uppercase tracking-tight">GANCIA CON BATIDO</h3>
+<div class="flex justify-between items-center">
+<span class="text-primary font-bold">$3.800</span>
+<button class="size-8 rounded-full bg-primary/20 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+</div>
+<!-- Drink 3 -->
+<div class="glass-card rounded-xl p-4 flex flex-col gap-3 group">
+<div class="aspect-square rounded-lg bg-center bg-cover" data-alt="Gin tonic con pepino y bayas" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBSakbr7v8g1LbGsvIc43FQ6oQZsI1dSfE_4bJOemy2ogAP-4qM2HgokW6xPf_aDrAKvzgLgDtAnY61EmvmIGIgV2P0D5MEEzY1VobGAI5ZYiYsNX7O6VfTDuKO0wTlUUYOkw-svB-hp2YyhSeTVaoCz_i2RbhdTKPTMkgbbsEBeaTVV4vGkaNHsexhvkLgB2VTIHcA0BC9eN3a6R7CYMfueAEPRYE7W4LLZZ39sW3LSIsB6YDBtLjZ0jGx0HcsaZM13QgTliK0FrY');">
+</div>
+<h3 class="text-sm font-bold text-white uppercase tracking-tight">GIN TONIC PREMIUM</h3>
+<div class="flex justify-between items-center">
+<span class="text-primary font-bold">$5.200</span>
+<button class="size-8 rounded-full bg-primary/20 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+</div>
+<!-- Drink 4 -->
+<div class="glass-card rounded-xl p-4 flex flex-col gap-3 group opacity-50">
+<div class="aspect-square rounded-lg bg-center bg-cover grayscale" data-alt="Negroni clasico" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCz2JT_kozPuvPYmX-C-Q0w9BES18Wmzglf-rEfEEgJwbZ3LP3DJrO_2kKr2BbKQ1ZpK9E7f3CAU9jWSUtKx5B6_6tWCeS9_90aRfQF_nk00-jzRskI4mNxnglP3nKsTopn8YDV9Gk30J1_gm9vXZxhBvq7xshMLWHHYJlp2Fhm3PDXHIDpZRUXORVzFdxLvRWbvS325RLv1IoFzOI3zgD473K0r3sx0XWHz1v54art1Urf6-YvK11G_20mGeJ2fpAm1ES34nyjzS0');">
+</div>
+<h3 class="text-sm font-bold text-white uppercase tracking-tight">NEGRONI</h3>
+<div class="flex justify-between items-center">
+<span class="text-slate-400 font-bold">$4.900</span>
+<span class="text-[10px] font-black text-red-500 uppercase">SIN STOCK</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Cart Button (Mobile) -->
+<div class="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50">
+<button class="flex items-center gap-3 px-6 py-4 bg-primary text-white rounded-full shadow-2xl shadow-primary/40 hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">shopping_basket</span>
+<span class="font-black text-sm uppercase tracking-widest hidden sm:inline">Ver Pedido</span>
+<span class="bg-white text-primary text-[10px] font-black size-5 rounded-full flex items-center justify-center">2</span>
+</button>
+</div>
+<!-- Footer -->
+<footer class="bg-slate-100 dark:bg-primary/5 px-6 lg:px-40 py-12 mt-auto">
+<div class="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-10">
+<div>
+<div class="flex items-center gap-3 text-primary mb-6">
+<span class="material-symbols-outlined text-3xl">sports_soccer</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-extrabold tracking-tight">GIOVANNI</h2>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                    El mejor complejo deportivo y gastronómico de la ciudad. Calidad premium en cada detalle de tu experiencia.
+                </p>
+</div>
+<div>
+<h4 class="text-slate-900 dark:text-white font-black text-sm uppercase tracking-widest mb-6">HORARIOS BAR</h4>
+<ul class="space-y-3 text-slate-500 dark:text-slate-400 text-sm">
+<li class="flex justify-between"><span>Lunes a Jueves:</span> <span class="font-bold">18:00 - 01:00</span></li>
+<li class="flex justify-between"><span>Viernes y Sábados:</span> <span class="font-bold">18:00 - 03:00</span></li>
+<li class="flex justify-between text-primary"><span>Domingos:</span> <span class="font-bold text-primary">11:00 - 00:00</span></li>
+</ul>
+</div>
+<div>
+<h4 class="text-slate-900 dark:text-white font-black text-sm uppercase tracking-widest mb-6">UBICACIÓN</h4>
+<p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Av. Siempre Viva 742, Córdoba, Argentina</p>
+<div class="h-32 rounded-xl bg-slate-200 dark:bg-primary/10 overflow-hidden">
+<div class="w-full h-full bg-center bg-cover opacity-70" data-alt="Mapa de ubicacion del complejo" data-location="Cordoba, Argentina" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDBEpxoXYneILWHgaZnjHrNbioKn6K80_7wt-uwY6Br9CwCaph2Ep1nntrPXuxBLEt27YAAEN5JulKV5EReeP2PFmyyzzrO3Mvh_wIueD4qLj_-X0f19vjjG7jkpXG4O75gtS87NmArbyp2Uus5ymkpMw5KdZZttF2yP251AFYMzSGS88jQWN40hrkKFEdbGxnvub0zxyf9aTGKUha11XCBHICOmygkJpfpCYqzzaJR_xTzrLkfuU927Z2BACDpkvgvj8nR5D08rDQ');"></div>
+</div>
+</div>
+</div>
+<div class="max-w-[1200px] mx-auto mt-12 pt-8 border-t border-slate-200 dark:border-primary/10 text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest">
+            © 2024 Complejo Giovanni - Todos los derechos reservados.
+        </div>
+</footer>
+</div>
+</body></html>

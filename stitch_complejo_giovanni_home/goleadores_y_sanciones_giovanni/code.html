@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Goleadores y Sanciones Giovanni</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df20d",
+                        "primary-dark": "#0ab80a",
+                        "background-light": "#f5f8f5",
+                        "background-dark": "#0f172a", /* Slate 950 base */
+                        "card-dark": "#1e293b", /* Slate 800 */
+                        "gold": "#fbbf24",
+                        "silver": "#94a3b8",
+                        "bronze": "#b45309",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem", 
+                        "lg": "2rem", 
+                        "xl": "2.5rem", 
+                        "2xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased min-h-screen flex flex-col selection:bg-primary selection:text-slate-900">
+<!-- Top Navbar -->
+<header class="sticky top-0 z-50 glass-panel border-b border-white/5 px-4 lg:px-10 py-4">
+<div class="max-w-7xl mx-auto flex items-center justify-between">
+<div class="flex items-center gap-4 text-white">
+<div class="size-8 text-primary">
+<svg fill="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM5.93 4.26C8.6 2.87 11.69 2.45 14.65 3.12C11.89 4.67 9.53 7.03 7.98 9.79C7.31 6.83 7.73 3.74 9.12 1.07L5.93 4.26ZM4 12C4 10.73 4.29 9.51 4.82 8.42C6.72 6.2 9.14 4.54 11.9 3.65C9.37 5.79 7.42 8.5 6.25 11.59C5.43 11.72 4.63 11.93 3.86 12.22C3.95 12.14 4 12.07 4 12ZM12 20C10.73 20 9.51 19.71 8.42 19.18C6.2 17.28 4.54 14.86 3.65 12.1C5.79 14.63 8.5 16.58 11.59 17.75C11.72 18.57 11.93 19.37 12.22 20.14C12.14 20.05 12.07 20 12 20ZM19.18 15.58C17.28 17.8 14.86 19.46 12.1 20.35C14.63 18.21 16.58 15.5 17.75 12.41C18.57 12.28 19.37 12.07 20.14 11.78C20.05 11.86 20 11.93 20 12C20 13.27 19.71 14.49 19.18 15.58Z"></path>
+</svg>
+</div>
+<h2 class="text-white text-xl font-black tracking-tighter italic">COMPLEJO GIOVANNI</h2>
+</div>
+<div class="hidden lg:flex flex-1 justify-end gap-8">
+<nav class="flex items-center gap-8 mr-8">
+<a class="text-slate-400 hover:text-primary text-sm font-bold tracking-wider transition-colors" href="#">INICIO</a>
+<a class="text-slate-400 hover:text-primary text-sm font-bold tracking-wider transition-colors" href="#">CANCHAS</a>
+<a class="text-white border-b-2 border-primary pb-1 text-sm font-bold tracking-wider" href="#">TORNEOS</a>
+<a class="text-slate-400 hover:text-primary text-sm font-bold tracking-wider transition-colors" href="#">ADMIN</a>
+</nav>
+<div class="flex gap-3">
+<button class="flex items-center justify-center rounded-full size-10 bg-slate-800 hover:bg-slate-700 text-white transition-colors border border-white/10">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-full size-10 bg-slate-800 hover:bg-slate-700 text-white transition-colors border border-white/10">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+</div>
+</div>
+<!-- Mobile Menu Toggle -->
+<button class="lg:hidden text-white">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<main class="flex-1 w-full max-w-7xl mx-auto px-4 lg:px-10 py-8 space-y-8">
+<!-- Header Section -->
+<section class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+<div class="flex flex-col gap-2">
+<h1 class="text-4xl md:text-5xl font-black tracking-tight text-white uppercase italic">
+<span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">Estadísticas</span> y Sanciones
+                </h1>
+<p class="text-slate-400 text-lg max-w-2xl font-light">
+                    Consulta el rendimiento de los jugadores estrella y mantente al día con el estado disciplinario del torneo actual.
+                </p>
+</div>
+<div class="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-white/5 backdrop-blur-sm">
+<span class="material-symbols-outlined text-primary">calendar_month</span>
+<span class="text-slate-300 font-medium text-sm">Temporada 2024 - Apertura</span>
+</div>
+</section>
+<!-- Tabs Navigation -->
+<div class="sticky top-[80px] z-40 bg-background-dark/80 backdrop-blur-md pt-2 pb-6 -mx-4 px-4 md:mx-0 md:px-0">
+<div class="flex bg-slate-900/50 p-1.5 rounded-full border border-white/5 max-w-md">
+<button class="flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full bg-primary text-slate-900 font-black shadow-lg shadow-primary/20 transition-all transform hover:scale-[1.02]">
+<span class="material-symbols-outlined text-[20px] font-bold">trophy</span>
+                    GOLEADORES
+                </button>
+<button class="flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-slate-400 hover:text-white font-bold transition-colors">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+                    SANCIONES
+                </button>
+</div>
+</div>
+<!-- Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left Column: Top Scorers Table (Takes 2 columns) -->
+<div class="lg:col-span-2 space-y-6">
+<div class="glass-panel rounded-2xl overflow-hidden shadow-2xl shadow-black/20">
+<div class="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-slate-800/30">
+<h3 class="text-white text-lg font-bold tracking-wide flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">leaderboard</span>
+                            TABLA DE GOLEO
+                        </h3>
+<button class="text-xs font-bold text-primary hover:text-white transition-colors uppercase tracking-wider">Ver todo</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-white/5 text-xs uppercase tracking-wider text-slate-400 font-semibold bg-slate-900/40">
+<th class="px-6 py-4 w-16 text-center">Pos</th>
+<th class="px-6 py-4">Jugador</th>
+<th class="px-6 py-4">Equipo</th>
+<th class="px-6 py-4 text-center">PJ</th> <!-- Partidos Jugados -->
+<th class="px-6 py-4 text-right">Goles</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5 text-sm">
+<!-- Rank 1 -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="px-6 py-4 text-center">
+<div class="size-8 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 text-slate-900 font-black flex items-center justify-center mx-auto shadow-lg shadow-yellow-500/20">1</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="size-10 rounded-full bg-slate-700 overflow-hidden ring-2 ring-yellow-500/50">
+<img class="w-full h-full object-cover" data-alt="Portrait of Carlos Mendoza" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBV0luucXiMQ6w6Qe4Ysfr4v9LfNK3YJQP0AzXfSWCF_C4WqQZc3BxqEPVkudi1aLZatFtwPSdCvmUsDCFcO8x7nv_QB4zA7RMzDbtG3s7iN52ADy28vNkFQOOqAgi625YkujeOZ3tW1okHSmJ5reWx0SLcsQsw7YOB46X35F9j-1JOOIygMucmlz2JSEvzVGBZqagVRKNvVCtqYK9yJo2t2nY5373uJvsM5G20I_Ejk0DqI0uunxLRP5663u2jHbHLjwNzvSEeW9M"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5">
+<span class="material-symbols-outlined text-[10px] text-slate-900 block font-bold">star</span>
+</div>
+</div>
+<div>
+<p class="font-bold text-white group-hover:text-yellow-400 transition-colors">Carlos Mendoza</p>
+<p class="text-xs text-slate-400">Delantero</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-300">Los Rayos FC</td>
+<td class="px-6 py-4 text-center text-slate-400">8</td>
+<td class="px-6 py-4 text-right">
+<span class="text-2xl font-black text-white">12</span>
+</td>
+</tr>
+<!-- Rank 2 -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="px-6 py-4 text-center">
+<div class="size-8 rounded-full bg-gradient-to-br from-slate-300 to-slate-500 text-slate-900 font-black flex items-center justify-center mx-auto shadow-lg shadow-slate-400/20">2</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-700 overflow-hidden ring-2 ring-slate-400/50">
+<img class="w-full h-full object-cover" data-alt="Portrait of Andrés Silva" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjXfLXp3sSMpW6yn2savscoirXtxhNuTOZVmQcLp-QV5z4IfvWCbmhsRY-8TwCjoqQBAJff0AdFu6GnCZ24BgRl5aUo_rgHIv9vsWb2Cg_FOcfx9jn1kAK4zfTp95C-W0jcULMlpTmrZPXs_5oHwslxP6LA-krGH9fcE2fexNGTmc0uJUuUfV6JVbcW3mxly6NFWYobsnNovMqWAE_d-P2NCy1Oln0V3pDZv71BoEtQLrEzbf8V8kQM5Ru44gws3-qtviPDX1ly7w"/>
+</div>
+<div>
+<p class="font-bold text-white group-hover:text-slate-300 transition-colors">Andrés Silva</p>
+<p class="text-xs text-slate-400">Mediapunta</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-300">Atlético Sur</td>
+<td class="px-6 py-4 text-center text-slate-400">8</td>
+<td class="px-6 py-4 text-right">
+<span class="text-2xl font-black text-white">10</span>
+</td>
+</tr>
+<!-- Rank 3 -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="px-6 py-4 text-center">
+<div class="size-8 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 text-white font-black flex items-center justify-center mx-auto shadow-lg shadow-amber-700/20">3</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-700 overflow-hidden ring-2 ring-amber-700/50">
+<img class="w-full h-full object-cover" data-alt="Portrait of Jorge Ruiz" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDO_hrFS-ETwYo4Yh8nrdeE61xCaKp00obo7MeE3REOYo-Awh1GLxd5KBBrwaIvFLPrCjGWOgGFdqP0pKy5CxQ5O7BsfHhrvPngBLhXWNy6I98KjFSVUFTWr2idNMR9POuN_VLBiwyrQo6714o-lwSewl9UPqWKAQ7b9716jVykkEzy3VatSEUM2-d52g5qPQFFk2HE4NFAPtJDcG9LdoeynB6kKlAoSQ3iDR7n7riaDrFlN2IfIWWxFR7KIoLkLwMx8SEGxl37cEI"/>
+</div>
+<div>
+<p class="font-bold text-white group-hover:text-amber-500 transition-colors">Jorge Ruiz</p>
+<p class="text-xs text-slate-400">Delantero</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-300">Deportivo Norte</td>
+<td class="px-6 py-4 text-center text-slate-400">7</td>
+<td class="px-6 py-4 text-right">
+<span class="text-2xl font-black text-white">9</span>
+</td>
+</tr>
+<!-- Rank 4 -->
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="px-6 py-4 text-center">
+<span class="font-bold text-slate-500">4</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div>
+<p class="font-bold text-white">Luis Hernández</p>
+<p class="text-xs text-slate-400">Extremo</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-300">F.C. Giovanni</td>
+<td class="px-6 py-4 text-center text-slate-400">8</td>
+<td class="px-6 py-4 text-right">
+<span class="text-xl font-bold text-slate-300">7</span>
+</td>
+</tr>
+<!-- Rank 5 -->
+<tr class="group hover:bg-white/5 transition-colors border-b-0">
+<td class="px-6 py-4 text-center">
+<span class="font-bold text-slate-500">5</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div>
+<p class="font-bold text-white">Miguel Torres</p>
+<p class="text-xs text-slate-400">Central</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-300">Halcones</td>
+<td class="px-6 py-4 text-center text-slate-400">8</td>
+<td class="px-6 py-4 text-right">
+<span class="text-xl font-bold text-slate-300">6</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Column: Recent Sanctions & Quick Stats -->
+<div class="lg:col-span-1 space-y-6">
+<!-- Sanctions Card -->
+<div class="glass-panel rounded-2xl p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[120px] text-red-500">style</span>
+</div>
+<div class="relative z-10">
+<h3 class="text-white text-lg font-bold tracking-wide mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500">gavel</span>
+                            SANCIONES RECIENTES
+                        </h3>
+<div class="space-y-4">
+<!-- Suspended Player -->
+<div class="flex items-center gap-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+<div class="relative shrink-0">
+<div class="size-12 rounded-full bg-slate-800 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of suspended player" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHhx5F86rnbvYue__3874bpYzGUlzqIsr0_EmG8QHWcdu3obiGoKenLM8BbwRIFy3EPOhVrBqYxUba8nns3cHMVMXKivdCBMzeIkPsQgc-4mrRrswopBTX4DOLmXfGzd_PbPZXCAYdirQjuORyahkj_1Q1hcnKUpvsHcolTu3BR1nLqw-kraacIWEu60wkm4xn0StAB7lQFoo2U0z3MVPzBVncPbI3adq1UPfRC4QUxkeRwhgx4Bk-WEdtZTRybeXqhS1z1Rd-AKw"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-red-600 rounded-full p-1 border border-slate-900">
+<span class="material-symbols-outlined text-[12px] text-white block">block</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-white font-bold truncate">Roberto Diaz</p>
+<p class="text-xs text-red-400 font-medium uppercase tracking-wider">Suspendido (2 Fechas)</p>
+</div>
+</div>
+<!-- Yellow Cards -->
+<div class="flex items-center gap-4 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors border border-white/5">
+<div class="size-12 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-slate-400">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-white font-bold truncate">Juan Perez</p>
+<p class="text-xs text-slate-400">Los Rayos FC</p>
+</div>
+<div class="flex -space-x-1">
+<div class="w-4 h-5 bg-yellow-400 rounded-sm shadow-sm transform -rotate-6 border border-black/20" title="Tarjeta Amarilla"></div>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors border border-white/5">
+<div class="size-12 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-slate-400">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-white font-bold truncate">Esteban Quito</p>
+<p class="text-xs text-slate-400">Halcones</p>
+</div>
+<div class="flex -space-x-2">
+<div class="w-4 h-5 bg-yellow-400 rounded-sm shadow-sm transform -rotate-12 border border-black/20" title="Tarjeta Amarilla"></div>
+<div class="w-4 h-5 bg-yellow-400 rounded-sm shadow-sm transform rotate-6 border border-black/20" title="Tarjeta Amarilla"></div>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors border border-white/5">
+<div class="size-12 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-slate-400">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-white font-bold truncate">Mario G.</p>
+<p class="text-xs text-slate-400">Deportivo Norte</p>
+</div>
+<div class="flex -space-x-1">
+<div class="w-4 h-5 bg-red-600 rounded-sm shadow-sm transform rotate-3 border border-black/20" title="Tarjeta Roja"></div>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-slate-300 font-medium text-sm transition-colors flex items-center justify-center gap-2">
+                            Ver reporte completo
+                            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Featured Team Mini-Card -->
+<div class="glass-panel rounded-2xl p-6 bg-gradient-to-br from-slate-800/80 to-slate-900/80">
+<h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">Equipo Fair Play</h3>
+<div class="flex items-center gap-4">
+<div class="size-14 rounded-full bg-white flex items-center justify-center shrink-0 shadow-lg shadow-white/10">
+<!-- Team Logo Placeholder -->
+<span class="material-symbols-outlined text-slate-900 text-3xl">shield</span>
+</div>
+<div>
+<p class="text-white text-lg font-black italic">ATLÉTICO SUR</p>
+<p class="text-emerald-400 text-sm font-medium">0 Tarjetas Rojas</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Persistent Nav (Mobile Only style as per request context, but hidden on LG usually, let's make it visible only on small screens) -->
+<div class="lg:hidden fixed bottom-0 w-full glass-panel border-t border-white/10 px-6 py-3 z-50">
+<div class="flex justify-between items-center max-w-sm mx-auto">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-bold">Inicio</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-current">emoji_events</span>
+<span class="text-[10px] font-bold">Torneos</span>
+</a>
+<div class="relative -top-8">
+<button class="size-14 rounded-full bg-primary text-slate-900 flex items-center justify-center shadow-lg shadow-primary/40 border-4 border-slate-900">
+<span class="material-symbols-outlined text-3xl">sports_soccer</span>
+</button>
+</div>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="text-[10px] font-bold">Fechas</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Perfil</span>
+</a>
+</div>
+</div>
+</body></html>

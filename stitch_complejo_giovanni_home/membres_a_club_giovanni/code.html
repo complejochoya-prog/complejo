@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Membresía Club Giovanni</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f2b90d",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#221e10",
+                        "slate-custom": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(34, 30, 16, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(242, 185, 13, 0.2);
+        }
+        .glow-button {
+            box-shadow: 0 0 20px rgba(242, 185, 13, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between border-b border-primary/10 px-6 py-4 lg:px-20 bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-4 text-primary">
+<span class="material-symbols-outlined text-3xl">workspace_premium</span>
+<h2 class="text-slate-100 text-xl font-extrabold tracking-tighter">COMPLEJO GIOVANNI</h2>
+</div>
+<div class="hidden lg:flex items-center gap-10">
+<a class="text-slate-300 hover:text-primary text-sm font-semibold transition-colors" href="#">INICIO</a>
+<a class="text-slate-300 hover:text-primary text-sm font-semibold transition-colors" href="#">RESERVAS</a>
+<a class="text-slate-300 hover:text-primary text-sm font-semibold transition-colors" href="#">TORNEOS</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary pb-1" href="#">CLUB</a>
+<a class="text-slate-300 hover:text-primary text-sm font-semibold transition-colors" href="#">BAR</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex min-w-[120px] items-center justify-center rounded-full h-10 px-5 bg-primary text-background-dark text-sm font-bold tracking-wide hover:scale-105 transition-transform">
+                    MI PERFIL
+                </button>
+<div class="rounded-full size-10 border-2 border-primary/30 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile avatar placeholder" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZ__qrWeTINzDujcfLY8AWhaa0pdrA4fjTV3LT-bi6WGUTO0r0iaEwd4ls5WyrtUgBXIIz0KAC9yA3MiS_8jy_C0JpWH-luqYEMK1FrQMH16HlFfWF6IF4EU84SXHksRXJ2X7xJQjZGtCVHo7eBn5s6U-glne5jsS5vXUMFiFhW9ub9WKRMDiDAOzarpe4PVbqqgRwAjED7UVSbl4bF4iuF2vPo5jt9sLUlGfIe9RXXjn--TSwnznA7Em71hl_c40dyHe04Ty_c7E"/>
+</div>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center justify-start py-12 px-6 lg:px-20 max-w-7xl mx-auto w-full">
+<!-- Hero Header Section -->
+<div class="w-full mb-12 text-center lg:text-left">
+<h1 class="text-primary text-5xl lg:text-7xl font-black italic uppercase tracking-tighter leading-none mb-4">
+                    BECOME A MEMBER <br/>
+<span class="text-slate-100 not-italic">CLUB GIOVANNI</span>
+</h1>
+<p class="text-slate-400 text-lg max-w-2xl lg:ml-1">
+                    Únete a la élite del deporte y el ocio. Beneficios exclusivos, prioridad en reservas y experiencias premium diseñadas para atletas exigentes.
+                </p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-start">
+<!-- Registration Form - Glassmorphism Card -->
+<div class="lg:col-span-8 glass-card rounded-xl p-8 lg:p-12">
+<div class="flex items-center gap-4 mb-10">
+<div class="size-10 rounded-full bg-primary flex items-center justify-center text-background-dark font-bold">1</div>
+<h3 class="text-2xl font-bold text-slate-100">Información Personal</h3>
+</div>
+<form class="space-y-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-slate-400 text-sm font-semibold uppercase tracking-wider ml-1">Nombre Completo</label>
+<input class="w-full bg-slate-custom/50 border border-slate-700 rounded-xl px-4 py-4 text-slate-100 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Juan Pérez" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-slate-400 text-sm font-semibold uppercase tracking-wider ml-1">Fecha de Nacimiento</label>
+<input class="w-full bg-slate-custom/50 border border-slate-700 rounded-xl px-4 py-4 text-slate-100 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" type="date"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-slate-400 text-sm font-semibold uppercase tracking-wider ml-1">WhatsApp</label>
+<input class="w-full bg-slate-custom/50 border border-slate-700 rounded-xl px-4 py-4 text-slate-100 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-600" placeholder="+54 9 11 ..." type="tel"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-slate-400 text-sm font-semibold uppercase tracking-wider ml-1">Deporte Preferido</label>
+<select class="w-full bg-slate-custom/50 border border-slate-700 rounded-xl px-4 py-4 text-slate-100 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all appearance-none">
+<option>Fútbol</option>
+<option>Pádel</option>
+<option>Tenis</option>
+<option>Básquet</option>
+</select>
+</div>
+</div>
+<div class="pt-6 border-t border-slate-800">
+<div class="flex items-center gap-4 mb-8">
+<div class="size-10 rounded-full bg-primary flex items-center justify-center text-background-dark font-bold">2</div>
+<h3 class="text-2xl font-bold text-slate-100">Plan de Membresía</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<label class="relative flex flex-col p-6 rounded-xl border-2 border-slate-700 bg-slate-custom/30 cursor-pointer hover:border-primary/50 transition-all group">
+<input checked="" class="absolute top-4 right-4 text-primary focus:ring-primary bg-slate-800 border-slate-600" name="plan" type="radio"/>
+<span class="text-xl font-bold text-slate-100 mb-1">Standard</span>
+<span class="text-primary font-bold text-lg mb-4">$5.000 <span class="text-slate-500 text-xs uppercase">/ mes</span></span>
+<p class="text-slate-400 text-sm">Acceso a beneficios básicos y reservas anticipadas de 24hs.</p>
+</label>
+<label class="relative flex flex-col p-6 rounded-xl border-2 border-primary bg-primary/5 cursor-pointer hover:bg-primary/10 transition-all group">
+<input class="absolute top-4 right-4 text-primary focus:ring-primary bg-slate-800 border-slate-600" name="plan" type="radio"/>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-xl font-bold text-slate-100">Premium</span>
+<span class="bg-primary text-background-dark text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Top</span>
+</div>
+<span class="text-primary font-bold text-lg mb-4">$8.500 <span class="text-slate-500 text-xs uppercase">/ mes</span></span>
+<p class="text-slate-300 text-sm">Acceso total, estacionamiento VIP y descuentos exclusivos en el bar.</p>
+</label>
+</div>
+</div>
+<button class="w-full glow-button bg-primary hover:bg-primary/90 text-background-dark font-black text-xl py-6 rounded-xl mt-8 transition-all hover:scale-[1.01] active:scale-[0.98] uppercase tracking-widest flex items-center justify-center gap-3" type="button">
+                            UNIRME AL CLUB
+                            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</form>
+</div>
+<!-- Benefits Sidebar -->
+<div class="lg:col-span-4 space-y-6">
+<div class="glass-card rounded-xl p-8 border-l-4 border-l-primary">
+<h4 class="text-xl font-bold text-slate-100 mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">verified</span>
+                            Tus Beneficios
+                        </h4>
+<ul class="space-y-5">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-xl">check_circle</span>
+<div>
+<p class="text-slate-100 font-semibold text-sm">Descuento en Bar</p>
+<p class="text-slate-400 text-xs">20% OFF en todos tus consumos en Giovanni Bar.</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-xl">check_circle</span>
+<div>
+<p class="text-slate-100 font-semibold text-sm">Prioridad de Reserva</p>
+<p class="text-slate-400 text-xs">Reserva tus canchas favoritas antes que nadie.</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-xl">check_circle</span>
+<div>
+<p class="text-slate-100 font-semibold text-sm">Torneos Exclusivos</p>
+<p class="text-slate-400 text-xs">Inscripción bonificada en la Copa Giovanni anual.</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-xl">check_circle</span>
+<div>
+<p class="text-slate-100 font-semibold text-sm">Estacionamiento VIP</p>
+<p class="text-slate-400 text-xs">Ubicación preferencial dentro del predio.</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-xl">check_circle</span>
+<div>
+<p class="text-slate-100 font-semibold text-sm">Vestuarios Premium</p>
+<p class="text-slate-400 text-xs">Acceso a lockers privados y zona de relax.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="rounded-xl overflow-hidden h-48 relative group">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="High-end soccer pitch night lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdVvinhbT4sY15KzxcSyefGov1SoSt4UApAwOFZprP1jHA1y_dAeGFH1Ce6Uc4Woi2aVKbeQv7vjDqYqV5ZpWHO484mI0uM_Re44ebDlB_CIbFOWeCd8PxFm6sgS9uMV2T70oXztTwloiEf3n2oyXXfHyZ6DRZTzOqOJc-QiMqc-tJ5vZrkrsw5YiT6EjyVxMCOML6w_Fe40EzOw0KARn5wcg2WZSI3ryLclcPl2pKvWdcHGFQLT6JMJzQ-LcBwn8G2O415OZloB4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark to-transparent flex items-end p-6">
+<p class="text-white text-sm font-bold italic">Instalaciones de primer nivel mundial.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Persistent Bottom Navigation -->
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-background-dark/95 backdrop-blur-lg border-t border-slate-800 px-6 py-4 flex justify-between items-center z-50">
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Inicio</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Reservas</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">workspace_premium</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Club</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">sports_score</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Torneos</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Perfil</span>
+</a>
+</nav>
+<!-- Desktop Footer Info (Optional for aesthetics) -->
+<footer class="hidden lg:block py-10 px-20 border-t border-slate-800 bg-background-dark text-slate-500">
+<div class="max-w-7xl mx-auto flex justify-between items-center">
+<p class="text-sm">© 2024 Complejo Giovanni. All Rights Reserved.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Términos</a>
+<a class="hover:text-primary transition-colors" href="#">Privacidad</a>
+<a class="hover:text-primary transition-colors" href="#">Contacto</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

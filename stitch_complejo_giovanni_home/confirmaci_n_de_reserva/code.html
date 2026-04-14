@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Confirmación de Reserva - Complejo Giovanni</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#258cf4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                        "accent-success": "#22c55e",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass {
+            background: rgba(24, 38, 52, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 lg:px-20 py-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-8">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M24 4C25.7818 14.2173 33.7827 22.2182 44 24C33.7827 25.7818 25.7818 33.7827 24 44C22.2182 33.7827 14.2173 25.7818 4 24C14.2173 22.2182 22.2182 14.2173 24 4Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] uppercase">Complejo Giovanni</h2>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<nav class="hidden md:flex items-center gap-9">
+<a class="hover:text-primary transition-colors text-sm font-medium uppercase" href="#">Inicio</a>
+<a class="text-primary text-sm font-medium uppercase" href="#">Reservas</a>
+<a class="hover:text-primary transition-colors text-sm font-medium uppercase" href="#">Servicios</a>
+<a class="hover:text-primary transition-colors text-sm font-medium uppercase" href="#">Contacto</a>
+</nav>
+<div class="bg-slate-200 dark:bg-slate-800 rounded-full size-10 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">person</span>
+</div>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center py-10 px-4">
+<div class="max-w-[800px] w-full space-y-8">
+<!-- Progress Section -->
+<div class="glass p-6 rounded-lg space-y-4">
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<p class="text-primary text-xs font-bold tracking-widest uppercase">Paso 3 de 4</p>
+<p class="text-slate-900 dark:text-white text-lg font-bold uppercase">Datos de Reserva</p>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">75% Completado</p>
+</div>
+<div class="h-3 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 75%;"></div>
+</div>
+</div>
+<!-- Main Form Section -->
+<div class="glass p-8 lg:p-12 rounded-lg space-y-10">
+<h1 class="text-slate-900 dark:text-white text-3xl lg:text-4xl font-bold text-center tracking-tight uppercase">Confirmación de Reserva</h1>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Input: Full Name -->
+<div class="space-y-2">
+<label class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">Nombre Completo</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">person</span>
+<input class="w-full pl-12 pr-4 py-4 bg-white/5 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 dark:text-white transition-all" placeholder="Ej: Juan Pérez" type="text"/>
+</div>
+</div>
+<!-- Input: WhatsApp -->
+<div class="space-y-2">
+<label class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">WhatsApp</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">phone_iphone</span>
+<input class="w-full pl-12 pr-4 py-4 bg-white/5 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 dark:text-white transition-all" placeholder="+54 9..." type="tel"/>
+</div>
+</div>
+<!-- Input: Number of People -->
+<div class="space-y-2">
+<label class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">Cantidad de Personas (Pileta)</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">groups</span>
+<input class="w-full pl-12 pr-4 py-4 bg-white/5 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 dark:text-white transition-all" min="1" placeholder="4" type="number"/>
+</div>
+</div>
+<!-- Input: Payment Method -->
+<div class="space-y-2">
+<label class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">Método de Pago</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">payments</span>
+<select class="w-full pl-12 pr-4 py-4 bg-white/5 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 dark:text-white transition-all appearance-none">
+<option class="bg-background-dark" value="cash">Efectivo en el Complejo</option>
+<option class="bg-background-dark" value="transfer">Transferencia Bancaria</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Summary Card -->
+<div class="bg-primary/5 border border-primary/20 rounded-xl p-6 space-y-4">
+<h3 class="text-primary text-sm font-bold uppercase tracking-wider">Resumen de Selección</h3>
+<div class="flex justify-between items-center text-slate-700 dark:text-slate-300">
+<span class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">calendar_today</span> Sábado, 24 de Octubre</span>
+<span class="font-bold">14:00 - 18:00 HS</span>
+</div>
+<div class="h-px bg-primary/10 w-full"></div>
+<div class="flex justify-between items-center">
+<span class="text-lg font-medium text-slate-900 dark:text-white">Total a abonar</span>
+<span class="text-2xl font-bold text-primary">$12.500</span>
+</div>
+</div>
+<!-- Action Button -->
+<div class="pt-4">
+<button class="w-full py-5 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3 uppercase tracking-wide">
+                                Confirmar Datos
+                                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Step 4: WhatsApp Confirmation (Hidden by default in actual logic, shown here for visual design) -->
+<div class="glass p-8 lg:p-12 rounded-lg space-y-8 text-center border-2 border-accent-success/30">
+<div class="size-20 bg-accent-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
+<span class="material-symbols-outlined text-accent-success text-5xl">check_circle</span>
+</div>
+<div class="space-y-2">
+<h2 class="text-slate-900 dark:text-white text-3xl font-bold uppercase">¡Casi listo!</h2>
+<p class="text-slate-500 dark:text-slate-400">Tu reserva ha sido pre-confirmada. Para validarla, por favor envía el comprobante por WhatsApp.</p>
+</div>
+<div class="pt-4">
+<a class="w-full py-6 bg-accent-success hover:bg-green-600 text-white rounded-xl font-bold text-xl shadow-xl shadow-green-500/20 transition-all flex items-center justify-center gap-4 uppercase tracking-wider" href="#">
+<svg class="size-8" fill="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.284l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.768-5.764-5.768zm3.393 8.165c-.145.405-.851.758-1.174.805-.295.042-.676.066-1.1-.074-.242-.081-.541-.184-1.11-.429-1.921-.828-3.142-2.825-3.238-2.953-.096-.127-.783-.804-.783-1.547 0-.744.381-1.107.518-1.252.138-.145.301-.182.403-.182h.271c.091 0 .213.003.308.225.097.23.332.808.361.865.03.058.05.127.012.203-.039.076-.058.127-.116.19-.058.064-.121.144-.173.193-.058.058-.118.121-.051.23.067.11.301.496.646.804.444.397.818.52 1.129.67.311.15.493.127.677-.08.185-.208.783-.912.993-1.226.208-.313.419-.26.708-.152.289.108 1.834.864 2.15 1.022.316.158.528.235.606.368.077.133.077.771-.068 1.176z"></path>
+</svg>
+                                Enviar Comprobante por WhatsApp
+                            </a>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-500 uppercase tracking-widest font-medium">Serás redirigido a la aplicación de WhatsApp</p>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-auto py-8 border-t border-slate-200 dark:border-slate-800 text-center">
+<p class="text-slate-500 text-sm font-medium uppercase tracking-widest">© 2023 Complejo Giovanni - Gestión de Espacios Deportivos</p>
+</footer>
+</div>
+</div>
+</body></html>

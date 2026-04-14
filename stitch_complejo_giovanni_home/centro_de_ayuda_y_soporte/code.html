@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Centro de Ayuda - Complejo Giovanni</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df20d",
+                        "background-light": "#f5f8f5",
+                        "background-dark": "#102210",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #102210; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a4c2a; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0df20d; 
+        }
+        
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen text-slate-900 dark:text-slate-100 selection:bg-primary selection:text-black overflow-x-hidden">
+<!-- Wrapper -->
+<div class="flex flex-col min-h-screen">
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10">
+<div class="px-6 lg:px-40 py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 text-primary flex items-center justify-center bg-primary/10 rounded-full p-1.5">
+<svg class="w-full h-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M8.57829 8.57829C5.52816 11.6284 3.451 15.5145 2.60947 19.7452C1.76794 23.9758 2.19984 28.361 3.85056 32.3462C5.50128 36.3314 8.29667 39.7376 11.8832 42.134C15.4698 44.5305 19.6865 45.8096 24 45.8096C28.3135 45.8096 32.5302 44.5305 36.1168 42.134C39.7033 39.7375 42.4987 36.3314 44.1494 32.3462C45.8002 28.361 46.2321 23.9758 45.3905 19.7452C44.549 15.5145 42.4718 11.6284 39.4217 8.57829L24 24L8.57829 8.57829Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white uppercase">Complejo Giovanni</h2>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">INICIO</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">RESERVAS</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">CLASES</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">EVENTOS</a>
+<a class="text-sm font-semibold text-primary transition-colors" href="#">AYUDA</a>
+</nav>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center size-10 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-900 dark:text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-900 dark:text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow px-4 md:px-6 lg:px-40 py-8 lg:py-12 flex justify-center">
+<div class="w-full max-w-[960px] flex flex-col gap-10">
+<!-- Page Title -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-primary mb-2">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="text-sm font-bold tracking-wider uppercase">Soporte al cliente</span>
+</div>
+<h1 class="text-4xl md:text-5xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Centro de Ayuda</h1>
+<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl">Encuentra respuestas rápidas a tus dudas sobre reservas, canchas y eventos, o contáctanos directamente si necesitas asistencia personalizada.</p>
+</div>
+<!-- FAQ Section -->
+<section>
+<h2 class="text-xl font-bold uppercase tracking-tight mb-6 px-1 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">quiz</span>
+                        Preguntas Frecuentes
+                    </h2>
+<div class="flex flex-col gap-3">
+<!-- FAQ Item 1 -->
+<details class="group bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden transition-all duration-300 open:bg-slate-50 dark:open:bg-white/10" open="">
+<summary class="flex cursor-pointer items-center justify-between gap-4 p-5 md:px-6 select-none">
+<span class="font-bold text-slate-900 dark:text-white uppercase tracking-wide">¿Cómo reservo una cancha?</span>
+<span class="material-symbols-outlined text-slate-400 group-open:text-primary group-open:rotate-180 transition-transform duration-300">expand_more</span>
+</summary>
+<div class="px-5 md:px-6 pb-5 pt-0">
+<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+                                    Puedes reservar directamente desde la pestaña <strong class="text-primary">'Reservas'</strong> en el menú principal. Selecciona tu deporte (fútbol, tenis, pádel), elige la fecha deseada en el calendario y haz clic en una hora disponible. Recibirás una confirmación inmediata por correo electrónico.
+                                </p>
+</div>
+</details>
+<!-- FAQ Item 2 -->
+<details class="group bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden transition-all duration-300 open:bg-slate-50 dark:open:bg-white/10">
+<summary class="flex cursor-pointer items-center justify-between gap-4 p-5 md:px-6 select-none">
+<span class="font-bold text-slate-900 dark:text-white uppercase tracking-wide">¿Qué pasa si llueve el día de mi reserva?</span>
+<span class="material-symbols-outlined text-slate-400 group-open:text-primary group-open:rotate-180 transition-transform duration-300">expand_more</span>
+</summary>
+<div class="px-5 md:px-6 pb-5 pt-0">
+<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+                                    Si las condiciones climáticas impiden el juego en canchas descubiertas, puedes reprogramar tu reserva sin costo adicional hasta 2 horas antes del inicio. Para cancelaciones, el saldo quedará como crédito en tu cuenta para futuras reservas.
+                                </p>
+</div>
+</details>
+<!-- FAQ Item 3 -->
+<details class="group bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden transition-all duration-300 open:bg-slate-50 dark:open:bg-white/10">
+<summary class="flex cursor-pointer items-center justify-between gap-4 p-5 md:px-6 select-none">
+<span class="font-bold text-slate-900 dark:text-white uppercase tracking-wide">Métodos de pago aceptados</span>
+<span class="material-symbols-outlined text-slate-400 group-open:text-primary group-open:rotate-180 transition-transform duration-300">expand_more</span>
+</summary>
+<div class="px-5 md:px-6 pb-5 pt-0">
+<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+                                    Aceptamos todas las tarjetas de crédito y débito principales (Visa, Mastercard, Amex), pagos vía QR y transferencias bancarias instantáneas. También puedes cargar saldo en tu billetera virtual del club.
+                                </p>
+</div>
+</details>
+<!-- FAQ Item 4 -->
+<details class="group bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden transition-all duration-300 open:bg-slate-50 dark:open:bg-white/10">
+<summary class="flex cursor-pointer items-center justify-between gap-4 p-5 md:px-6 select-none">
+<span class="font-bold text-slate-900 dark:text-white uppercase tracking-wide">¿Puedo organizar torneos privados?</span>
+<span class="material-symbols-outlined text-slate-400 group-open:text-primary group-open:rotate-180 transition-transform duration-300">expand_more</span>
+</summary>
+<div class="px-5 md:px-6 pb-5 pt-0">
+<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+                                    ¡Sí! Contamos con paquetes especiales para torneos empresariales y cumpleaños. Por favor contáctanos directamente a través del botón de WhatsApp más abajo para coordinar fechas y servicios de catering.
+                                </p>
+</div>
+</details>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+<!-- Contact Card -->
+<section class="flex flex-col bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-6 md:p-8 h-full">
+<h2 class="text-xl font-bold uppercase tracking-tight mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">headset_mic</span>
+                            Contacto Directo
+                        </h2>
+<div class="flex flex-col gap-4 flex-grow">
+<p class="text-slate-600 dark:text-slate-400 mb-2">
+                                ¿No encontraste lo que buscabas? Nuestro equipo de atención al cliente está disponible de 08:00 a 22:00 hs.
+                            </p>
+<button class="w-full bg-primary hover:bg-green-400 text-slate-900 font-bold py-4 px-6 rounded-full uppercase tracking-wide shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">chat</span>
+                                Chatear por WhatsApp
+                            </button>
+<button class="w-full bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/20 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-bold py-4 px-6 rounded-full uppercase tracking-wide transition-colors flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">call</span>
+                                Llamar a Recepción
+                            </button>
+</div>
+</section>
+<!-- Location/Map Card -->
+<section class="flex flex-col bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg overflow-hidden h-full">
+<!-- Map Image Placeholder -->
+<div class="h-48 w-full bg-slate-800 relative group overflow-hidden">
+<img alt="Map view of sports complex location" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" data-location="Buenos Aires" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDL2OwbkUTNW8ndvj7lSPmxGSazhBPzUZVfuJhGB00-DU7Wd_xS6DcP-uEs74rkhAjN8NjkXvbUkG2ejS95mVqsX_HNKiXjCjcVvOGrlT-SsPOq937ayG6EhqEPvQOHMzEEfgHg3wQMYB-5eyRzv7ecpe1uIaLqGvj4bbxKel-uDybyPmGyUl9CCJWAbx61d3xGF24v21IdXd1vgNmYK_fGiYsVDV5nDt7P62nAXMm-plv_mBuSZge8342tT9gJ5qBFvqqrjc77Qm8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-80"></div>
+<div class="absolute bottom-4 left-6">
+<span class="text-white font-bold text-lg flex items-center gap-1">
+<span class="material-symbols-outlined text-primary">location_on</span>
+                                    UBICACIÓN
+                                </span>
+</div>
+</div>
+<div class="p-6 md:p-8 flex flex-col justify-between flex-grow">
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white uppercase mb-2">Complejo Giovanni Central</h3>
+<p class="text-slate-600 dark:text-slate-400 text-sm mb-4">
+                                    Av. del Libertador 1234<br/>
+                                    Buenos Aires, Argentina
+                                </p>
+</div>
+<div class="flex items-center gap-4 mt-auto">
+<button class="flex-1 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-xs font-bold py-3 rounded-full text-slate-900 dark:text-white uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">directions</span>
+                                    Cómo llegar
+                                </button>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer Info -->
+<div class="text-center pb-8 pt-4">
+<p class="text-slate-500 text-sm">© 2023 Complejo Giovanni. Todos los derechos reservados.</p>
+</div>
+</div>
+</main>
+</div>
+</body></html>
