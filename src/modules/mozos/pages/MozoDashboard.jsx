@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useConfig } from '../../../core/services/ConfigContext';
+import { usePedidos } from '../../bar/services/PedidosContext';
 import { getMozoSession } from '../services/mozoService';
 import { 
     Clock, 
@@ -18,7 +19,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 export default function MozoDashboard() {
     const { negocioId } = useParams();
     const navigate = useNavigate();
-    const { orders } = useConfig();
+    const { orders } = usePedidos();
     const mozo = getMozoSession();
 
     const stats = useMemo(() => {

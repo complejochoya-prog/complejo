@@ -6,8 +6,7 @@ import OrderCard from '../components/OrderCard';
 import { ClipboardList, ShoppingBag, Clock } from 'lucide-react';
 
 export default function MozoOrders() {
-    const { orders } = useConfig();
-    const { updateOrderStatus } = usePedidos();
+    const { orders, updateOrderStatus } = usePedidos();
     const mozo = getMozoSession();
 
     const myOrders = useMemo(() => {

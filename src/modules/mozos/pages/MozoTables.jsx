@@ -24,16 +24,10 @@ import { getMozoSession } from '../services/mozoService';
 
 export default function MozoTables() {
     const { negocioId, barProducts, updateOrder: updateConfigOrder } = useConfig();
-    const { orders: pedidosOrders, addOrder: addPedidoOrder, updateOrderStatus } = usePedidos();
-    const { orders: configOrders, addOrder: addConfigOrder } = useConfig();
+    const { orders, addOrder, updateOrderStatus } = usePedidos();
     
-    // Merge de-duplicated: PedidosContext (Firebase) takes priority over ConfigContext (localStorage)
-    const orders = useMemo(() => {
-        const map = new Map();
-        (pedidosOrders || []).forEach(o => map.set(o.id, o));
-        (configOrders || []).forEach(o => { if (!map.has(o.id)) map.set(o.id, o); });
-        return Array.from(map.values());
-    }, [pedidosOrders, configOrders]);
+    // 🔥 ELIMINADO EL MERGE CON LOCALSTORAGE: 
+    // Ahora dependemos 100% de lo que viene de Firebase para que todos los mozos vean lo mismo.
 
     const mozo = getMozoSession();
     const [selectedTable, setSelectedTable] = useState(null);
@@ -110,9 +104,9 @@ export default function MozoTables() {
             origin: 'mozo'
         };
         
-        // Save via PedidosContext (Firebase + EventBus + localStorage)
-        if (addPedidoOrder) {
-            addPedidoOrder(newOrder);
+        // Save via PedidosContext (Firebase Directly)
+        if (addOrder) {
+            addOrder(newOrder);
         }
 
         setCart([]);

@@ -99,66 +99,61 @@ export default function PedidosProvider({ children }) {
              setLoading(false);
         };
 
-        // 2. FIRESTORE REALTIME
+        // loadLocalOnly removed to avoid ghost data conflicts. 
+        // We rely 100% on Firebase for cross-device consistency.
+        
+        // 2. FIRESTORE REALTIME (SECURE)
         const qOrders = query(
             collection(db, 'negocios', negocioId, 'pedidos'), 
             orderBy('timestamp', 'desc'), 
-            limit(50) 
+            limit(100) 
         );
         
         const unsubOrders = onSnapshot(qOrders, (snap) => {
-            const listFromFirestore = snap.docs.map(d => ({ 
-                id: d.id, 
-                ...d.data(),
-                timestamp: d.data().timestamp?.toDate() || new Date(d.data().timestamp || Date.now())
-            }));
-            
-            setOrders(prev => {
-                const combined = [...listFromFirestore];
-                const localKey = `${negocioId}_orders`;
-                const localData = JSON.parse(localStorage.getItem(localKey)) || [];
+            const listFromFirestore = snap.docs.map(d => {
+                const data = d.data();
+                // ✅ Robust Timestamp handling (Firestore serverTimestamp can be null on local preview)
+                let ts = new Date();
+                if (data.timestamp?.toDate) ts = data.timestamp.toDate();
+                else if (data.timestamp) ts = new Date(data.timestamp);
+                else if (data.createdAt) ts = new Date(data.createdAt);
 
-                localData.forEach(local => {
-                    if (!combined.some(o => o.id === local.id)) {
-                        combined.push({
-                             ...local,
-                             timestamp: new Date(local.timestamp || local.id)
-                        });
-                    }
-                });
-                
-                return combined.sort((a,b) => b.timestamp - a.timestamp);
+                return { 
+                    id: d.id, 
+                    ...data,
+                    timestamp: ts,
+                    status: data.status || data.estado || 'nuevo',
+                    estado: data.estado || data.status || 'nuevo'
+                };
             });
+            
+            // Filter out 'paid' orders older than 24h if needed, but for now we trust the limit(100)
+            setOrders(listFromFirestore);
             setLoading(false);
+            
+            // Sync with local cache for persistence across refreshes
+            localStorage.setItem(`${negocioId}_orders`, JSON.stringify(listFromFirestore));
+            localStorage.setItem("giovanni_orders", JSON.stringify(listFromFirestore));
+            
         }, (err) => {
-            console.warn("Order Subscription fallback triggered by error:", err);
-            loadLocalOnly();
+            console.error("Firestore Subscription Error:", err);
+            // Fallback load from cache
+            const cached = JSON.parse(localStorage.getItem(`${negocioId}_orders`)) || [];
+            setOrders(cached);
+            setLoading(false);
         });
 
-        // Carga inicial desde localStorage
-        loadLocalOnly();
-
-        // 3. Bar Products
+        // 3. Bar Products (Realtime)
         const unsubProducts = onSnapshot(collection(db, 'negocios', negocioId, 'inventario'), (snap) => {
             const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.sector === 'BAR');
             setBarProducts(list);
         });
 
-        // 4. STORAGE LISTENER
-        const handleStorage = (e) => {
-             if (e.key === `${negocioId}_orders`) {
-                 loadLocalOnly();
-             }
-        };
-        window.addEventListener('storage', handleStorage);
-
-        // CLEANUP
         return () => {
              unsubOrders();
              unsubProducts();
-             window.removeEventListener('storage', handleStorage);
         };
-    }, [negocioId, playNotification]);
+    }, [negocioId]);
 
     // 🔥 ESCUCHA GLOBAL DE PEDIDOS (FIX PRINCIPAL)
     useEffect(() => {
@@ -194,95 +189,78 @@ export default function PedidosProvider({ children }) {
         return () => off('pedido_creado', handler);
     }, []);
 
-    // OPTIMIZED ACTIONS (useCallback to prevent re-renders in children)
+    // 🔥 ACCIONES UNIFICADAS (FIRMEZA EN BASE DE DATOS)
     const addOrder = useCallback(async (orderData) => {
+        if (!negocioId) return { success: false, error: 'No Negocio ID' };
+        
         try {
-            // Guardar en LOCAL STORAGE primero o como fallback para que la cocina lo vea al instante
+            const orderId = orderData.id || `ORD-${Date.now()}`;
+            const secureOrder = { 
+                ...orderData, 
+                id: orderId,
+                negocioId,
+                status: orderData.status || 'nuevo',
+                estado: orderData.estado || 'nuevo',
+                timestamp: serverTimestamp(), // Firebase time for cross-device consistency
+                createdAt: orderData.createdAt || new Date().toISOString()
+            };
+
+            // 1. Guardar en Firestore (Fuente de Verdad)
+            const docRef = doc(db, 'negocios', negocioId, 'pedidos', String(orderId));
+            await setDoc(docRef, secureOrder);
+
+            // 2. Guardar en Local Storage (Cache/Optimismo)
             const localKey = `${negocioId}_orders`;
             const prevOrders = JSON.parse(localStorage.getItem(localKey)) || [];
-            const newOrder = { 
-                ...orderData, 
-                id: orderData.id || `L-${Date.now()}`,
-                timestamp: orderData.timestamp || new Date().toISOString()
-            };
-            
-            if (!prevOrders.some(o => o.id === newOrder.id)) {
-                localStorage.setItem(localKey, JSON.stringify([newOrder, ...prevOrders]));
-            } else {
-                localStorage.setItem(localKey, JSON.stringify(prevOrders.map(o => o.id === newOrder.id ? { ...o, ...newOrder } : o)));
+            if (!prevOrders.some(o => o.id === orderId)) {
+                localStorage.setItem(localKey, JSON.stringify([secureOrder, ...prevOrders]));
             }
-            
-            const storageEvent = new Event('storage');
-            storageEvent.key = localKey;
-            window.dispatchEvent(storageEvent);
 
-            // EventBus: notificar a otros módulos
-            emit('pedido_creado', newOrder);
+            window.dispatchEvent(new Event('storage'));
+            emit('pedido_creado', secureOrder);
 
-            // Intentar enviar al API real
-            const res = await apiRequest('/pedidos', {
-                method: 'POST',
-                headers: { 'X-Negocio-ID': negocioId },
-                body: JSON.stringify(newOrder)
-            });
-            return { success: true, orderId: res.data?.orderId || newOrder.id };
+            return { success: true, orderId };
         } catch (error) {
-            console.warn("Backend offline, order saved only locally:", error);
-            return { success: true, local: true };
+            console.error("Critical error adding order to Firebase:", error);
+            return { success: false, error };
         }
     }, [negocioId]);
 
     const updateOrderStatus = useCallback(async (id, newStatus) => {
-        try {
-            console.log('[PedidosContext] Iniciando cambio de estado:', id, '->', newStatus);
-            
-            // 1. ACTUALIZACIÓN DE ESTADO INMEDIATA (Optimismo UI)
-            setOrders(prev => prev.map(o => String(o.id) === String(id) ? { ...o, status: newStatus, estado: newStatus, ...(newStatus === 'paid' ? { paid: true } : {}) } : o));
+        if (!negocioId) return;
 
-            // 2. PERSISTENCIA TENANT-SPECIFIC
+        try {
+            console.log('[PedidosContext] Syncing Status update to Firebase:', id, '->', newStatus);
+            
+            // 1. Actualización en Firestore
+            const docRef = doc(db, 'negocios', negocioId, 'pedidos', String(id));
+            await updateDoc(docRef, {
+                status: newStatus,
+                estado: newStatus,
+                paid: newStatus === 'paid',
+                updatedAt: serverTimestamp()
+            });
+
+            // 2. Actualización Local (Optimismo UI)
+            setOrders(prev => prev.map(o => String(o.id) === String(id) 
+                ? { ...o, status: newStatus, estado: newStatus, paid: newStatus === 'paid' } 
+                : o
+            ));
+
+            // Sync LocalStorage
             const localKey = `${negocioId}_orders`;
             let localData = JSON.parse(localStorage.getItem(localKey)) || [];
-            localData = localData.map(o => {
-                if (String(o.id) === String(id)) {
-                    return { ...o, status: newStatus, estado: newStatus, ...(newStatus === 'paid' ? { paid: true } : {}) };
-                }
-                return o;
-            });
+            localData = localData.map(o => String(o.id) === String(id) 
+                ? { ...o, status: newStatus, estado: newStatus, paid: newStatus === 'paid' } 
+                : o
+            );
             localStorage.setItem(localKey, JSON.stringify(localData));
-
-            // 3. PERSISTENCIA GLOBAL (Giovanni Fix)
-            let globalData = JSON.parse(localStorage.getItem("giovanni_orders")) || [];
-            globalData = globalData.map(o => {
-                if (String(o.id) === String(id)) {
-                    return { ...o, status: newStatus, estado: newStatus, ...(newStatus === 'paid' ? { paid: true } : {}) };
-                }
-                return o;
-            });
-            localStorage.setItem("giovanni_orders", JSON.stringify(globalData));
-
-            // Disparar evento de sincronización para otras pestañas
+            
             window.dispatchEvent(new Event('storage'));
-
-            // Notificar al sistema
             emit('pedido_actualizado', { id, status: newStatus });
 
-            // 4. PERSISTENCIA REMOTA (Firebase)
-            try {
-                await apiRequest(`/pedidos/${id}`, {
-                    method: 'PUT',
-                    headers: { 'X-Negocio-ID': negocioId },
-                    body: JSON.stringify({ 
-                        status: newStatus,
-                        estado: newStatus,
-                        updatedAt: Date.now() 
-                    })
-                });
-            } catch (err) {
-                console.warn("API update falló, se mantiene el sync local:", err);
-            }
-
         } catch (error) {
-            console.error("Error crítico en updateOrderStatus:", error);
+            console.error("Error syncing status to Firebase:", error);
         }
     }, [negocioId]);
 
