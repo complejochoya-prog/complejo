@@ -39,7 +39,7 @@ export default function PWALayout() {
 
     const navItems = [
         { path: '', label: 'Inicio', icon: Home },
-        { path: 'reservas', label: 'Reservas', icon: CalendarRange },
+        { path: 'reservas', label: 'Mis Turnos', icon: CalendarRange },
         { path: 'menu', label: 'Bar', icon: Coffee },
         { path: 'torneos', label: 'Torneos', icon: Trophy },
         { path: 'perfil', label: 'Perfil', icon: User },

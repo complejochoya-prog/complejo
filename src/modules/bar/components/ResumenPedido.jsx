@@ -91,7 +91,7 @@ const ResumenPedido = ({ carrito, setCarrito, setIsOpen, nombreComplejo, whatsap
                 <h2 className="text-white font-bold uppercase tracking-widest text-sm italic">Resumen de mi pedido</h2>
             </div>
 
-            <div className="p-4 space-y-6 pb-20">
+            <div className="p-4 space-y-6 pb-32">
                 {/* Selector Mesa / Delivery */}
                 <div className="grid grid-cols-2 bg-zinc-900/50 p-1.5 rounded-[22px] border border-zinc-800">
                     <button
@@ -194,7 +194,7 @@ const ResumenPedido = ({ carrito, setCarrito, setIsOpen, nombreComplejo, whatsap
                 </div>
 
                 {/* BOTÓN FINAL */}
-                <div className="pb-10 pt-4">
+                <div className="pb-32 pt-4">
                     <button
                         onClick={finalizarPedido}
                         disabled={carrito.length === 0}

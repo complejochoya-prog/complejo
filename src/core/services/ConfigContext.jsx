@@ -218,7 +218,7 @@ export function ConfigProvider({ children }) {
                 loadTables();
                 loadBarProducts();
             }
-        }, 5000);
+        }, 2000);
 
         return () => {
             window.removeEventListener('storage', handleStorage);
@@ -230,10 +230,12 @@ export function ConfigProvider({ children }) {
         try {
             const key = `${negocioId}_orders`;
             const prevOrders = JSON.parse(localStorage.getItem(key)) || [];
-            const nextOrders = [newOrder, ...prevOrders];
-            localStorage.setItem(key, JSON.stringify(nextOrders));
-            loadOrders();
-            window.dispatchEvent(new Event('storage'));
+            if (!prevOrders.some(o => o.id === newOrder.id)) {
+                const nextOrders = [newOrder, ...prevOrders];
+                localStorage.setItem(key, JSON.stringify(nextOrders));
+                loadOrders();
+                window.dispatchEvent(new Event('storage'));
+            }
         } catch(e) {}
     };
 

@@ -122,9 +122,9 @@ export default function KitchenOrderCard({ order, onStatusChange }) {
                                     {item.cantidad || item.quantity}x {item.nombre}
                                 </span>
                             </div>
-                            {item.observaciones && (
-                                <p className="text-[9px] text-slate-400 mt-1 italic font-bold leading-none uppercase tracking-widest">
-                                    ⚠️ {item.observaciones}
+                            {(item.observaciones || item.comment || item.notes || item.nota) && (
+                                <p className="text-[9px] text-amber-500/80 mt-1 italic font-bold leading-none uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded w-fit border border-amber-500/20">
+                                    ⚠️ {item.observaciones || item.comment || item.notes || item.nota}
                                 </p>
                             )}
                         </div>

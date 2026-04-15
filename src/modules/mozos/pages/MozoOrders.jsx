@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { useConfig } from '../../../core/services/ConfigContext';
+import { usePedidos } from '../../bar/services/PedidosContext';
 import { getMozoSession } from '../services/mozoService';
 import OrderCard from '../components/OrderCard';
 import { ClipboardList, ShoppingBag, Clock } from 'lucide-react';
 
 export default function MozoOrders() {
     const { orders } = useConfig();
+    const { updateOrderStatus } = usePedidos();
     const mozo = getMozoSession();
 
     const myOrders = useMemo(() => {
@@ -48,7 +50,12 @@ export default function MozoOrders() {
                         <div key={order.id} className="relative group">
                             <OrderCard 
                                 order={order} 
-                                showHeader={true} // Assumes OrderCard can show mesa # if we want
+                                showHeader={true}
+                                isMozoMode={true}
+                                onStatusChange={(o, s) => {
+                                    if ('vibrate' in navigator) navigator.vibrate([30, 20, 50]);
+                                    if (updateOrderStatus) updateOrderStatus(String(o.id), s);
+                                }}
                             />
                             <div className="absolute top-4 right-4 flex items-center gap-2">
                                 <div className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${

@@ -205,7 +205,12 @@ export default function PedidosProvider({ children }) {
                 id: orderData.id || `L-${Date.now()}`,
                 timestamp: orderData.timestamp || new Date().toISOString()
             };
-            localStorage.setItem(localKey, JSON.stringify([newOrder, ...prevOrders]));
+            
+            if (!prevOrders.some(o => o.id === newOrder.id)) {
+                localStorage.setItem(localKey, JSON.stringify([newOrder, ...prevOrders]));
+            } else {
+                localStorage.setItem(localKey, JSON.stringify(prevOrders.map(o => o.id === newOrder.id ? { ...o, ...newOrder } : o)));
+            }
             
             const storageEvent = new Event('storage');
             storageEvent.key = localKey;
@@ -232,26 +237,28 @@ export default function PedidosProvider({ children }) {
             console.log('[PedidosContext] Iniciando cambio de estado:', id, '->', newStatus);
             
             // 1. ACTUALIZACIÓN DE ESTADO INMEDIATA (Optimismo UI)
-            setOrders(prev => prev.map(o => String(o.id) === String(id) ? { ...o, status: newStatus, estado: newStatus } : o));
+            setOrders(prev => prev.map(o => String(o.id) === String(id) ? { ...o, status: newStatus, estado: newStatus, ...(newStatus === 'paid' ? { paid: true } : {}) } : o));
 
             // 2. PERSISTENCIA TENANT-SPECIFIC
             const localKey = `${negocioId}_orders`;
-            const localData = JSON.parse(localStorage.getItem(localKey)) || [];
-            const index = localData.findIndex(o => String(o.id) === String(id));
-            if (index !== -1) {
-                localData[index].status = newStatus;
-                localData[index].estado = newStatus;
-                localStorage.setItem(localKey, JSON.stringify(localData));
-            }
+            let localData = JSON.parse(localStorage.getItem(localKey)) || [];
+            localData = localData.map(o => {
+                if (String(o.id) === String(id)) {
+                    return { ...o, status: newStatus, estado: newStatus, ...(newStatus === 'paid' ? { paid: true } : {}) };
+                }
+                return o;
+            });
+            localStorage.setItem(localKey, JSON.stringify(localData));
 
             // 3. PERSISTENCIA GLOBAL (Giovanni Fix)
-            const globalData = JSON.parse(localStorage.getItem("giovanni_orders")) || [];
-            const gIndex = globalData.findIndex(o => String(o.id) === String(id));
-            if (gIndex !== -1) {
-                globalData[gIndex].status = newStatus;
-                globalData[gIndex].estado = newStatus;
-                localStorage.setItem("giovanni_orders", JSON.stringify(globalData));
-            }
+            let globalData = JSON.parse(localStorage.getItem("giovanni_orders")) || [];
+            globalData = globalData.map(o => {
+                if (String(o.id) === String(id)) {
+                    return { ...o, status: newStatus, estado: newStatus, ...(newStatus === 'paid' ? { paid: true } : {}) };
+                }
+                return o;
+            });
+            localStorage.setItem("giovanni_orders", JSON.stringify(globalData));
 
             // Disparar evento de sincronización para otras pestañas
             window.dispatchEvent(new Event('storage'));

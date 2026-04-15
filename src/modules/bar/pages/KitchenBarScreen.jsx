@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { usePedidos } from '../services/PedidosContext';
 import { useConfig } from '../../../core/services/ConfigContext';
 import KitchenOrderCard from '../components/KitchenOrderCard';
@@ -9,10 +9,75 @@ import { on } from "@/core/events/eventBus";
 export default function KitchenBarScreen() {
     const navigate = useNavigate();
     const { config, negocioId } = useConfig();
-    const { orders, loading, updateOrderStatus } = usePedidos();
+    const { orders: pedidosOrders, loading, updateOrderStatus, setOrders } = usePedidos();
+    const { orders: configOrders } = useConfig();
+
+    // 🔥 MERGE: Combine PedidosContext + ConfigContext orders (de-duplicated)
+    const orders = useMemo(() => {
+        const map = new Map();
+        // PedidosContext orders take priority
+        (pedidosOrders || []).forEach(o => map.set(o.id, o));
+        // Add any ConfigContext orders not already present
+        (configOrders || []).forEach(o => {
+            if (!map.has(o.id)) map.set(o.id, o);
+        });
+        return Array.from(map.values());
+    }, [pedidosOrders, configOrders]);
+
+    // 🔥 AUTO-REFRESH: Poll localStorage every 2 seconds so kitchen never misses an order
+    useEffect(() => {
+        if (!negocioId) return;
+        
+        const pollInterval = setInterval(() => {
+            try {
+                const localKey = `${negocioId}_orders`;
+                const localData = JSON.parse(localStorage.getItem(localKey)) || [];
+                const globalData = JSON.parse(localStorage.getItem("giovanni_orders")) || [];
+                
+                // Merge both sources
+                const mergedMap = new Map();
+                [...localData, ...globalData].forEach(o => {
+                    if (o && o.id) mergedMap.set(o.id, {
+                        ...o,
+                        timestamp: new Date(o.timestamp || o.createdAt || Date.now()),
+                        status: o.status || o.estado || 'nuevo',
+                        estado: o.estado || o.status || 'nuevo'
+                    });
+                });
+
+                if (setOrders) {
+                    setOrders(prev => {
+                        const currentMap = new Map();
+                        prev.forEach(o => currentMap.set(o.id, o));
+                        
+                        let changed = false;
+                        mergedMap.forEach((newOrder, id) => {
+                            const current = currentMap.get(id);
+                            if (!current) {
+                                currentMap.set(id, newOrder);
+                                changed = true;
+                            } else if (current.status !== newOrder.status || current.estado !== newOrder.estado) {
+                                currentMap.set(id, newOrder);
+                                changed = true;
+                            }
+                        });
+                        
+                        if (!changed) return prev;
+                        return Array.from(currentMap.values()).sort((a, b) => 
+                            new Date(b.timestamp) - new Date(a.timestamp)
+                        );
+                    });
+                }
+            } catch (e) {
+                // Silent fail on poll
+            }
+        }, 2000);
+
+        return () => clearInterval(pollInterval);
+    }, [negocioId, setOrders]);
 
     // 🔥 ESCUCHA GLOBAL (LOG)
-    React.useEffect(() => {
+    useEffect(() => {
         const handler = (pedido) => {
             console.log('[Cocina] Pedido recibido:', pedido?.id);
         };
@@ -92,7 +157,12 @@ export default function KitchenBarScreen() {
             {/* Columns Grid */}
             <main className="flex-1 overflow-x-auto p-6 flex gap-6 custom-scrollbar">
                 {columns.map(col => {
-                    const filteredOrders = orders.filter(o => col.status.includes(o.status || o.estado));
+                    const filteredOrders = orders.filter(o => 
+                        col.status.includes(o.status || o.estado) && 
+                        o.status !== 'paid' && 
+                        !o.paid &&
+                        o.estado !== 'paid'
+                    );
                     
                     return (
                         <div key={col.title} className={`flex-1 min-w-[360px] flex flex-col ${col.bg} rounded-[32px] border border-white/5 p-4 transition-all duration-300`}>

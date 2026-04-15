@@ -4,7 +4,7 @@
  * FASE 7: Internal Apps by Role
  */
 import React from 'react';
-import { Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams, Outlet } from 'react-router-dom';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
@@ -77,6 +77,9 @@ import OrderConfirmation from './modules/bar/pages/OrderConfirmation';
 import KitchenBarScreen from './modules/bar/pages/KitchenBarScreen';
 import KitchenOrderHistory from './modules/bar/pages/KitchenOrderHistory';
 import PedidosProvider from './modules/bar/services/PedidosContext';
+import ReservasProvider from './modules/reservas/services/ReservasContext';
+import BookingFlow from './modules/reservas/components/BookingFlow';
+
 
 // Employee App (FASE 14)
 import ReceptionDashboard from './modules/employee_app/pages/ReceptionDashboard';
@@ -179,7 +182,7 @@ function BusinessAppWrapper({ children }) {
 
 function RedirectToAppReservas() {
     const { negocioId } = useParams();
-    return <Navigate to={`/${negocioId}/app/reservas`} replace />;
+    return <Navigate to={`/${negocioId}/app`} replace />;
 }
 
 function BusinessApp() {
@@ -188,7 +191,9 @@ function BusinessApp() {
             <AuthProvider>
                 <CartProvider>
                     <PedidosProvider>
-                        <BusinessAppWrapper>
+                        <ReservasProvider>
+                            <BusinessAppWrapper>
+
                         <Routes>
                         {/* ── CLIENT AREA (public) ── */}
                         {/* ── STANDALONE / DIGITAL BOARDS ── */}
@@ -199,7 +204,7 @@ function BusinessApp() {
                             <Route index element={<Home />} />
                             <Route path="/" element={<Home />} />
                             <Route path="menu" element={<BarMenu />} />
-                            <Route path="reservas" element={<RedirectToAppReservas />} />
+                            <Route path="reservas" element={<BookingFlow />} />
                             <Route path="torneos" element={<ClientTournaments />} />
                             <Route path="torneos/:tournamentId" element={<TournamentDetail />} />
                             <Route path="jugadores" element={<MissingPage name="Ranking de Jugadores" />} />
@@ -311,13 +316,17 @@ function BusinessApp() {
                             <Route path="pedido-confirmado" element={<OrderConfirmation />} />
                             <Route path="torneos" element={<ClientTournaments />} />
                             <Route path="perfil" element={<ClientProfile />} />
-                            
-                            {/* Delivery App Routes */}
-                            <Route path="delivery/*" element={<DeliveryRoutes />} />
                         </Route>
+                        
+                        {/* Delivery App Routes (Standalone, without Client PWA Layout) */}
+                        <Route path="app/delivery/*" element={<DeliveryRoutes />} />
 
                         {/* ── EMPLOYEE INTERNAL (FASE 14) ── */}
-                        <Route path="staff">
+                        <Route path="staff" element={
+                            <RoleGuard allowedRoles={['admin', 'encargado', 'recepcion', 'mozo', 'cocina', 'mantenimiento']}>
+                                <Outlet />
+                            </RoleGuard>
+                        }>
                             <Route index element={<ReceptionDashboard />} />
                             <Route path="dashboard" element={<ReceptionDashboard />} />
                             <Route path="recepcion" element={<ReceptionDashboard />} />
@@ -333,8 +342,10 @@ function BusinessApp() {
                         {/* Fallback within business context */}
                         <Route path="*" element={<Navigate to="" replace />} />
                     </Routes>
-                        </BusinessAppWrapper>
+                            </BusinessAppWrapper>
+                        </ReservasProvider>
                     </PedidosProvider>
+
                 </CartProvider>
             </AuthProvider>
         </ConfigProvider>

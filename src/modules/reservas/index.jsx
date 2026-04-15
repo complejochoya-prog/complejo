@@ -1,12 +1,11 @@
 import React from 'react';
-import MissingPage from '../../components/MissingPage';
-
-const ReservasPage = () => <MissingPage name="Módulo de Reservas" />;
+import BookingFlow from './components/BookingFlow';
 
 export const ReservasModule = {
     id: 'reservas',
     name: 'Reservas',
     routes: [
-        { path: 'reservas', element: ReservasPage, layout: 'client' }
+        { path: 'reservas', element: <BookingFlow />, layout: 'client' }
     ]
 };
+

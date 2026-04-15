@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useConfig } from '../../../core/services/ConfigContext';
+import { usePedidos } from '../../bar/services/PedidosContext';
 import { Wallet, ChevronRight, Receipt, CreditCard, Banknote, Landmark } from 'lucide-react';
 import PaymentModal from '../components/PaymentModal';
 import { getMozoSession } from '../services/mozoService';
 
 export default function MozoCheckout() {
-    const { orders, updateOrder } = useConfig();
+    const { negocioId } = useConfig();
+    const { orders, updateOrderStatus } = usePedidos();
     const mozo = getMozoSession();
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isPaymentOpen, setIsPaymentOpen] = useState(false);
@@ -40,7 +42,7 @@ export default function MozoCheckout() {
             const targetOrders = selectedOrder.orders || [selectedOrder];
             const totalToPay = selectedOrder.total || selectedOrder.monto;
 
-            await registerExternalMovement({
+            await registerExternalMovement(negocioId, {
                 tipo: 'entrada',
                 categoria: 'Venta mozo',
                 monto: totalToPay,
@@ -51,14 +53,7 @@ export default function MozoCheckout() {
             });
 
             targetOrders.forEach(o => {
-                updateOrder(o.id, {
-                    status: "paid",
-                    estado: "entregado",
-                    paid: true,
-                    paymentMethod: details.method,
-                    paidBy: mozo.name,
-                    paidAt: new Date().toISOString()
-                });
+                updateOrderStatus(String(o.id), 'paid');
             });
 
             setIsPaymentOpen(false);

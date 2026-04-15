@@ -79,7 +79,7 @@ export default function ClientReservations() {
                         <p className="text-slate-400 text-sm font-bold uppercase tracking-widest leading-relaxed">
                             Aún no tienes <br /> <span className="text-amber-500">reservas activas</span>
                         </p>
-                        <button onClick={() => navigate(`/${negocioId}`)} className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
+                        <button onClick={() => navigate(`/${negocioId}/app`)} className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
                             Reservar Ahora
                         </button>
                     </div>

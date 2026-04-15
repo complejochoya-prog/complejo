@@ -96,7 +96,7 @@ export default function ReservasProvider({ children }) {
         await setDoc(doc(db, 'negocios', negocioId, 'reservas', id), payload);
 
         if (payment) {
-            const { cajaService } = await import('../../core/services/firestoreService');
+            const { cajaService } = await import('../../../core/services/firestoreService');
             await cajaService.addMovement(negocioId, {
                 tipo: 'entrada',
                 categoria: 'Reserva Online',
