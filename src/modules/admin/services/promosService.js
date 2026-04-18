@@ -1,9 +1,8 @@
-/**
- * promosService.js — Gestión de Promos y Eventos
- * Persistencia en localStorage
- */
-
-const STORAGE_KEY = 'complejo_promos';
+import { db } from '../../../firebase/config';
+import { 
+    collection, doc, getDocs, setDoc, updateDoc, 
+    deleteDoc, query, orderBy, serverTimestamp 
+} from 'firebase/firestore';
 
 const DEFAULT_PROMOS = [
     { 
@@ -18,7 +17,7 @@ const DEFAULT_PROMOS = [
     { 
         id: 'prm-birthday-2', 
         title: 'Festejo de Cumple (Pack Clásico)', 
-        desc: 'Para 10 personas\n• 3 pizzas de cualquier variedad\n• 4 porciones de papas\n• 1 docena de empanadas\n• 4 cervezas Heineken o 6 cocas 1,5 lt\n• Incluye: 1 botella de champagne para brindar', 
+        desc: 'Para 10 personas\n• 3 pizzas de cualquier variedad\n• 4 porciones de papas\n• Docena de empanadas\n• 4 cervezas Heineken o 6 cocas 1,5 lt\n• Incluye: 1 botella de champagne para brindar', 
         price: '130000',
         active: true,
         type: 'evento',
@@ -26,52 +25,47 @@ const DEFAULT_PROMOS = [
     }
 ];
 
-function getAll() {
+export const fetchPromos = async (negocioId) => {
+    if (!negocioId) return [];
     try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : DEFAULT_PROMOS;
-    } catch { return DEFAULT_PROMOS; }
-}
-
-function saveAll(list) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    window.dispatchEvent(new Event('storage_promos'));
-}
-
-export const fetchPromos = () => {
-    return getAll();
+        const q = query(collection(db, 'negocios', negocioId, 'promociones'), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) return DEFAULT_PROMOS;
+        
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+        console.error("Error fetching promos:", e);
+        return DEFAULT_PROMOS;
+    }
 };
 
-export const savePromo = (promo) => {
-    const list = getAll();
-    if (promo.id) {
-        const idx = list.findIndex(p => p.id === promo.id);
-        if (idx !== -1) list[idx] = { ...list[idx], ...promo };
-    } else {
-        const nuevo = {
-            ...promo,
-            id: `prm-${Date.now()}`,
-            active: true
-        };
-        list.push(nuevo);
-    }
-    saveAll(list);
+export const savePromo = async (negocioId, promo) => {
+    if (!negocioId) return false;
+    const id = promo.id || `prm-${Date.now()}`;
+    const ref = doc(db, 'negocios', negocioId, 'promociones', id);
+    
+    await setDoc(ref, {
+        ...promo,
+        id,
+        createdAt: promo.createdAt || serverTimestamp(),
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+    
     return true;
 };
 
-export const deletePromo = (id) => {
-    const list = getAll();
-    const filtered = list.filter(p => p.id !== id);
-    saveAll(filtered);
+export const deletePromo = async (negocioId, id) => {
+    if (!negocioId) return false;
+    await deleteDoc(doc(db, 'negocios', negocioId, 'promociones', id));
     return true;
 };
 
-export const togglePromoStatus = (id) => {
-    const list = getAll();
-    const idx = list.findIndex(p => p.id === id);
-    if (idx !== -1) {
-        list[idx].active = !list[idx].active;
-        saveAll(list);
-    }
+export const togglePromoStatus = async (negocioId, id, currentStatus) => {
+    if (!negocioId) return false;
+    await updateDoc(doc(db, 'negocios', negocioId, 'promociones', id), {
+        active: !currentStatus,
+        updatedAt: serverTimestamp()
+    });
     return true;
 };

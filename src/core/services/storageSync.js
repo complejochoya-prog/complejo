@@ -10,19 +10,9 @@
 
 // Keys del sistema que queremos sincronizar
 const SYNC_KEYS = [
-    'complejo_espacios',
-    'complejo_reservas',
-    'complejo_horarios',
     'complejo_empleados',
-    'complejo_caja',
-    'complejo_caja_movimientos',
-    'complejo_inventario',
-    'complejo_pedidos',
-    'complejo_promos',
-    'complejo_clientes',
     'complejo_config',
     'complejo_negocios',
-    'complejo_users',
     'complejo_torneos',
 ];
 

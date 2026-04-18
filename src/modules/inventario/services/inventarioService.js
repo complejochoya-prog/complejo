@@ -1,4 +1,5 @@
-import { inventarioService, cajaService } from '../../../core/services/firestoreService.js';
+import { inventarioService } from '../../../core/services/inventarioService.js';
+import { cajaService } from '../../../core/services/cajaService.js';
 
 /**
  * ADAPTADOR PARA INVENTARIO SERVICE

@@ -1,30 +1,43 @@
+import { db } from '../../../firebase/config';
+import { 
+    collection, 
+    doc, 
+    setDoc, 
+    getDocs, 
+    query, 
+    where, 
+    serverTimestamp 
+} from 'firebase/firestore';
+
 /**
- * menuService.js - Motor de Pedidos y Menú estilo Digital Board
+ * menuService.js - Motor de Pedidos y Menú estilo Digital Board (Firestore)
  */
 
-const PROMOS_KEY = 'complejo_promos';
-const ORDERS_KEY = 'complejo_pedidos';
-
-export const fetchPromosMenu = () => {
-    const data = localStorage.getItem(PROMOS_KEY);
-    return data ? JSON.parse(data).filter(p => p.active) : [];
+export const fetchPromosMenu = async (negocioId) => {
+    if (!negocioId) return [];
+    try {
+        const q = query(collection(db, 'negocios', negocioId, 'promociones'), where('active', '==', true));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+        console.error("Error fetching promos menu:", e);
+        return [];
+    }
 };
 
-export const submitOrder = (orderData) => {
-    const currentOrders = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]');
+export const submitOrder = async (negocioId, orderData) => {
+    if (!negocioId) return { success: false };
+    const id = `ord-${Date.now()}`;
     const newOrder = {
-        id: Date.now(),
+        id,
         type: 'promo',
         status: 'pending',
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
+        timestamp: serverTimestamp(),
         ...orderData
     };
     
-    currentOrders.push(newOrder);
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(currentOrders));
+    await setDoc(doc(db, 'negocios', negocioId, 'pedidos', id), newOrder);
     
-    // Disparar evento para pantallas de cocina/bar
-    window.dispatchEvent(new CustomEvent('new_order', { detail: newOrder }));
-    
-    return { success: true, orderId: newOrder.id };
+    return { success: true, orderId: id };
 };

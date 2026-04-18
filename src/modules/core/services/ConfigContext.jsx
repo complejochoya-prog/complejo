@@ -24,7 +24,9 @@ export default function ConfigProvider({ children }) {
         const pathParts = location.pathname.split('/');
         const id = pathParts[1];
         const reserved = ['home', 'login', 'superadmin', 'help', 'admin', 'giovanni'];
+        console.log("ConfigProvider: Path change detected", { id, currentNegocioId: negocioId });
         if (id && id.length > 0 && !reserved.includes(id) && id !== negocioId) {
+            console.log("ConfigProvider: Updating negocioId to", id);
             setNegocioId(id);
         }
     }, [location.pathname, negocioId]);

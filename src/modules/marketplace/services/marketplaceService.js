@@ -1,41 +1,35 @@
-export async function fetchAvailableModules() {
-    return new Promise(async (resolve) => {
-        const { ALL_MODULES } = await import('../../../core/config/modulePlans');
-        
-        // Modules are now fully defined in ALL_MODULES
-        const marketModules = ALL_MODULES.map(m => ({
-            ...m,
-            installed: false // Initial status before sync with business config
-        }));
+import { db } from '../../../firebase/config';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
-        setTimeout(() => {
-            resolve(marketModules);
-        }, 500);
-    });
+export async function fetchAvailableModules() {
+    const { ALL_MODULES } = await import('../../../core/config/modulePlans');
+    return ALL_MODULES.map(m => ({ ...m, installed: false }));
 }
 
 export async function installModule(negocioId, moduleId) {
-    console.log(`[Marketplace] Installing ${moduleId} for ${negocioId}`);
-    
-    // In a real environment, we would update Firestore here
-    // For development, we'll try to update the mock/local state if possible
-    // but the best way is to emit an event so ConfigContext can re-load or update
-    
-    return new Promise(resolve => {
-        setTimeout(() => {
-            window.dispatchEvent(new Event('storage')); // Trigger reload in ConfigContext
-            resolve({ success: true });
-        }, 1000);
-    });
+    if (!negocioId) return { success: false };
+    try {
+        const ref = doc(db, 'negocios', negocioId, 'configuracion', 'general');
+        await updateDoc(ref, {
+            activeModules: arrayUnion(moduleId)
+        });
+        return { success: true };
+    } catch (e) {
+        console.error("Error installing module:", e);
+        return { success: false };
+    }
 }
 
 export async function uninstallModule(negocioId, moduleId) {
-    console.log(`[Marketplace] Uninstalling ${moduleId} for ${negocioId}`);
-    
-    return new Promise(resolve => {
-        setTimeout(() => {
-            window.dispatchEvent(new Event('storage'));
-            resolve({ success: true });
-        }, 800);
-    });
+    if (!negocioId) return { success: false };
+    try {
+        const ref = doc(db, 'negocios', negocioId, 'configuracion', 'general');
+        await updateDoc(ref, {
+            activeModules: arrayRemove(moduleId)
+        });
+        return { success: true };
+    } catch (e) {
+        console.error("Error uninstalling module:", e);
+        return { success: false };
+    }
 }

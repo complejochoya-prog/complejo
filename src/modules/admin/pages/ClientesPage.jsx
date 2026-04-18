@@ -15,59 +15,47 @@ export default function ClientesPage() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        const load = () => {
-            const data = getUsers(negocioId);
-            setClientes(data);
-        };
-        
-        load();
-
-        // Escuchar cambios en tiempo real
-        window.addEventListener('storage', load);
-        
-        // Polling de seguridad cada 2 segundos por si el evento no dispara en la misma pestaña
-        const interval = setInterval(load, 2000);
-
-        return () => {
-            window.removeEventListener('storage', load);
-            clearInterval(interval);
-        };
+        loadData();
     }, [negocioId]);
 
-    const filteredClientes = clientes.filter(c => 
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        c.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const loadData = async () => {
+        const data = await getUsers(negocioId);
+        setClientes(data);
+    };
 
-    const handleAuthAdmin = (e) => {
+    const handleAuthAdmin = async (e) => {
         e.preventDefault();
-        // Consultar directamente la base de datos de empleados
-        const empleados = JSON.parse(localStorage.getItem('complejo_empleados') || '[]');
-        
-        // Buscar un empleado con función de administrador que coincida con las credenciales
-        const isAdmin = empleados.find(emp => 
-            (emp.usuario === adminCreds.user || emp.email === adminCreds.user) && 
-            emp.password === adminCreds.password && 
-            (emp.rol === 'admin' || emp.rol === 'administrador' || emp.rol?.toLowerCase() === 'admin')
-        );
+        try {
+            const { fetchEmpleados } = await import('../../empleados/services/empleadosService');
+            const empleados = await fetchEmpleados(negocioId);
+            
+            const isAdmin = empleados.find(emp => 
+                (emp.usuario === adminCreds.user || emp.email === adminCreds.user) && 
+                emp.password === adminCreds.password && 
+                (emp.rol === 'admin' || emp.rol?.toLowerCase() === 'admin' || emp.rol === 'administrador')
+            );
 
-        if (isAdmin) {
-            setShowAuthModal(false);
-            setEditData({ ...selectedClient });
-            setShowEditModal(true);
-            setAdminCreds({ user: '', password: '' });
-            setError('');
-        } else {
-            setError('Credenciales de administrador inválidas');
+            if (isAdmin) {
+                setShowAuthModal(false);
+                setEditData({ ...selectedClient });
+                setShowEditModal(true);
+                setAdminCreds({ user: '', password: '' });
+                setError('');
+            } else {
+                setError('Credenciales de administrador inválidas');
+            }
+        } catch (err) {
+            console.error("Auth error:", err);
+            setError('Error de conexión con el servidor');
         }
     };
 
-    const handleSaveClient = (e) => {
+    const handleSaveClient = async (e) => {
         e.preventDefault();
-        updateUser(selectedClient.id, editData);
+        await updateUser(selectedClient.id, editData, negocioId);
         setShowEditModal(false);
         setSelectedClient(null);
+        loadData();
     };
 
     return (

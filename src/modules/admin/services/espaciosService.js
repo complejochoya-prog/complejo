@@ -1,104 +1,105 @@
-/**
- * espaciosService.js — Gestión de espacios del complejo
- * Persistencia en localStorage
- */
-
-const STORAGE_KEY = 'complejo_espacios';
+import { db } from '../../../firebase/config';
+import { 
+    collection, doc, getDocs, setDoc, updateDoc, 
+    deleteDoc, query, orderBy, serverTimestamp 
+} from 'firebase/firestore';
 
 const DEFAULT_ESPACIOS = [
     { 
         id: 'esp-1', 
-        title: 'Fútbol 5 sintético', 
+        name: 'Fútbol 5 sintético', 
         desc: 'Cesped PRO-FIFA', 
+        category: 'Deportes Interés',
         img: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=800',
         active: true,
         order: 1
     },
     { 
         id: 'esp-2', 
-        title: 'Fútbol 7 profesional', 
+        name: 'Fútbol 7 profesional', 
         desc: 'Iluminación LED', 
+        category: 'Deportes Interés',
         img: 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=800',
         active: true,
         order: 2
     },
     { 
         id: 'esp-3', 
-        title: 'Padel Glass Pro', 
+        name: 'Padel Glass Pro', 
         desc: 'Canchas vidriadas', 
+        category: 'Deportes Interés',
         img: 'https://images.unsplash.com/photo-1626245917164-214273c248ca?q=80&w=800',
         active: true,
         order: 3
     },
 ];
 
-function getAll() {
+export const fetchEspacios = async (negocioId) => {
+    if (!negocioId) return [];
     try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : DEFAULT_ESPACIOS;
-    } catch { return DEFAULT_ESPACIOS; }
-}
-
-function saveAll(list) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    window.dispatchEvent(new Event('storage_espacios'));
-}
-
-export const fetchEspacios = (negocioId) => {
-    const list = getAll();
-    // En este mock filtramos por negocio si quisiéramos, por ahora devolvemos todos
-    return list.sort((a, b) => (a.order || 0) - (b.order || 0));
-};
-
-export const saveEspacio = (espacio) => {
-    const list = getAll();
-    if (espacio.id) {
-        const idx = list.findIndex(e => e.id === espacio.id);
-        if (idx !== -1) list[idx] = { ...list[idx], ...espacio };
-    } else {
-        const nuevo = {
-            ...espacio,
-            id: `esp-${Date.now()}`,
-            active: true,
-            order: list.length + 1
-        };
-        list.push(nuevo);
+        const q = query(collection(db, 'negocios', negocioId, 'espacios'), orderBy('order', 'asc'));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) return DEFAULT_ESPACIOS;
+        
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+        console.error("Error fetching espacios:", e);
+        return DEFAULT_ESPACIOS;
     }
-    saveAll(list);
+};
+
+export const saveEspacio = async (negocioId, espacio, currentList = []) => {
+    if (!negocioId) return false;
+    const id = espacio.id || `esp-${Date.now()}`;
+    const ref = doc(db, 'negocios', negocioId, 'espacios', id);
+    
+    // Ensure order exists so it appears in ordered queries
+    const order = espacio.order || (currentList.length + 1);
+    
+    await setDoc(ref, {
+        ...espacio,
+        id,
+        order,
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+    
     return true;
 };
 
-export const deleteEspacio = (id) => {
-    const list = getAll();
-    const filtered = list.filter(e => e.id !== id);
-    saveAll(filtered);
+export const deleteEspacio = async (negocioId, id) => {
+    if (!negocioId) return false;
+    await deleteDoc(doc(db, 'negocios', negocioId, 'espacios', id));
     return true;
 };
 
-export const toggleEspacioStatus = (id) => {
-    const list = getAll();
-    const idx = list.findIndex(e => e.id === id);
-    if (idx !== -1) {
-        list[idx].active = !list[idx].active;
-        saveAll(list);
-    }
+export const toggleEspacioStatus = async (negocioId, id, currentStatus) => {
+    if (!negocioId) return false;
+    await updateDoc(doc(db, 'negocios', negocioId, 'espacios', id), {
+        active: !currentStatus,
+        updatedAt: serverTimestamp()
+    });
     return true;
 };
 
-export const reorderEspacios = (id, direction) => {
-    const list = getAll().sort((a, b) => (a.order || 0) - (b.order || 0));
+export const reorderEspacios = async (negocioId, id, direction, list) => {
+    if (!negocioId) return;
     const idx = list.findIndex(e => e.id === id);
     if (idx === -1) return;
 
+    const newList = [...list];
     if (direction === 'up' && idx > 0) {
-        const temp = list[idx].order;
-        list[idx].order = list[idx - 1].order;
-        list[idx - 1].order = temp;
-    } else if (direction === 'down' && idx < list.length - 1) {
-        const temp = list[idx].order;
-        list[idx].order = list[idx + 1].order;
-        list[idx + 1].order = temp;
+        [newList[idx], newList[idx - 1]] = [newList[idx - 1], newList[idx]];
+    } else if (direction === 'down' && idx < newList.length - 1) {
+        [newList[idx], newList[idx + 1]] = [newList[idx + 1], newList[idx]];
     }
 
-    saveAll(list);
+    // Save all orders using setDoc to handle potentially non-existent docs (from defaults)
+    for (let i = 0; i < newList.length; i++) {
+        const ref = doc(db, 'negocios', negocioId, 'espacios', newList[i].id);
+        await setDoc(ref, { 
+            ...newList[i],
+            order: i + 1 
+        }, { merge: true });
+    }
 };

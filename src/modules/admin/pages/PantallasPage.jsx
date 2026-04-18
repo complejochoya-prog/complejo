@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Monitor, Tv, Laptop, Clock, Beer, Sparkles, Trophy, ExternalLink } from 'lucide-react';
 import { useConfig } from '../../../core/services/ConfigContext';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { configService } from '../../../core/services/configService';
+// Global screen configuration service
 
 export default function PantallasPage() {
-    const { negocioId } = useConfig();
+    const { negocioId } = useParams();
     
-    // Simulate configurable screens
     const [screens, setScreens] = useState([
         { id: 'turnos', name: 'Tablero de Turnos', desc: 'Muestra las canchas y turnos', path: 'turnos', icon: Clock, enabled: true },
         { id: 'bar', name: 'Monitor del Bar', desc: 'Muestra los pedidos en curso', path: 'bar', icon: Beer, enabled: true },
@@ -14,8 +15,35 @@ export default function PantallasPage() {
         { id: 'ranking', name: 'Ranking General', desc: 'Top 8 de jugadores locales', path: 'ranking', icon: Trophy, enabled: false },
     ]);
 
-    const toggleScreen = (id) => {
-        setScreens(screens.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
+    useEffect(() => {
+        loadScreens();
+    }, [negocioId]);
+
+    const loadScreens = async () => {
+        if (!negocioId) return;
+        const dbScreens = await configService.getPantallas(negocioId);
+        if (dbScreens.length > 0) {
+            // Merge with local icons/meta
+            setScreens(prev => prev.map(ps => {
+                const found = dbScreens.find(s => s.id === ps.id);
+                return found ? { ...ps, ...found } : ps;
+            }));
+        }
+    };
+
+    const toggleScreen = async (id) => {
+        const screen = screens.find(s => s.id === id);
+        const newStatus = !screen.enabled;
+        
+        // Optimistic update
+        setScreens(prev => prev.map(s => s.id === id ? { ...s, enabled: newStatus } : s));
+        
+        await configService.savePantalla(negocioId, { 
+            id, 
+            enabled: newStatus,
+            name: screen.name,
+            path: screen.path
+        });
     };
 
     return (

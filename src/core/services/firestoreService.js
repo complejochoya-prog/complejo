@@ -3,17 +3,11 @@ import {
     collection, 
     doc, 
     setDoc, 
-    getDocs, 
-    query, 
-    where, 
     onSnapshot, 
-    updateDoc, 
-    increment,
     serverTimestamp,
+    query,
     orderBy,
-    limit,
-    deleteDoc,
-    addDoc
+    limit
 } from 'firebase/firestore';
 
 /**
@@ -84,17 +78,18 @@ export const migrateLocalStorageToFirestore = async (negocioId) => {
             }
         }
 
-        // 5. Migrate Reservas (Legacy)
-        const resKey = 'complejo_reservas';
-        const legacyReservas = JSON.parse(localStorage.getItem(resKey) || '[]');
-        if (legacyReservas.length > 0) {
-            console.log(`[Migration] Migrating ${legacyReservas.length} legacy reservations...`);
-            for (const r of legacyReservas) {
-                await addDoc(collection(db, 'negocios', negocioId, 'reservas'), {
-                    ...r,
-                    negocioId,
-                    timestamp: serverTimestamp()
-                });
+        // 5. Migrate Clientes
+        const clientKey = 'giovanni_users_db';
+        const legacyClients = JSON.parse(localStorage.getItem(clientKey) || '[]');
+        if (legacyClients.length > 0) {
+            console.log(`[Migration] Migrating ${legacyClients.length} clients...`);
+            for (const c of legacyClients) {
+                if (c.negocioId === negocioId) {
+                    await setDoc(doc(db, 'negocios', negocioId, 'clientes', c.id), {
+                        ...c,
+                        createdAt: c.createdAt || serverTimestamp()
+                    });
+                }
             }
         }
 
@@ -104,120 +99,6 @@ export const migrateLocalStorageToFirestore = async (negocioId) => {
         
     } catch (error) {
         console.error(`[Migration] Failed for ${negocioId}:`, error);
-    }
-};
-
-/**
- * INVENTARIO SERVICE (FIRESTORE)
- */
-export const inventarioService = {
-    getProductos: async (negocioId, filters = {}) => {
-        const ref = collection(db, 'negocios', negocioId, 'inventario');
-        let q = query(ref, orderBy('nombre', 'asc'));
-        
-        if (filters.sector) q = query(ref, where('sector', '==', filters.sector));
-        
-        const snap = await getDocs(q);
-        let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        if (filters.categoria) list = list.filter(p => p.categoria === filters.categoria);
-        if (filters.alerta_stock) list = list.filter(p => p.stock <= p.stock_minimo);
-        if (filters.buscar) {
-            const search = filters.buscar.toLowerCase();
-            list = list.filter(p => p.nombre.toLowerCase().includes(search) || (p.codigo && p.codigo.toLowerCase().includes(search)));
-        }
-        return list;
-    },
-
-    saveProducto: async (negocioId, data) => {
-        const id = data.id || `pro-${Date.now()}`;
-        const ref = doc(db, 'negocios', negocioId, 'inventario', id);
-        const payload = { 
-            ...data, 
-            id, 
-            negocioId, 
-            updatedAt: serverTimestamp(),
-            stock: Number(data.stock || 0),
-            precio: Number(data.precio || 0)
-        };
-        await setDoc(ref, payload, { merge: true });
-        return { success: true, producto: payload };
-    },
-
-    deleteProducto: async (negocioId, id) => {
-        await deleteDoc(doc(db, 'negocios', negocioId, 'inventario', id));
-    },
-
-    registrarMovimiento: async (negocioId, mov) => {
-        const movId = `mov-${Date.now()}`;
-        const batch = []; // In a real app we'd use writeBatch
-        
-        // 1. Save movement
-        await setDoc(doc(db, 'negocios', negocioId, 'inventario_movimientos', movId), {
-            ...mov,
-            id: movId,
-            negocioId,
-            timestamp: serverTimestamp()
-        });
-
-        // 2. Adjust stock
-        const prodRef = doc(db, 'negocios', negocioId, 'inventario', mov.productoId);
-        const adjustment = ['Ingreso', 'Ajuste_Positivo'].includes(mov.tipo) ? mov.cantidad : -mov.cantidad;
-        
-        await updateDoc(prodRef, {
-            stock: increment(adjustment),
-            updatedAt: serverTimestamp()
-        });
-        
-        return { success: true };
-    }
-};
-
-/**
- * CAJA SERVICE (FIRESTORE)
- */
-export const cajaService = {
-    getCajaStatus: async (negocioId) => {
-        // Get current open session
-        const q = query(collection(db, 'negocios', negocioId, 'caja_sesiones'), where('status', '==', 'open'), limit(1));
-        const snap = await getDocs(q);
-        const session = snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
-
-        // Get today's movements
-        const today = new Date().toISOString().split('T')[0];
-        const movQ = query(collection(db, 'negocios', negocioId, 'caja_movements'), where('fecha', '==', today));
-        const movSnap = await getDocs(movQ);
-        const movements = movSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        return { session, movements };
-    },
-
-    addMovement: async (negocioId, data) => {
-        const id = `mov-${Date.now()}`;
-        const payload = {
-            ...data,
-            id,
-            negocioId,
-            timestamp: serverTimestamp(),
-            fecha: new Date().toISOString().split('T')[0],
-            hora: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
-        };
-        await setDoc(doc(db, 'negocios', negocioId, 'caja_movements', id), payload);
-        return { success: true, movement: payload };
-    },
-
-    openCaja: async (negocioId, initialBalance, user) => {
-        const id = `ses-${Date.now()}`;
-        const session = {
-            id,
-            negocioId,
-            status: 'open',
-            openedAt: serverTimestamp(),
-            openedBy: user,
-            initialBalance: Number(initialBalance)
-        };
-        await setDoc(doc(db, 'negocios', negocioId, 'caja_sesiones', id), session);
-        return { success: true, session };
     }
 };
 

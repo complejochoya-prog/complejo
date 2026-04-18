@@ -7,7 +7,6 @@ import {
 import {
     fetchHorariosConfig,
     updateHorariosConfig,
-    updateEspacioHorarios,
     fetchBloqueos,
     addBloqueo,
     removeBloqueo,
@@ -53,15 +52,19 @@ export default function HorariosPage() {
         return () => window.removeEventListener('storage_horarios', loadData);
     }, [negocioId]);
 
-    const loadData = () => {
-        const cfg = fetchHorariosConfig();
+    const loadData = async () => {
+        const cfg = await fetchHorariosConfig(negocioId);
         setConfig(cfg);
-        setEspacios(fetchEspacios(negocioId));
-        setBloqueos(fetchBloqueos());
+        const [espList, bloqList] = await Promise.all([
+            fetchEspacios(negocioId),
+            fetchBloqueos(negocioId)
+        ]);
+        setEspacios(espList);
+        setBloqueos(bloqList);
     };
 
-    const handleSaveConfig = () => {
-        updateHorariosConfig(config);
+    const handleSaveConfig = async () => {
+        await updateHorariosConfig(negocioId, config);
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2000);
     };
@@ -97,13 +100,13 @@ export default function HorariosPage() {
         }));
     };
 
-    const handleAddBloqueo = (e) => {
+    const handleAddBloqueo = async (e) => {
         e.preventDefault();
         if (!bloqueoForm.espacioId || !bloqueoForm.fecha) {
             alert('Seleccioná un espacio y una fecha');
             return;
         }
-        addBloqueo(bloqueoForm);
+        await addBloqueo(negocioId, bloqueoForm);
         setShowBloqueoModal(false);
         setBloqueoForm({
             espacioId: '',
@@ -117,9 +120,9 @@ export default function HorariosPage() {
         loadData();
     };
 
-    const handleRemoveBloqueo = (id) => {
+    const handleRemoveBloqueo = async (id) => {
         if (window.confirm('¿Eliminar este bloqueo?')) {
-            removeBloqueo(id);
+            await removeBloqueo(negocioId, id);
             loadData();
         }
     };

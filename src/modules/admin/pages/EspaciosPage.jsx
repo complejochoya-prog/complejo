@@ -8,30 +8,42 @@ export default function EspaciosPage() {
     const [espacios, setEspacios] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedEspacio, setSelectedEspacio] = useState(null);
-    const [formData, setFormData] = useState({ title: '', desc: '', img: '', capacidad: '' });
+    const [formData, setFormData] = useState({ name: '', desc: '', img: '', capacidad: '', category: 'Recreativos' });
     const [imgMode, setImgMode] = useState('link'); // 'link' or 'upload'
+    const [activeCategory, setActiveCategory] = useState('Todos');
+
+    const CATEGORIES = ['Recreativos', 'Deportes Interés', 'Festivos', 'Eventos'];
 
     useEffect(() => {
         load();
-        window.addEventListener('storage_espacios', load);
-        return () => window.removeEventListener('storage_espacios', load);
     }, [negocioId]);
 
-    const load = () => {
-        const data = fetchEspacios(negocioId);
-        setEspacios(data);
+    const load = async () => {
+        try {
+            const data = await fetchEspacios(negocioId);
+            setEspacios(data);
+        } catch (error) {
+            console.error("Error loading espacios:", error);
+            alert("Error al cargar los espacios.");
+        }
     };
 
     const handleEdit = (esp) => {
         setSelectedEspacio(esp);
-        setFormData({ title: esp.title, desc: esp.desc, img: esp.img, capacidad: esp.capacidad || '' });
+        setFormData({ 
+            name: esp.name, 
+            desc: esp.desc, 
+            img: esp.img, 
+            capacidad: esp.capacidad || '',
+            category: esp.category || 'Recreativos'
+        });
         setImgMode(esp.img?.startsWith('data:image') ? 'upload' : 'link');
         setShowModal(true);
     };
 
     const handleAddNew = () => {
         setSelectedEspacio(null);
-        setFormData({ title: '', desc: '', img: '', capacidad: '' });
+        setFormData({ name: '', desc: '', img: '', capacidad: '', category: activeCategory !== 'Todos' ? activeCategory : 'Recreativos' });
         setImgMode('link');
         setShowModal(true);
     };
@@ -47,16 +59,38 @@ export default function EspaciosPage() {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        saveEspacio({ ...formData, id: selectedEspacio?.id });
-        setShowModal(false);
+        try {
+            console.log("Saving espacio:", formData);
+            const success = await saveEspacio(negocioId, { ...formData, id: selectedEspacio?.id }, espacios);
+            if (success) {
+                setShowModal(false);
+                await load();
+            } else {
+                alert("Error al guardar: Falta ID de negocio.");
+            }
+        } catch (error) {
+            console.error("Error saving:", error);
+            alert("Error al conectar con la base de datos.");
+        }
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm('¿Eliminar este espacio definitivamente?')) {
-            deleteEspacio(id);
+            await deleteEspacio(negocioId, id);
+            load();
         }
+    };
+
+    const handleToggleStatus = async (id, currentStatus) => {
+        await toggleEspacioStatus(negocioId, id, currentStatus);
+        load();
+    };
+
+    const handleReorder = async (id, direction) => {
+        await reorderEspacios(negocioId, id, direction, espacios);
+        load();
     };
 
     return (
@@ -74,26 +108,47 @@ export default function EspaciosPage() {
 
                 <button 
                     onClick={handleAddNew}
-                    className="flex items-center gap-3 bg-amber-500 text-black px-6 py-4 rounded-[24px] text-xs font-black uppercase tracking-widest shadow-xl shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    className="flex items-center gap-3 bg-amber-500 text-black px-8 py-4 rounded-[28px] text-xs font-black uppercase tracking-widest shadow-2xl shadow-amber-500/30 hover:scale-[1.05] active:scale-[0.95] transition-all group"
                 >
-                    <Plus size={18} /> Nuevo Espacio
+                    <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" /> Nuevo Espacio
                 </button>
+            </div>
+
+            {/* Categorías (Tabs) */}
+            <div className="flex flex-wrap items-center gap-3 bg-white/5 p-2 rounded-[32px] border border-white/5 backdrop-blur-md">
+                <button 
+                    onClick={() => setActiveCategory('Todos')}
+                    className={`px-6 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === 'Todos' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                >
+                    Todos
+                </button>
+                {CATEGORIES.map(cat => (
+                    <button 
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        className={`px-6 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                        {cat}
+                    </button>
+                ))}
             </div>
 
             {/* Grid de Espacios */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {espacios.map((esp) => (
+                {espacios
+                    .filter(esp => activeCategory === 'Todos' || esp.category === activeCategory)
+                    .map((esp) => (
                     <div 
                         key={esp.id} 
                         className={`group bg-slate-900 border ${esp.active ? 'border-white/5' : 'border-red-500/20 grayscale'} rounded-[40px] overflow-hidden flex flex-col transition-all hover:border-amber-500/30 shadow-2xl`}
                     >
                         <div className="relative h-48 overflow-hidden">
-                            <img src={esp.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={esp.title} />
+                            <img src={esp.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={esp.name} />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
                             
                             <div className="absolute top-4 right-4 flex gap-2">
                                 <button 
-                                    onClick={() => toggleEspacioStatus(esp.id)}
+                                    onClick={() => handleToggleStatus(esp.id, esp.active)}
                                     className={`p-2 rounded-xl backdrop-blur-md border ${esp.active ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border-red-500/30 text-red-500'}`}
                                 >
                                     {esp.active ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -101,9 +156,14 @@ export default function EspaciosPage() {
                             </div>
                         </div>
 
-                        <div className="p-8 flex-1 flex flex-col">
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-1 leading-none">{esp.title}</h3>
-                            <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2">{esp.desc}</p>
+                        <div className="p-8 flex-1 flex-col flex">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="px-3 py-1 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-amber-500/20">
+                                    {esp.category || 'Recreativos'}
+                                </span>
+                            </div>
+                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-1 leading-none">{esp.name}</h3>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 opacity-70 group-hover:opacity-100 transition-opacity">{esp.desc}</p>
                             {esp.capacidad && (
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Capacidad: {esp.capacidad} personas</p>
                             )}
@@ -112,13 +172,13 @@ export default function EspaciosPage() {
                             <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
                                 <div className="flex items-center gap-1">
                                     <button 
-                                        onClick={() => reorderEspacios(esp.id, 'up')}
+                                        onClick={() => handleReorder(esp.id, 'up')}
                                         className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-amber-500 transition-all"
                                     >
                                         <MoveUp size={14} />
                                     </button>
                                     <button 
-                                        onClick={() => reorderEspacios(esp.id, 'down')}
+                                        onClick={() => handleReorder(esp.id, 'down')}
                                         className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-amber-500 transition-all"
                                     >
                                         <MoveDown size={14} />
@@ -167,27 +227,42 @@ export default function EspaciosPage() {
 
                         <form onSubmit={handleSubmit} className="p-8 space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Título del Espacio</label>
-                                <input 
-                                    type="text" 
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all"
-                                    placeholder="Ej: Fútbol 5 sintético"
+                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Categoría</label>
+                                <select 
+                                    value={formData.category}
+                                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all appearance-none text-white"
                                     required
-                                />
+                                >
+                                    {CATEGORIES.map(cat => (
+                                        <option key={cat} value={cat} className="bg-slate-900">{cat}</option>
+                                    ))}
+                                </select>
                             </div>
-                            
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Descripción corta / Equipamiento</label>
-                                <input 
-                                    type="text" 
-                                    value={formData.desc}
-                                    onChange={(e) => setFormData({...formData, desc: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all"
-                                    placeholder="Ej: Cesped PRO-FIFA / Iluminación LED"
-                                    required
-                                />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Título del Espacio</label>
+                                    <input 
+                                        type="text" 
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all"
+                                        placeholder="Ej: Fútbol 5 sintético"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Descripción corta</label>
+                                    <input 
+                                        type="text" 
+                                        value={formData.desc}
+                                        onChange={(e) => setFormData({...formData, desc: e.target.value})}
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all"
+                                        placeholder="Ej: Cesped PRO-FIFA"
+                                        required
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-2">

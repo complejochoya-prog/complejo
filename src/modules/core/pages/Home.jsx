@@ -14,9 +14,11 @@ export default function Home() {
 
     useEffect(() => { 
         setAnimate(true); 
-        const load = () => {
-            setEspacios(fetchEspacios(negocioId).filter(e => e.active));
-            setPromos(fetchPromos().filter(p => p.active));
+        const load = async () => {
+            const dataEsp = await fetchEspacios(negocioId);
+            const dataPromo = await fetchPromos(negocioId);
+            setEspacios(dataEsp.filter(e => e.active));
+            setPromos(dataPromo.filter(p => p.active));
         };
         load();
         window.addEventListener('storage_espacios', load);
@@ -141,14 +143,14 @@ export default function Home() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {espacios.map((espacio, i) => {
-                             const isBar = (espacio.title || '').toLowerCase().includes('bar') || 
+                             const isBar = (espacio.name || '').toLowerCase().includes('bar') || 
                                          (espacio.desc || '').toLowerCase().includes('bar') ||
                                          (espacio.tipo || '').toLowerCase().includes('bar');
                             const targetPath = isBar ? `${basePath}/menu` : `${basePath}/app/reservar/${espacio.id}`;
 
                             return (
                                 <Link key={espacio.id || i} to={targetPath} className="group relative h-[450px] rounded-[48px] overflow-hidden bg-slate-900 border border-white/5 shadow-2xl transition-all hover:border-amber-500/30">
-                                    <img src={espacio.img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-40 group-hover:opacity-80" alt={espacio.title} />
+                                    <img src={espacio.img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-40 group-hover:opacity-80" alt={espacio.name} />
                                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
                                     
                                     <div className="absolute top-8 right-8">
@@ -158,9 +160,14 @@ export default function Home() {
                                     </div>
 
                                     <div className="absolute bottom-10 left-10 right-10 space-y-2">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="px-3 py-1 bg-amber-500/10 backdrop-blur-md border border-amber-500/20 text-amber-500 text-[8px] font-black uppercase tracking-widest rounded-full">
+                                                {espacio.category || 'Recreativo'}
+                                            </span>
+                                        </div>
                                         <div className="h-1 w-12 bg-amber-500 mb-4 group-hover:w-full transition-all duration-500" />
-                                        <h4 className="text-2xl font-black uppercase tracking-tight text-white leading-none">{espacio.title}</h4>
-                                        <p className="text-[11px] font-bold text-amber-500/80 uppercase tracking-widest">{espacio.desc}</p>
+                                        <h4 className="text-2xl font-black uppercase tracking-tight text-white leading-none">{espacio.name}</h4>
+                                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-amber-500/80 transition-colors">{espacio.desc}</p>
                                     </div>
                                 </Link>
                             );

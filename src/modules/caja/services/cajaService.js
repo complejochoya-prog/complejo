@@ -1,4 +1,4 @@
-import { cajaService } from '../../../core/services/firestoreService';
+import { cajaService } from '../../../core/services/cajaService';
 
 export const fetchCajaStatus = async (negocioId) => {
     const { session, movements } = await cajaService.getCajaStatus(negocioId);

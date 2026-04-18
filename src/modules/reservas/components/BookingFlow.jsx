@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useConfig } from '../../core/services/ConfigContext';
 import { useReservas } from '../services/ReservasContext';
+import { fetchEspacios } from '../../admin/services/espaciosService';
+import ReservationForm from '../../client_app/pages/ReservationForm';
 import {
     Calendar,
     ChevronRight,
@@ -17,7 +19,18 @@ import {
     Clock,
     Timer,
     Sun,
-    Moon
+    Moon,
+    Users,
+    MapPin,
+    ArrowLeft,
+    Share2,
+    Heart,
+    Star,
+    CheckCircle,
+    CreditCard,
+    Check,
+    CalendarCheck,
+    Loader2
 } from 'lucide-react';
 
 const ICON_MAP = {
@@ -27,90 +40,141 @@ const ICON_MAP = {
     'Cancha de Vóley': Activity,
     'Piscina': Waves,
     'Quincho': UtensilsCrossed,
+    'Padel': Activity,
 };
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export default function BookingFlow() {
-    const { businessInfo } = useConfig();
-    const { resources, blockedSlots, isSlotBlocked, getBlockReason, getAvailableSlots, getSlotPrice, getResourcePrice, bookings, liveUsage, checkAvailability, timeSchedule } = useReservas();
+    const { negocioId } = useParams();
+    const { businessInfo, config } = useConfig();
+    const { 
+        resources: contextResources, 
+        getAvailableSlots, 
+        bookings, 
+        liveUsage, 
+        checkAvailability, 
+        timeSchedule,
+        addBooking
+    } = useReservas();
+    
     const location = useLocation();
+    const navigate = useNavigate();
+
+    // Local state for spaces from service (for images/desc)
+    const [serviceEspacios, setServiceEspacios] = useState([]);
+    const [loadingEspacios, setLoadingEspacios] = useState(true);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const data = await fetchEspacios(negocioId);
+                setServiceEspacios(data);
+            } finally {
+                setLoadingEspacios(false);
+            }
+        };
+        load();
+    }, [negocioId]);
+
+    // Merge resources from context with images from service
+    const resources = useMemo(() => {
+        // 1. If we have real resources in context (Firestore), use them
+        if (contextResources && contextResources.length > 0) {
+            return contextResources.map(res => {
+                const serviceMatch = serviceEspacios.find(s => 
+                    s.id === res.id || s.title?.toLowerCase() === res.name?.toLowerCase()
+                );
+                return {
+                    ...res,
+                    img: res.img || serviceMatch?.img || 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=800',
+                    desc: res.desc || serviceMatch?.desc || 'Instalación profesional de alta calidad.',
+                    capacidad: res.capacidad || serviceMatch?.capacidad || null
+                };
+            });
+        }
+        
+        // 2. FALLBACK: If Firestore is empty, use the mock/local spaces from the service
+        return serviceEspacios.map(s => ({
+            id: s.id,
+            name: s.name || s.title, // Support both during migration
+            category: s.category || 'Deportes',
+            active: s.active !== false,
+            img: s.img,
+            desc: s.desc,
+            priceDiurno: s.priceDiurno || 8000,
+            precioNocturno: s.precioNocturno || 12000,
+            capacidad: s.capacidad || null
+        }));
+    }, [contextResources, serviceEspacios]);
 
     const today = new Date();
     const [selectedResource, setSelectedResource] = useState(null);
-    const [selectedCategory, setSelectedCategory] = useState('Deportes');
-    // selectedDate is a JS Date object
     const [selectedDate, setSelectedDate] = useState(today);
-    const [selectedSlot, setSelectedSlot] = useState(null); // full slot object
-    const [peopleCount, setPeopleCount] = useState(1);
-
-    // Range mode
+    const [selectedSlot, setSelectedSlot] = useState(null); 
     const [rentalMode, setRentalMode] = useState('hora'); // 'hora' | 'franja'
     const [startSlot, setStartSlot] = useState(null);
     const [endSlot, setEndSlot] = useState(null);
 
-    // Pre-select resource passed from Home page
+    // Form data & Payment
+    const [formData, setFormData] = useState({
+        nombre: '',
+        apellido: '',
+        telefono: '',
+        cantidadPersonas: 1
+    });
+    const [paymentMethod, setPaymentMethod] = useState('Pagar en el complejo');
+    const [bookingLoading, setBookingLoading] = useState(false);
+
+    // Filter categories
+    const categories = useMemo(() => {
+        const cats = [...new Set(resources.filter(r => r.active).map(r => r.category || 'Recreación'))];
+        return cats.length > 0 ? ['Todos', ...cats] : ['Todos'];
+    }, [resources]);
+    
+    const [selectedCategory, setSelectedCategory] = useState('Todos');
+    useEffect(() => {
+        if (categories.length > 0 && !categories.includes(selectedCategory)) {
+            setSelectedCategory(categories[0]);
+        }
+    }, [categories, selectedCategory]);
+
+    // Pre-select resource
     useEffect(() => {
         if (location.state?.preselectedResource) {
             const pre = location.state.preselectedResource;
             const match = resources.find(r =>
                 r.id === pre.id || r.name.toLowerCase() === pre.name.toLowerCase()
             );
-            if (match) {
-                setSelectedResource(match);
-                setSelectedCategory(match.category);
-            } else {
-                setSelectedResource(pre);
-            }
+            if (match) setSelectedResource(match);
         }
     }, [location.state, resources]);
 
-
-    const categories = [...new Set(resources.filter(r => r.active).map(r => r.category))];
-
-    // Build calendar: next 14 days from today
+    // Calendar logic
     const [currentMonthDate, setCurrentMonthDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-
     const calendarDays = useMemo(() => {
         const year = currentMonthDate.getFullYear();
         const month = currentMonthDate.getMonth();
-        const firstDay = new Date(year, month, 1).getDay(); // 0 (Sun) to 6 (Sat)
+        const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-
         const days = [];
-        // Padding for first week
-        for (let i = 0; i < firstDay; i++) {
-            days.push(null);
-        }
-        // Actual days
-        for (let d = 1; d <= daysInMonth; d++) {
-            days.push(new Date(year, month, d));
-        }
+        for (let i = 0; i < firstDay; i++) days.push(null);
+        for (let d = 1; d <= daysInMonth; d++) days.push(new Date(year, month, d));
         return days;
     }, [currentMonthDate]);
 
-    const handleNextMonth = () => {
-        setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-    };
-
-    const handlePrevMonth = () => {
-        setCurrentMonthDate(prev => {
-            const newDate = new Date(prev.getFullYear(), prev.getMonth() - 1, 1);
-            // Don't let them go before current month
-            if (newDate < new Date(today.getFullYear(), today.getMonth(), 1)) return prev;
-            return newDate;
-        });
-    };
-
-    // Available slots for the selected date (from admin schedule)
+    // Time schedule slots
     const availableScheduleSlots = useMemo(() => {
-        if (!timeSchedule || timeSchedule.length === 0) return [];
-        let slots = getAvailableSlots(selectedDate);
-        // Filter by resource's available hours
-        if (selectedResource?.availableHours) {
-            slots = slots.filter(s => selectedResource.availableHours.includes(s.hour));
+        if (!timeSchedule || timeSchedule.length === 0) {
+            const slots = [];
+            for (let h = 8; h <= 23; h++) {
+                slots.push({ hour: `${h}:00`, type: h >= 19 ? 'nocturno' : 'diurno', priceDiurno: 5000, precioNocturno: 7000 });
+            }
+            return slots;
         }
+        let slots = (typeof getAvailableSlots === 'function') ? getAvailableSlots(selectedDate) : timeSchedule;
+        if (selectedResource?.availableHours) slots = slots.filter(s => selectedResource.availableHours.includes(s.hour));
         return slots;
     }, [timeSchedule, selectedDate, getAvailableSlots, selectedResource]);
 
@@ -119,111 +183,31 @@ export default function BookingFlow() {
         const dateStr = selectedDate.toISOString().split('T')[0];
         const todayStr = today.toISOString().split('T')[0];
 
-        // 1. Time Validation for 'Today'
         if (dateStr === todayStr) {
             const currentHour = today.getHours();
             const slotHourNum = parseInt(slotHour.split(':')[0], 10);
-            if (slotHourNum <= currentHour) {
-                return 'Pasado';
-            }
+            if (slotHourNum <= currentHour) return 'Pasado';
         }
 
-        // Manual Blocks
-        if (isSlotBlocked(selectedResource.id, dateStr, slotHour)) {
-            const reason = getBlockReason(selectedResource.id, dateStr, slotHour);
-            return reason ? `Bloqueado: ${reason}` : 'Bloqueado';
+        if (typeof checkAvailability === 'function') {
+            if (!checkAvailability(selectedResource.id, dateStr, slotHour)) return 'Ocupado';
         }
-
-        // Real Firebase Bookings & Live Usage check
-        // Find existing non-cancelled bookings for THIS resource on THIS date
-        const existingBookings = bookings.filter(b =>
-            b.resource?.id === selectedResource.id &&
-            b.fullDate === dateStr &&
-            b.status !== 'Cancelado'
-        );
-
-        // Find existing liveUsage sessions for THIS resource on THIS date
-        // Note: liveUsage duration could span multiple hours. We check overlapping logic.
-        const existingLive = liveUsage.filter(u =>
-            u.resourceId === selectedResource.id &&
-            u.date === dateStr &&
-            u.status !== 'finished'
-        );
-
-        // Helper: does a liveUsage session overlap with slotHour?
-        const isLiveOverlapping = (session, hourStr) => {
-            const slotNum = parseInt(hourStr.split(':')[0], 10);
-            const sessionStartNum = parseInt(session.slot.split(':')[0], 10);
-            const sessionEndNum = sessionStartNum + (session.duration || 1);
-            return slotNum >= sessionStartNum && slotNum < sessionEndNum; // slot length is 1hr
-        };
-
-        // Special logic for Piscina (summing people up)
-        if (selectedResource.name === 'Piscina') {
-            // First check if Quincho is fully booked (exclusive rule)
-            // Check online bookings for Quincho
-            const quinchoBookings = bookings.filter(b =>
-                b.resource?.name === 'Quincho' &&
-                b.fullDate === dateStr &&
-                b.status !== 'Cancelado' &&
-                (
-                    (b.rentalMode === 'hora' && b.time === slotHour) ||
-                    (b.rentalMode === 'franja' && slotHour >= b.time && slotHour < b.endTime)
-                )
-            );
-            // Check liveUsage for Quincho
-            const quinchoLive = liveUsage.filter(u =>
-                u.resourceId === 'quincho' &&
-                u.date === dateStr &&
-                u.status !== 'finished' &&
-                isLiveOverlapping(u, slotHour)
-            );
-
-            if (quinchoBookings.length > 0 || quinchoLive.length > 0) return 'Bloqueado por Evento';
-
-            // Otherwise sum up total people in Piscina for this hour
-            let currentCount = existingBookings.reduce((sum, b) => {
-                const isOverlapping =
-                    (b.rentalMode === 'hora' && b.time === slotHour) ||
-                    (b.rentalMode === 'franja' && slotHour >= b.time && slotHour < b.endTime);
-                // Assume 1 person per online booking currently
-                return isOverlapping ? sum + 1 : sum;
-            }, 0);
-
-            // Add liveUsage people count
-            currentCount += existingLive.reduce((sum, session) => {
-                return isLiveOverlapping(session, slotHour) ? sum + (parseInt(session.peopleCount) || 1) : sum;
-            }, 0);
-
-            if (currentCount >= (selectedResource.capacity || 10)) return 'Ocupado';
-            if (currentCount > (selectedResource.capacity || 10) - 3) return 'Últimos Lugares';
-            return 'Disponible';
-        }
-
-        // Standard logic for Courts/Quincho (strict 1 per time)
-        if (!checkAvailability(selectedResource.id, dateStr, slotHour)) return 'Ocupado';
-
         return 'Disponible';
     };
 
-    // Price for a slot object — use resource-specific day/night pricing
     const getPrice = (slot) => {
         if (!slot || !selectedResource) return 0;
-        // Use resource-specific pricing
         const hourNum = parseInt(slot.hour.split(':')[0], 10);
         const isDiurno = hourNum >= 8 && hourNum < 19;
+        
         if (selectedResource.priceDiurno !== undefined && selectedResource.precioNocturno !== undefined) {
             const base = isDiurno ? selectedResource.priceDiurno : selectedResource.precioNocturno;
-            if (selectedResource.name === 'Piscina') return base * peopleCount;
+            if (selectedResource.name === 'Piscina') return base * formData.cantidadPersonas;
             return base;
         }
-        // Fallback to global slot price
-        const base = getSlotPrice(slot);
-        if (selectedResource.name === 'Piscina') return base * peopleCount;
-        return base;
+        return isDiurno ? (slot.priceDiurno || 5000) : (slot.precioNocturno || 7000);
     };
 
-    // For franja mode: slots between start and end
     const rangeSlots = useMemo(() => {
         if (rentalMode !== 'franja' || !startSlot || !endSlot) return [];
         const startIdx = availableScheduleSlots.findIndex(s => s.hour === startSlot.hour);
@@ -232,547 +216,241 @@ export default function BookingFlow() {
         return availableScheduleSlots.slice(startIdx, endIdx);
     }, [rentalMode, startSlot, endSlot, availableScheduleSlots]);
 
-    const hoursCount = useMemo(() => {
-        if (rentalMode === 'hora') return 1;
-        return rangeSlots.length;
-    }, [rentalMode, rangeSlots]);
+    const hoursCount = rentalMode === 'hora' ? 1 : rangeSlots.length;
+    const currentPrice = rentalMode === 'hora' ? (selectedSlot ? getPrice(selectedSlot) : 0) : rangeSlots.reduce((acc, slot) => acc + getPrice(slot), 0);
+    
+    const hasValidSelection = rentalMode === 'hora' ? !!selectedSlot : (hoursCount > 0);
 
-    // Total price for franja: sum of each slot's price
-    const rangePrice = useMemo(() => {
-        if (rentalMode === 'hora') return selectedSlot ? getPrice(selectedSlot) : 0;
-        if (rangeSlots.length === 0) return 0;
-        return rangeSlots.reduce((acc, slot) => acc + getPrice(slot), 0);
-    }, [rentalMode, selectedSlot, rangeSlots, selectedResource, peopleCount]);
+    const handleBooking = async () => {
+        if (!hasValidSelection || !selectedResource) return;
+        if (!formData.nombre || !formData.apellido || !formData.telefono) {
+            alert("Por favor completa tus datos de contacto.");
+            return;
+        }
 
-    const rangeAllAvailable = useMemo(() => {
-        return rangeSlots.length > 0 && rangeSlots.every(s => {
-            const st = getSlotStatus(s.hour);
-            return st === 'Disponible' || st === 'Últimos Lugares';
-        });
-    }, [rangeSlots, selectedResource, selectedDate]);
+        setBookingLoading(true);
+        try {
+            // Integration with createReserva from context (which uses Firestore)
+            const dateStr = selectedDate.toISOString().split('T')[0];
+            const timeStr = rentalMode === 'hora' ? selectedSlot.hour : `${startSlot.hour} - ${endSlot.hour}`;
+            const endTimeStr = rentalMode === 'hora' ? null : endSlot.hour;
 
-    const hasValidSelection = rentalMode === 'hora'
-        ? !!selectedSlot
-        : (hoursCount > 0 && rangeAllAvailable);
+            if (addBooking) {
+                await addBooking({
+                    resource: selectedResource,
+                    fullDate: dateStr,
+                    time: timeStr,
+                    endTime: endTimeStr,
+                    price: currentPrice,
+                    cliente: formData,
+                    pago: paymentMethod,
+                    rentalMode,
+                    status: 'Pendiente'
+                });
+            }
 
-    const currentPrice = rangePrice;
-
-    const displayTime = rentalMode === 'hora'
-        ? selectedSlot?.hour
-        : (startSlot && endSlot ? `${startSlot.hour} - ${endSlot.hour}` : null);
-
-    // The slot type for single-hour mode
-    const activeSlotType = rentalMode === 'hora'
-        ? selectedSlot?.type
-        : (rangeSlots.length > 0 ? rangeSlots[0]?.type : null);
-
-    const handleModeChange = (mode) => {
-        setRentalMode(mode);
-        setSelectedSlot(null);
-        setStartSlot(null);
-        setEndSlot(null);
+            setTimeout(() => {
+                navigate(`/${negocioId}/pedido-confirmado`, { 
+                    state: { 
+                        reserva: {
+                            fieldName: selectedResource.name,
+                            date: dateStr,
+                            time: timeStr,
+                            firstName: formData.nombre,
+                            lastName: formData.apellido,
+                            phone: formData.telefono,
+                            price: currentPrice
+                        } 
+                    } 
+                });
+                setBookingLoading(false);
+            }, 800);
+        } catch (error) {
+            console.error("Error booking:", error);
+            alert("Error al procesar la reserva.");
+            setBookingLoading(false);
+        }
     };
 
-    const handleResourceSelect = (res) => {
-        setSelectedResource(res);
-        setSelectedSlot(null);
-        setStartSlot(null);
-        setEndSlot(null);
-    };
+    // --- LOADING STATE ---
+    if (loadingEspacios) {
+        return (
+            <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-6 text-white">
+                <Loader2 className="animate-spin text-amber-500 mb-4" size={48} />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">Cargando oferta deportiva...</p>
+            </div>
+        );
+    }
 
-    // Day of week for selected date
-    const selectedDayName = DAY_NAMES[selectedDate.getDay()];
-    const isWeekend = selectedDate.getDay() === 0 || selectedDate.getDay() === 5 || selectedDate.getDay() === 6;
-
-    const confirmState = {
-        resource: selectedResource,
-        date: selectedDate.getDate(),
-        fullDate: selectedDate.toISOString().split('T')[0],
-        dayOfWeek: selectedDayName,
-        isWeekend,
-        time: rentalMode === 'hora' ? selectedSlot?.hour : startSlot?.hour,
-        endTime: rentalMode === 'hora' ? selectedSlot?.hour : endSlot?.hour,
-        price: currentPrice,
-        rentalMode,
-        hoursCount,
-        displayTime,
-        slotType: activeSlotType,
-        appliedPrice: currentPrice,
-        priceDiurno: selectedSlot?.priceDiurno,
-        precioNocturno: selectedSlot?.precioNocturno,
-    };
-
-    return (
-        <div className="min-h-screen bg-slate-950 font-inter text-white pb-40 overflow-x-hidden">
-            <header className="px-6 py-10 space-y-2 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50 border-b border-white/5">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link to="/home" className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
-                            <ChevronLeft size={18} />
-                        </Link>
-                        <div>
-                            <h1 className="text-2xl font-black italic uppercase tracking-tighter leading-none">RESERVAR <span className="text-gold">TURNO</span></h1>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                Paso {selectedResource ? (hasValidSelection ? '3' : '2') : '1'} de 3
-                            </p>
+    // --- STEP 1: GALLERY VIEW ---
+    if (!selectedResource) {
+        return (
+            <div className="min-h-screen bg-[#020617] text-white font-inter pb-20">
+                <header className="relative h-[40vh] flex items-end px-6 pb-12 overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=1200" className="absolute inset-0 w-full h-full object-cover opacity-40 scale-105" alt="Bg" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent" />
+                    <div className="relative z-10 max-w-5xl mx-auto w-full">
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="bg-amber-500 text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Premium Complex</span>
+                            <div className="flex gap-1">{[1,2,3,4,5].map(i => <Star key={i} size={10} className="fill-amber-500 text-amber-500" />)}</div>
                         </div>
+                        <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-2">ELIGE TU <span className="text-amber-500">ESPACIO</span></h1>
+                        <p className="text-slate-400 font-medium max-w-lg text-sm md:text-base">Reserva las mejores instalaciones con tecnología de punta y servicios exclusivos.</p>
                     </div>
-                </div>
-            </header>
-
-            <main className="max-w-4xl mx-auto px-6 py-8 space-y-10">
-                {/* Paso 1: Selección de Espacio */}
-                <section className="space-y-8">
-                    <div className="flex items-center gap-4 px-2">
-                        <div className="flex-1 h-1.5 bg-gold rounded-full"></div>
-                        <div className="flex-1 h-1.5 bg-white/10 rounded-full"></div>
-                        <div className="flex-1 h-1.5 bg-white/10 rounded-full"></div>
-                        <span className="text-[10px] font-black text-gold uppercase tracking-tighter italic">Paso 1 de 3</span>
-                    </div>
-
-                    <div className="space-y-2">
-                        <h2 className="text-3xl font-black italic uppercase tracking-tighter text-gold">Selecciona tu espacio</h2>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">¿Qué actividad vas a realizar hoy?</p>
-                    </div>
-
-                    <div className="flex gap-2 p-1.5 bg-white/[0.03] rounded-2xl w-fit border border-white/5">
+                </header>
+                <main className="max-w-7xl mx-auto px-6 -mt-8 relative z-20 space-y-12">
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4">
                         {categories.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => { setSelectedCategory(cat); setSelectedResource(null); setSelectedSlot(null); setStartSlot(null); setEndSlot(null); }}
-                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-gold text-slate-950 shadow-lg shadow-gold/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
-                            >
-                                {cat}
-                            </button>
+                            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border ${selectedCategory === cat ? 'bg-amber-500 border-amber-500 text-black shadow-xl shadow-amber-500/20' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}>{cat}</button>
                         ))}
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {resources.filter(r => (r.category === selectedCategory || selectedCategory === 'Todos') && r.active).map(res => (
+                            <div key={res.id} className="group relative bg-[#0f172a] border border-white/5 rounded-[40px] overflow-hidden flex flex-col transition-all duration-500 hover:border-amber-500/50 hover:-translate-y-2 shadow-2xl">
+                                <div className="relative h-64 overflow-hidden">
+                                    <img src={res.img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={res.name} />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-transparent to-transparent opacity-60" />
+                                    <div className="absolute top-6 left-6 flex flex-col gap-2"><div className="bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-2"><div className="size-2 rounded-full bg-emerald-500 animate-pulse" /><span className="text-[10px] font-black uppercase tracking-widest">Disponible Hoy</span></div></div>
+                                </div>
+                                <div className="p-8 flex-1 flex flex-col">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div><h3 className="text-2xl font-black italic uppercase tracking-tighter text-white group-hover:text-amber-500 transition-colors leading-none">{res.name}</h3><span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 block">{res.category || 'Deportes'}</span></div>
+                                        <div className="bg-amber-500/10 p-2 rounded-xl border border-amber-500/20 text-amber-500">{(() => { const I = ICON_MAP[res.name] || Trophy; return <I size={20} />; })()}</div>
+                                    </div>
+                                    <p className="text-sm text-slate-400 line-clamp-2 mb-8 font-medium italic">{res.desc}</p>
+                                    <div className="grid grid-cols-2 gap-4 mb-8">
+                                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5"><div className="flex items-center gap-2 mb-1"><Sun size={14} className="text-amber-400" /><span className="text-[8px] font-black uppercase text-slate-500">Diurno</span></div><p className="text-lg font-black italic text-white">${res.priceDiurno?.toLocaleString() || '5.000'}</p></div>
+                                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5"><div className="flex items-center gap-2 mb-1"><Moon size={14} className="text-indigo-400" /><span className="text-[8px] font-black uppercase text-slate-500">Nocturno</span></div><p className="text-lg font-black italic text-white">${res.precioNocturno?.toLocaleString() || '7.000'}</p></div>
+                                    </div>
+                                    <button onClick={() => setSelectedResource(res)} className="w-full bg-white text-black py-5 rounded-[24px] font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-amber-500 hover:scale-[1.02] shadow-xl flex items-center justify-center gap-2 group">Reservar Ahora <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" /></button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </main>
+            </div>
+        );
+    }
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {resources.filter(r => r.category === selectedCategory && r.active).map(res => {
-                            const isSelected = selectedResource?.id === res.id;
-                            const precioDiurnoStr = res.priceDiurno ? `$${res.priceDiurno.toLocaleString()}` : 'N/A';
-                            const precioNocturnoStr = res.precioNocturno ? `$${res.precioNocturno.toLocaleString()}` : 'N/A';
-                            
+    // --- STEP 2: BOOKING VIEW ---
+    return (
+        <div className="min-h-screen bg-[#050508] text-white font-inter pb-60">
+            {/* Header */}
+            <div className="relative h-64 md:h-80 overflow-hidden">
+                <img src={selectedResource.img} className="w-full h-full object-cover opacity-50" alt={selectedResource.name} />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-transparent to-black/40" />
+                <div className="absolute top-8 left-8 right-8 flex justify-between items-start">
+                    <button onClick={() => setSelectedResource(null)} className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-all"><ArrowLeft size={20} /></button>
+                    <div className="flex gap-2"><button className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 text-white"><Share2 size={20} /></button></div>
+                </div>
+                <div className="absolute bottom-8 left-8 flex flex-col items-start">
+                    <div className="bg-amber-500 text-black px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest mb-3">{selectedResource.category || 'Espacio Seleccionado'}</div>
+                    <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-none">{selectedResource.name}</h2>
+                </div>
+            </div>
+
+            <main className="max-w-4xl mx-auto px-6 py-12 space-y-16">
+                
+                {/* Mode Selector */}
+                <section>
+                    <div className="flex bg-white/5 p-1.5 rounded-[28px] border border-white/5">
+                        <button onClick={() => { setRentalMode('hora'); setSelectedSlot(null); setStartSlot(null); setEndSlot(null); }} className={`flex-1 py-4 rounded-[22px] flex flex-col items-center justify-center transition-all duration-300 ${rentalMode === 'hora' ? 'bg-white text-black shadow-2xl' : 'text-slate-500 hover:text-white'}`}><span className="text-[10px] font-black uppercase tracking-widest">Turno Simple</span><span className="text-[8px] font-bold opacity-60">1 HORA</span></button>
+                        <button onClick={() => { setRentalMode('franja'); setSelectedSlot(null); setStartSlot(null); setEndSlot(null); }} className={`flex-1 py-4 rounded-[22px] flex flex-col items-center justify-center transition-all duration-300 ${rentalMode === 'franja' ? 'bg-amber-500 text-black shadow-2xl shadow-amber-500/20' : 'text-slate-500 hover:text-white'}`}><span className="text-[10px] font-black uppercase tracking-widest">Franja Horaria</span><span className="text-[8px] font-bold opacity-60">PERSONALIZADO</span></button>
+                    </div>
+                </section>
+
+                {/* Calendar */}
+                <section className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3"><Calendar size={18} className="text-amber-500" /> Selecciona el Día</h3>
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => setCurrentMonthDate(new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() - 1, 1))} className="p-2 text-slate-500 hover:text-white"><ChevronLeft size={20} /></button>
+                            <span className="text-xs font-black uppercase tracking-widest text-white italic">{MONTH_NAMES[currentMonthDate.getMonth()]} {currentMonthDate.getFullYear()}</span>
+                            <button onClick={() => setCurrentMonthDate(new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 1))} className="p-2 text-slate-500 hover:text-white"><ChevronRight size={20} /></button>
+                        </div>
+                    </div>
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar py-2">
+                        {calendarDays.filter(d => d && d >= new Date(today.getFullYear(), today.getMonth(), today.getDate())).map(d => {
+                            const isSelected = selectedDate.toDateString() === d.toDateString();
                             return (
-                                <button
-                                    key={res.id}
-                                    onClick={() => handleResourceSelect(res)}
-                                    className={`group relative p-8 rounded-[32px] text-left transition-all duration-300 border backdrop-blur-xl flex flex-col justify-between min-h-[160px] ${isSelected
-                                        ? 'bg-gold/10 border-gold shadow-2xl shadow-gold/10'
-                                        : 'bg-white/[0.02] border-white/5 hover:border-gold/30 hover:bg-white/[0.05]'
-                                        }`}
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h3 className="text-2xl font-black uppercase italic tracking-tighter group-hover:text-gold transition-colors">{res.name}</h3>
-                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">{res.desc || 'Instalación profesional'}</p>
-                                        </div>
-                                        {isSelected && <CheckCircle2 size={24} className="text-gold animate-in zoom-in" />}
-                                    </div>
-                                    
-                                    <div className="mt-6 flex items-center justify-between">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em]">Precios turno</span>
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex items-center gap-1.5">
-                                                    <Sun size={12} className="text-amber-400" />
-                                                    <span className="text-xs font-black italic tracking-tighter text-white/50">{precioDiurnoStr}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <Moon size={12} className="text-indigo-400" />
-                                                    <span className="text-xs font-black italic tracking-tighter text-white/50">{precioNocturnoStr}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="bg-gold/10 px-4 py-2 rounded-xl text-gold border border-gold/20 font-black italic uppercase tracking-tighter text-sm">
-                                            Seleccionar
-                                        </div>
-                                    </div>
-                                </button>
+                                <button key={d.toISOString()} onClick={() => { setSelectedDate(d); setSelectedSlot(null); setStartSlot(null); setEndSlot(null); }} className={`flex-none w-16 md:w-20 py-6 rounded-[32px] flex flex-col items-center justify-center transition-all duration-300 border ${isSelected ? 'bg-white text-black border-white shadow-2xl scale-110' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'}`}><span className="text-[8px] font-black uppercase mb-1 opacity-60">{DAY_NAMES[d.getDay()].substring(0,2)}</span><span className="text-xl font-black">{d.getDate()}</span></button>
                             );
                         })}
                     </div>
                 </section>
 
-                {selectedResource && (
-                    <>
-                        {/* Step 2: Date & Time */}
-                        <section className="space-y-8 animate-in slide-in-from-bottom duration-500">
-                            <div className="flex items-center gap-4 px-2">
-                                <div className="flex-1 h-1.5 bg-gold rounded-full"></div>
-                                <div className="flex-1 h-1.5 bg-gold rounded-full"></div>
-                                <div className="flex-1 h-1.5 bg-white/10 rounded-full"></div>
-                                <span className="text-[10px] font-black text-gold uppercase tracking-tighter italic">Paso 2 de 3</span>
-                            </div>
+                {/* Time Slots */}
+                <section className="space-y-10">
+                    <div className="space-y-4">
+                        <h3 className="text-[10px] items-center text-slate-600 font-black uppercase tracking-[0.3em] flex gap-3"><Sun size={18} className="text-amber-500" /> Diurnos</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                            {availableScheduleSlots.filter(s => s.type === 'diurno').map(slot => {
+                                const status = getSlotStatus(slot.hour);
+                                const isSelected = rentalMode === 'hora' ? selectedSlot?.hour === slot.hour : (startSlot?.hour === slot.hour || endSlot?.hour === slot.hour || (startSlot && endSlot && slot.hour > startSlot.hour && slot.hour < endSlot.hour));
+                                const isDisabled = status !== 'Disponible';
+                                return (
+                                    <button key={slot.hour} disabled={isDisabled && !isSelected} onClick={() => { if (rentalMode === 'hora') setSelectedSlot(slot); else { if (!startSlot || (startSlot && endSlot)) { setStartSlot(slot); setEndSlot(null); } else if (slot.hour > startSlot.hour) setEndSlot(slot); else setStartSlot(slot); } }} className={`relative py-5 rounded-[22px] border transition-all duration-300 flex flex-col items-center justify-center ${isSelected ? 'bg-amber-500 border-amber-400 text-black shadow-xl' : isDisabled ? 'bg-black/20 border-white/5 text-slate-700' : 'bg-white/5 border-white/5 text-slate-300 hover:bg-white/10'}`}>
+                                        <span className="text-lg font-black italic tracking-tighter">{slot.hour}</span>
+                                        {!isDisabled && <span className={`text-[8px] font-bold mt-1 ${isSelected ? 'text-black opacity-70' : 'text-slate-500'}`}>${getPrice(slot).toLocaleString()}</span>}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <h3 className="text-[10px] items-center text-slate-600 font-black uppercase tracking-[0.3em] flex gap-3"><Moon size={18} className="text-indigo-400" /> Nocturnos</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                            {availableScheduleSlots.filter(s => s.type === 'nocturno').map(slot => {
+                                const status = getSlotStatus(slot.hour);
+                                const isSelected = rentalMode === 'hora' ? selectedSlot?.hour === slot.hour : (startSlot?.hour === slot.hour || endSlot?.hour === slot.hour || (startSlot && endSlot && slot.hour > startSlot.hour && slot.hour < endSlot.hour));
+                                const isDisabled = status !== 'Disponible';
+                                return (
+                                    <button key={slot.hour} disabled={isDisabled && !isSelected} onClick={() => { if (rentalMode === 'hora') setSelectedSlot(slot); else { if (!startSlot || (startSlot && endSlot)) { setStartSlot(slot); setEndSlot(null); } else if (slot.hour > startSlot.hour) setEndSlot(slot); else setStartSlot(slot); } }} className={`relative py-5 rounded-[22px] border transition-all duration-300 flex flex-col items-center justify-center ${isSelected ? 'bg-indigo-600 border-indigo-400 text-white shadow-xl' : isDisabled ? 'bg-black/20 border-white/5 text-slate-700' : 'bg-white/5 border-white/5 text-slate-300 hover:bg-white/10'}`}>
+                                        <span className="text-lg font-black italic tracking-tighter">{slot.hour}</span>
+                                        {!isDisabled && <span className={`text-[8px] font-bold mt-1 ${isSelected ? 'text-white opacity-70' : 'text-slate-500'}`}>${getPrice(slot).toLocaleString()}</span>}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
 
-                            <div className="space-y-2">
-                                <h2 className="text-3xl font-black italic uppercase tracking-tighter text-gold">Fecha y Horario</h2>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                                    Hoy: {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, (c) => c.toUpperCase())}
-                                </p>
-                            </div>
-
-                            {/* Rental Mode Selector */}
-                            <div className="flex gap-3 p-1.5 bg-white/[0.03] rounded-[20px] border border-white/5 w-fit">
-                                <button
-                                    onClick={() => handleModeChange('hora')}
-                                    className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl transition-all duration-300 ${rentalMode === 'hora'
-                                        ? 'bg-gold text-slate-950 shadow-lg shadow-gold/20'
-                                        : 'text-slate-500 hover:text-white hover:bg-white/5'
-                                        }`}
-                                >
-                                    <Clock size={16} />
-                                    <div className="text-left">
-                                        <span className="text-[10px] font-black uppercase tracking-widest block leading-tight">Por Hora</span>
-                                        <span className="text-[8px] font-bold uppercase tracking-wider opacity-70 block leading-tight">1 turno</span>
-                                    </div>
+                {/* Form & Payment */}
+                <div className="pt-8 space-y-12">
+                    <ReservationForm formData={formData} setFormData={setFormData} cancha={selectedResource} />
+                    
+                    <section className="space-y-4">
+                        <h3 className="text-[10px] items-center text-slate-500 font-black uppercase tracking-widest flex gap-2"><CreditCard size={16} className="text-amber-500" /> Forma de Pago</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {['Pagar en el complejo', 'Transferencia', 'MercadoPago'].map(method => (
+                                <button key={method} onClick={() => setPaymentMethod(method)} className={`p-6 rounded-[24px] border flex items-center justify-between transition-all ${paymentMethod === method ? 'bg-amber-500/10 border-amber-500 text-white shadow-lg shadow-amber-500/10' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}>
+                                    <span className="text-xs font-black uppercase tracking-widest">{method}</span>
+                                    {paymentMethod === method && <div className="size-5 bg-amber-500 rounded-full flex items-center justify-center"><Check size={12} className="text-black" /></div>}
                                 </button>
-                                <button
-                                    onClick={() => handleModeChange('franja')}
-                                    className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl transition-all duration-300 ${rentalMode === 'franja'
-                                        ? 'bg-gold text-slate-950 shadow-lg shadow-gold/20'
-                                        : 'text-slate-500 hover:text-white hover:bg-white/5'
-                                        }`}
-                                >
-                                    <Timer size={16} />
-                                    <div className="text-left">
-                                        <span className="text-[10px] font-black uppercase tracking-widest block leading-tight">Franja Horaria</span>
-                                        <span className="text-[8px] font-bold uppercase tracking-wider opacity-70 block leading-tight">Múltiples horas</span>
-                                    </div>
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {/* Calendar */}
-                                <div className="flex items-center justify-between mb-4 px-2">
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                                        {MONTH_NAMES[currentMonthDate.getMonth()]} {currentMonthDate.getFullYear()}
-                                    </h3>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={handlePrevMonth}
-                                            disabled={currentMonthDate.getMonth() === today.getMonth() && currentMonthDate.getFullYear() === today.getFullYear()}
-                                            className="p-1 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                                        >
-                                            <ChevronLeft size={16} />
-                                        </button>
-                                        <button
-                                            onClick={handleNextMonth}
-                                            className="p-1 rounded-lg hover:bg-white/10 transition-colors"
-                                        >
-                                            <ChevronRight size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Days of week header */}
-                                <div className="grid grid-cols-7 gap-1 mb-2">
-                                    {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map(day => (
-                                        <div key={day} className="text-center text-[8px] font-black uppercase tracking-widest text-slate-600">
-                                            {day}
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="grid grid-cols-7 gap-1">
-                                    {calendarDays.map((d, index) => {
-                                        if (!d) return <div key={`empty-${index}`} className="aspect-square" />;
-
-                                        const isSelected = selectedDate.toDateString() === d.toDateString();
-                                        const isPast = d < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                                        const isWknd = d.getDay() === 0 || d.getDay() === 5 || d.getDay() === 6;
-
-                                        return (
-                                            <button
-                                                key={d.toISOString()}
-                                                disabled={isPast}
-                                                onClick={() => {
-                                                    setSelectedDate(d);
-                                                    setSelectedSlot(null);
-                                                    setStartSlot(null);
-                                                    setEndSlot(null);
-                                                }}
-                                                className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-bold transition-all relative ${isSelected
-                                                    ? 'bg-gold text-slate-950 shadow-lg shadow-gold/20'
-                                                    : isPast
-                                                        ? 'opacity-20 cursor-not-allowed'
-                                                        : 'hover:bg-white/10 text-slate-300 bg-white/[0.02]'
-                                                    }`}
-                                            >
-                                                <span className="font-black">{d.getDate()}</span>
-                                                {isWknd && !isPast && (
-                                                    <div className={`absolute bottom-1 size-1 rounded-full ${isSelected ? 'bg-slate-900' : 'bg-purple-400'}`} />
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                {/* Day type badge */}
-                                <div className={`mt-4 px-4 py-2 rounded-2xl text-center ${isWeekend ? 'bg-purple-500/10 border border-purple-500/20' : 'bg-blue-500/10 border border-blue-500/20'}`}>
-                                    <span className={`text-[9px] font-black uppercase tracking-widest ${isWeekend ? 'text-purple-400' : 'text-blue-400'}`}>
-                                        {isWeekend ? '🎉 Fin de semana' : '📅 Día de semana'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Time slots */}
-                            <div className="md:col-span-2 space-y-4">
-                                {/* Available slots info */}
-                                <div className="flex items-center gap-3 flex-wrap">
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                                        {availableScheduleSlots.length} franjas disponibles para el {selectedDayName}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 rounded-lg">
-                                            <Sun size={10} className="text-amber-400" />
-                                            <span className="text-[8px] font-black text-amber-400 uppercase">Diurno</span>
-                                        </div>
-                                        <div className="flex items-center gap-1 px-2 py-1 bg-indigo-500/10 rounded-lg">
-                                            <Moon size={10} className="text-indigo-400" />
-                                            <span className="text-[8px] font-black text-indigo-400 uppercase">Nocturno</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {rentalMode === 'hora' ? (
-                                    /* Single hour selection - Split into Día and Noche */
-                                    <div className="space-y-8">
-                                        {/* Día Section */}
-                                        {availableScheduleSlots.filter(s => s.type === 'diurno').length > 0 && (
-                                            <div className="space-y-4">
-                                                <h4 className="text-sm font-black italic uppercase tracking-tighter text-amber-500 flex items-center gap-2">
-                                                    <span>🟡 Día</span>
-                                                    <div className="h-px bg-amber-500/20 flex-1"></div>
-                                                </h4>
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                    {availableScheduleSlots.filter(s => s.type === 'diurno').map(slot => {
-                                                        const status = getSlotStatus(slot.hour);
-                                                        const isSelected = selectedSlot?.hour === slot.hour;
-                                                        const isDisabled = status === 'Ocupado' || status.startsWith('Bloqueado') || status === 'Pasado';
-                                                        const price = getPrice(slot);
-
-                                                        return (
-                                                            <button
-                                                                key={slot.hour}
-                                                                disabled={isDisabled}
-                                                                onClick={() => setSelectedSlot(slot)}
-                                                                className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border overflow-hidden transition-all duration-300 ${isSelected
-                                                                    ? 'bg-amber-500 border-amber-500 shadow-lg shadow-amber-500/20 text-slate-950 scale-105 z-10'
-                                                                    : isDisabled
-                                                                        ? 'bg-transparent border-dashed border-white/10 cursor-not-allowed opacity-40 hover:opacity-40'
-                                                                        : 'bg-white/5 border-white/10 hover:border-amber-500/50 hover:bg-white/10 text-white'
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-1.5 mb-1">
-                                                                    <span className={`text-base font-black italic tracking-tighter`}>
-                                                                        {slot.hour}
-                                                                    </span>
-                                                                </div>
-                                                                {!isDisabled && (
-                                                                    <span className={`text-[9px] font-black mt-1 ${isSelected ? 'text-slate-800' : 'text-amber-400'}`}>
-                                                                        ${price.toLocaleString()}
-                                                                    </span>
-                                                                )}
-                                                                {isDisabled && (
-                                                                    <span className={`text-[7px] font-bold uppercase tracking-widest mt-1 ${status === 'Pasado' ? 'text-red-400' : 'text-slate-500'}`}>{status}</span>
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Noche Section */}
-                                        {availableScheduleSlots.filter(s => s.type === 'nocturno').length > 0 && (
-                                            <div className="space-y-4">
-                                                <h4 className="text-sm font-black italic uppercase tracking-tighter text-indigo-400 flex items-center gap-2">
-                                                    <span>🌙 Noche</span>
-                                                    <div className="h-px bg-indigo-500/20 flex-1"></div>
-                                                </h4>
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                    {availableScheduleSlots.filter(s => s.type === 'nocturno').map(slot => {
-                                                        const status = getSlotStatus(slot.hour);
-                                                        const isSelected = selectedSlot?.hour === slot.hour;
-                                                        const isDisabled = status === 'Ocupado' || status.startsWith('Bloqueado') || status === 'Pasado';
-                                                        const price = getPrice(slot);
-
-                                                        return (
-                                                            <button
-                                                                key={slot.hour}
-                                                                disabled={isDisabled}
-                                                                onClick={() => setSelectedSlot(slot)}
-                                                                className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border overflow-hidden transition-all duration-300 ${isSelected
-                                                                    ? 'bg-indigo-500 border-indigo-500 shadow-lg shadow-indigo-500/20 text-white scale-105 z-10'
-                                                                    : isDisabled
-                                                                        ? 'bg-transparent border-dashed border-white/10 cursor-not-allowed opacity-40 hover:opacity-40'
-                                                                        : 'bg-white/5 border-white/10 hover:border-indigo-500/50 hover:bg-white/10 text-white'
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-1.5 mb-1">
-                                                                    <span className={`text-base font-black italic tracking-tighter`}>
-                                                                        {slot.hour}
-                                                                    </span>
-                                                                </div>
-                                                                {!isDisabled && (
-                                                                    <span className={`text-[9px] font-black mt-1 ${isSelected ? 'text-indigo-200' : 'text-indigo-400'}`}>
-                                                                        ${price.toLocaleString()}
-                                                                    </span>
-                                                                )}
-                                                                {isDisabled && (
-                                                                    <span className={`text-[7px] font-bold uppercase tracking-widest mt-1 ${status === 'Pasado' ? 'text-red-400' : 'text-slate-500'}`}>{status}</span>
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    /* Time range selection */
-                                    <div className="space-y-6">
-                                        {/* From selector */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="size-6 rounded-lg bg-green-500/20 flex items-center justify-center">
-                                                    <span className="text-[10px] font-black text-green-400">▶</span>
-                                                </div>
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Desde</span>
-                                                {startSlot && <span className="text-xs font-black italic text-gold ml-auto">{startSlot.hour}</span>}
-                                            </div>
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                                {availableScheduleSlots.map(slot => {
-                                                    const status = getSlotStatus(slot.hour);
-                                                    const isSelected = startSlot?.hour === slot.hour;
-                                                    const isDisabled = status === 'Ocupado' || status.startsWith('Bloqueado') || status === 'Pasado';
-                                                    const isDiurno = slot.type === 'diurno';
-                                                    return (
-                                                        <button
-                                                            key={slot.hour}
-                                                            disabled={isDisabled}
-                                                            onClick={() => {
-                                                                setStartSlot(slot);
-                                                                if (endSlot && availableScheduleSlots.findIndex(s => s.hour === endSlot.hour) <= availableScheduleSlots.findIndex(s => s.hour === slot.hour)) {
-                                                                    setEndSlot(null);
-                                                                }
-                                                            }}
-                                                            className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all duration-300 ${isSelected
-                                                                ? 'bg-green-500 border-green-500 shadow-lg shadow-green-500/20 text-slate-950 scale-105 z-10'
-                                                                : isDisabled
-                                                                    ? 'bg-transparent border-dashed border-white/10 cursor-not-allowed opacity-40'
-                                                                    : isDiurno
-                                                                        ? 'bg-amber-500/5 border-amber-500/10 hover:border-green-500/40 text-white'
-                                                                        : 'bg-indigo-500/5 border-indigo-500/10 hover:border-green-500/40 text-white'
-                                                                }`}
-                                                        >
-                                                            <span className={`text-sm font-black italic tracking-tighter ${isSelected ? 'text-slate-950' : isDisabled ? 'text-slate-600' : 'text-white'}`}>{slot.hour}</span>
-                                                            <span className={`text-[7px] font-bold uppercase tracking-widest mt-0.5 ${isSelected ? 'text-slate-800' : isDiurno ? 'text-amber-500/50' : 'text-indigo-500/50'}`}>
-                                                                {isDiurno ? 'DÍA' : 'NOCHE'}
-                                                            </span>
-                                                            {!isDisabled && <span className={`text-[8px] font-black mt-0.5 ${isSelected ? 'text-green-950' : 'text-slate-500'}`}>${getPrice(slot).toLocaleString()}</span>}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* To selector */}
-                                        {startSlot && (
-                                            <div className="space-y-3 animate-in slide-in-from-bottom duration-300">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="size-6 rounded-lg bg-red-500/20 flex items-center justify-center">
-                                                        <span className="text-[10px] font-black text-red-400">■</span>
-                                                    </div>
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hasta</span>
-                                                    {endSlot && <span className="text-xs font-black italic text-gold ml-auto">{endSlot.hour}</span>}
-                                                </div>
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                                    {availableScheduleSlots
-                                                        .filter(s => availableScheduleSlots.findIndex(x => x.hour === s.hour) > availableScheduleSlots.findIndex(x => x.hour === startSlot.hour))
-                                                        .map(slot => {
-                                                            const startIdx = availableScheduleSlots.findIndex(s => s.hour === startSlot.hour);
-                                                            const thisIdx = availableScheduleSlots.findIndex(s => s.hour === slot.hour);
-                                                            const intermediateSlots = availableScheduleSlots.slice(startIdx, thisIdx);
-                                                            const allAvailable = intermediateSlots.every(s => {
-                                                                const st = getSlotStatus(s.hour);
-                                                                return st === 'Disponible' || st === 'Últimos Lugares';
-                                                            });
-                                                            const isSelected = endSlot?.hour === slot.hour;
-                                                            const hours = thisIdx - startIdx;
-                                                            const isDiurno = slot.type === 'diurno';
-                                                            const totalRangePrice = intermediateSlots.reduce((acc, s) => acc + getPrice(s), 0);
-                                                            return (
-                                                                <button
-                                                                    key={slot.hour}
-                                                                    disabled={!allAvailable}
-                                                                    onClick={() => setEndSlot(slot)}
-                                                                    className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all duration-300 ${isSelected
-                                                                        ? 'bg-red-500 border-red-500 shadow-lg shadow-red-500/20 text-white scale-105 z-10'
-                                                                        : !allAvailable
-                                                                            ? 'bg-transparent border-dashed border-white/10 cursor-not-allowed opacity-40'
-                                                                            : isDiurno
-                                                                                ? 'bg-amber-500/5 border-amber-500/10 hover:border-red-400/40 text-white'
-                                                                                : 'bg-indigo-500/5 border-indigo-500/10 hover:border-red-400/40 text-white'
-                                                                        }`}
-                                                                >
-                                                                    <span className={`text-sm font-black italic tracking-tighter ${isSelected ? 'text-white' : !allAvailable ? 'text-slate-600' : 'text-white'}`}>{slot.hour}</span>
-                                                                    <span className={`text-[7px] font-bold uppercase tracking-widest mt-0.5 ${allAvailable ? isSelected ? 'text-red-200' : 'text-gold/60' : 'text-slate-600'}`}>
-                                                                        {allAvailable ? `${hours}h · $${totalRangePrice.toLocaleString()}` : 'No disp.'}
-                                                                    </span>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-
-                        {/* Step 3: Resumen Final */}
-                        {hasValidSelection && (
-                            <section className="bg-gold/10 border border-gold/30 rounded-[40px] p-8 md:p-12 animate-in zoom-in duration-500 shadow-2xl shadow-gold/10">
-                                <div className="flex flex-col md:flex-row items-center justify-between gap-10">
-                                    <div className="flex flex-col md:flex-row items-center gap-8">
-                                        <div className="size-20 rounded-[32px] bg-gold flex items-center justify-center shadow-2xl shadow-gold/30 transform -rotate-3 hover:rotate-0 transition-transform">
-                                            {(() => { const I = ICON_MAP[selectedResource.name] || Trophy; return <I size={40} className="text-slate-950" />; })()}
-                                        </div>
-                                        <div className="space-y-2 text-center md:text-left">
-                                            <h4 className="text-3xl font-black italic uppercase tracking-tighter text-white">{selectedResource.name}</h4>
-                                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-                                                <p className="text-[10px] font-black text-gold uppercase tracking-[0.2em] bg-gold/5 px-3 py-1.5 rounded-full border border-gold/20">
-                                                    {selectedDayName} {selectedDate.getDate()} • {displayTime} HS
-                                                </p>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
-                                                    {hoursCount} {hoursCount === 1 ? 'hora' : 'horas'}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center justify-center md:justify-start gap-4 mt-2">
-                                                {activeSlotType === 'diurno'
-                                                    ? <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 rounded-xl border border-amber-500/20"><Sun size={14} className="text-amber-400" /><span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Diurno</span></div>
-                                                    : <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20"><Moon size={14} className="text-indigo-400" /><span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Nocturno</span></div>
-                                                }
-                                                <span className="text-3xl font-black italic tracking-tighter text-gold">${currentPrice.toLocaleString()}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <Link
-                                        to="/reservation-confirm"
-                                        state={confirmState}
-                                        className="w-full md:w-auto px-12 py-6 bg-gold text-slate-950 font-black italic uppercase tracking-tighter rounded-[24px] hover:bg-white hover:scale-105 transition-all shadow-2xl shadow-gold/20 flex items-center justify-center gap-3 group text-lg"
-                                    >
-                                        Siguiente Paso
-                                        <ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" strokeWidth={3} />
-                                    </Link>
-                                </div>
-                            </section>
-                        )}
-                    </>
-                )}
+                            ))}
+                        </div>
+                    </section>
+                </div>
             </main>
+
+            {/* Floating Bar */}
+            {hasValidSelection && (
+                <div className="fixed bottom-0 left-0 right-0 p-6 z-50 animate-in slide-in-from-bottom duration-500 bg-gradient-to-t from-[#050508] via-[#050508] to-transparent">
+                    <div className="max-w-4xl mx-auto bg-white text-black p-6 md:p-8 rounded-[40px] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 border-4 border-amber-500/20">
+                        <div className="flex items-center gap-6 text-center md:text-left">
+                            <div className="hidden md:flex size-16 rounded-[24px] bg-black text-white items-center justify-center"><Clock size={32} /></div>
+                            <div>
+                                <h4 className="text-2xl font-black italic uppercase tracking-tighter leading-none">{rentalMode === 'hora' ? selectedSlot.hour : `${startSlot.hour} - ${endSlot ? endSlot.hour : '...'}`} HS</h4>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{DAY_NAMES[selectedDate.getDay()]} {selectedDate.getDate()} • Total: ${currentPrice.toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <button onClick={handleBooking} disabled={bookingLoading} className="w-full md:w-auto px-12 py-5 bg-black text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-amber-600 hover:scale-105 active:scale-95 flex items-center justify-center gap-3">
+                            {bookingLoading ? <Loader2 className="animate-spin" size={20} /> : <><CalendarCheck size={20} /> Confirmar Reserva</>}
+                        </button>
+                    </div>
+                </div>
+            )}
+            <style dangerouslySetInnerHTML={{ __html: `.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }` }} />
         </div>
     );
 }

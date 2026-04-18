@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { LayoutGrid, Utensils, ShoppingBasket, Monitor, Smartphone, Volume2, Search } from 'lucide-react';
 import { fetchPromosMenu, submitOrder } from '../services/menuService';
 import PromoCard from '../components/PromoCard';
@@ -10,18 +11,21 @@ export default function MenuBoard() {
     const [loading, setLoading] = useState(true);
     const [orderSuccess, setOrderSuccess] = useState(false);
 
+    const { negocioId } = useParams();
+
     useEffect(() => {
-        const load = () => {
-            setPromos(fetchPromosMenu());
+        const load = async () => {
+            const data = await fetchPromosMenu(negocioId);
+            setPromos(data);
             setLoading(false);
         };
         load();
         window.addEventListener('storage_promos', load);
         return () => window.removeEventListener('storage_promos', load);
-    }, []);
+    }, [negocioId]);
 
-    const handleOrder = (promo) => {
-        const res = submitOrder({
+    const handleOrder = async (promo) => {
+        const res = await submitOrder(negocioId, {
             promoName: promo.title,
             price: promo.price,
             promoId: promo.id

@@ -17,19 +17,23 @@ export default function Dashboard() {
     const basePath = `/${negocioId}`;
 
     const [reservasHoyCount, setReservasHoyCount] = useState(0);
-
-    const loadStats = () => {
+    const [recentReservas, setRecentReservas] = useState([]);
+    
+    const loadStats = async () => {
+        if (!negocioId) return;
+        
+        // Fetch bookings for today
+        const { fetchReservas } = await import('../../reservas/services/reservasService');
+        const allRes = await fetchReservas(negocioId);
         const dateStr = new Date().toISOString().split('T')[0];
-        const resData = JSON.parse(localStorage.getItem('complejo_reservas') || '[]');
-        const count = resData.filter(r => r.fecha === dateStr).length;
-        setReservasHoyCount(count);
+        const hoy = allRes.filter(r => r.fecha === dateStr);
+        setReservasHoyCount(hoy.length);
+        setRecentReservas([...allRes].reverse().slice(0, 4));
     };
 
     useEffect(() => {
         loadStats();
-        window.addEventListener('storage_reservas', loadStats);
-        return () => window.removeEventListener('storage_reservas', loadStats);
-    }, []);
+    }, [negocioId]);
 
     const stats = [
         { label: 'Ingresos Hoy', value: '$45,200', change: '+12%', icon: TrendingUp, color: 'text-emerald-400', bg: 'from-emerald-500/20 to-emerald-500/5', border: 'border-emerald-500/20' },
@@ -44,8 +48,6 @@ export default function Dashboard() {
         { label: 'Caja', icon: CreditCard, path: `${basePath}/caja`, color: 'bg-blue-500' },
         { label: 'Empleados', icon: Users, path: `${basePath}/empleados`, color: 'bg-purple-500' },
     ];
-
-    const recentReservas = JSON.parse(localStorage.getItem('complejo_reservas') || '[]').reverse().slice(0, 4);
 
     return (
         <div className={`space-y-6 lg:space-y-10 transition-all duration-1000 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>

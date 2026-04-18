@@ -115,52 +115,33 @@ export function ConfigProvider({ children }) {
         loadBusinessData();
     }, [negocioId]);
 
-    const loadOrders = useCallback(() => {
+    const loadOrders = useCallback(async () => {
+        if (!negocioId) return;
         try {
-            const data = JSON.parse(localStorage.getItem(`${negocioId}_orders`)) || [];
-            setOrders(Array.isArray(data) ? data : []);
+            const { getDocs, collection, query, orderBy, limit } = await import('firebase/firestore');
+            const q = query(collection(db, 'negocios', negocioId, 'pedidos'), orderBy('timestamp', 'desc'), limit(50));
+            const snap = await getDocs(q);
+            setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         } catch (e) {
+            console.error("Error loading orders from DB:", e);
             setOrders([]);
         }
     }, [negocioId]);
 
     const loadUsers = useCallback(async () => {
+        if (!negocioId) return;
         try {
-            const key = `${negocioId}_empleados`;
-            let data = JSON.parse(localStorage.getItem(key));
-            
-            if (!data || data.length === 0) {
-                try {
-                    const configRef = doc(db, 'negocios', negocioId);
-                    const configSnap = await getDoc(configRef);
-                    
-                    if (configSnap.exists()) {
-                        const businessData = configSnap.data();
-                        const adminUser = {
-                            id: 'admin',
-                            nombre: businessData.dueno || businessData.nombre || 'Administrador',
-                            usuario: 'admin',
-                            password: businessData.password || 'admin123',
-                            rol: 'admin',
-                            email: businessData.email || '',
-                            createdAt: new Date().toISOString()
-                        };
-                        data = [adminUser];
-                        localStorage.setItem(key, JSON.stringify(data));
-                    } else {
-                        data = [];
-                    }
-                } catch (err) {
-                    data = [];
-                }
-            }
-            setUsers(Array.isArray(data) ? data : []);
+            const { fetchEmpleados } = await import('../../modules/empleados/services/empleadosService');
+            const data = await fetchEmpleados(negocioId);
+            setUsers(data || []);
         } catch (e) {
+            console.error("Error loading employees from DB:", e);
             setUsers([]);
         }
     }, [negocioId]);
 
     const loadBarProducts = useCallback(async () => {
+        if (!negocioId) return;
         try {
             const { fetchBarMenu } = await import('../../modules/bar/services/barService');
             const products = await fetchBarMenu(negocioId);
@@ -170,25 +151,25 @@ export function ConfigProvider({ children }) {
         }
     }, [negocioId]);
 
-    const loadTables = useCallback(() => {
+    const loadTables = useCallback(async () => {
+        if (!negocioId) return;
         try {
-            const key = `${negocioId}_tables`;
-            const raw = localStorage.getItem(key);
-            if (raw) {
-                const data = JSON.parse(raw);
-                setTables(Array.isArray(data) ? data : []);
+            const { tablasService } = await import('./tablasService');
+            const data = await tablasService.getTablas(negocioId);
+            
+            if (data && data.length > 0) {
+                setTables(data.sort((a,b) => a.tableNumber - b.tableNumber));
             } else {
+                // Initialize default tables if none exist in DB
                 const initial = Array.from({ length: 12 }, (_, i) => ({
                     tableNumber: i + 1,
                     status: 'disponible',
-                    mozoId: null,
-                    mozoName: null,
-                    openedAt: null
+                    id: `table-${i+1}`
                 }));
-                localStorage.setItem(key, JSON.stringify(initial));
                 setTables(initial);
             }
         } catch (e) {
+            console.error("Error loading tables from DB:", e);
             setTables([]);
         }
     }, [negocioId]);
@@ -201,64 +182,50 @@ export function ConfigProvider({ children }) {
             loadBarProducts();
         }
 
-        const handleStorage = (e) => {
-            if (e.key && e.key.startsWith(`${negocioId}_`)) {
-                loadOrders();
-                loadUsers();
-                loadTables();
-                loadBarProducts();
-            }
-        };
-
-        window.addEventListener('storage', handleStorage);
-        const interval = setInterval(() => {
-            if (negocioId) {
-                loadOrders();
-                loadUsers();
-                loadTables();
-                loadBarProducts();
-            }
-        }, 2000);
+        // Subscripciones en tiempo real para cambios críticos (Tablas y Empleados)
+        const unsubTabs = onSnapshot(collection(db, 'negocios', negocioId, 'tablas'), () => loadTables());
+        const unsubEmps = onSnapshot(collection(db, 'negocios', negocioId, 'empleados'), () => loadUsers());
 
         return () => {
-            window.removeEventListener('storage', handleStorage);
-            clearInterval(interval);
+            unsubTabs();
+            unsubEmps();
         };
     }, [negocioId, loadOrders, loadUsers, loadTables, loadBarProducts]);
 
-    const addOrder = (newOrder) => {
+    const addOrder = async (newOrder) => {
+        if (!negocioId) return;
         try {
-            const key = `${negocioId}_orders`;
-            const prevOrders = JSON.parse(localStorage.getItem(key)) || [];
-            if (!prevOrders.some(o => o.id === newOrder.id)) {
-                const nextOrders = [newOrder, ...prevOrders];
-                localStorage.setItem(key, JSON.stringify(nextOrders));
-                loadOrders();
-                window.dispatchEvent(new Event('storage'));
-            }
-        } catch(e) {}
-    };
-
-    const updateOrder = (orderId, updates) => {
-        try {
-            const key = `${negocioId}_orders`;
-            const prevOrders = JSON.parse(localStorage.getItem(key)) || [];
-            const nextOrders = prevOrders.map(o => o.id === orderId ? { ...o, ...updates } : o);
-            localStorage.setItem(key, JSON.stringify(nextOrders));
+            const { setDoc, doc, serverTimestamp } = await import('firebase/firestore');
+            await setDoc(doc(db, 'negocios', negocioId, 'pedidos', newOrder.id), {
+                ...newOrder,
+                timestamp: serverTimestamp()
+            });
             loadOrders();
-            window.dispatchEvent(new Event('storage'));
-        } catch(e) {}
+        } catch(e) {
+            console.error("Error adding order to DB:", e);
+        }
     };
 
-    const updateTable = (tableNumber, updates) => {
+    const updateOrder = async (orderId, updates) => {
+        if (!negocioId) return;
         try {
-            const key = `${negocioId}_tables`;
-            const prevTables = JSON.parse(localStorage.getItem(key)) || [];
-            const nextTables = prevTables.map(t => t.tableNumber === tableNumber ? { ...t, ...updates } : t);
-            localStorage.setItem(key, JSON.stringify(nextTables));
+            const { updateDoc, doc } = await import('firebase/firestore');
+            await updateDoc(doc(db, 'negocios', negocioId, 'pedidos', orderId), updates);
+            loadOrders();
+        } catch(e) {
+            console.error("Error updating order in DB:", e);
+        }
+    };
+
+    const updateTable = async (tableNumber, updates) => {
+        if (!negocioId) return;
+        try {
+            const { tablasService } = await import('./tablasService');
+            await tablasService.updateTable(negocioId, tableNumber, updates);
             loadTables();
-            window.dispatchEvent(new Event('storage'));
-        } catch(e) {}
+        } catch(e) {
+            console.error("Error updating table in DB:", e);
+        }
     };
 
     return (

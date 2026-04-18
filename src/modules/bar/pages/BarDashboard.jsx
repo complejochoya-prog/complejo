@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useConfig } from '../../../core/services/ConfigContext';
 import TableCard from '../components/TableCard';
 import ProductSelector from '../components/ProductSelector';
-import MozoBadge from '../components/MozoBadge';
 import { 
     LayoutGrid, 
     Users, 
@@ -10,104 +10,159 @@ import {
     Zap, 
     TrendingUp, 
     UtensilsCrossed, 
-    AlertCircle, 
     Search,
     ChevronRight,
-    ArrowUpRight
+    ArrowUpRight,
+    ChefHat,
+    Coffee,
+    Monitor,
+    Bell,
+    Filter
 } from 'lucide-react';
 import TableDetail from './TableDetail';
 
 export default function BarDashboard() {
-    const { orders, tables, barProducts, users, updateTable, updateOrder } = useConfig();
+    const { negocioId } = useParams();
+    const { orders, tables, barProducts, users, config } = useConfig();
     const [selectedTable, setSelectedTable] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState('todas'); // 'todas', 'ocupadas', 'limpieza'
 
     // Filter Mozos
-    const activeMozos = users.filter(u => u.rol?.toLowerCase() === 'mozo' && (u.estado === 'activo' || u.activo === true));
+    const activeMozos = users.filter(u => 
+        (u.rol?.toLowerCase() === 'mozo' || u.role?.toLowerCase() === 'mozo') && 
+        (u.estado === 'activo' || u.active === true)
+    );
 
     // Stats
     const stats = useMemo(() => {
         const activeOrders = orders.filter(o => o.status !== 'paid');
         const revenueToday = orders.filter(o => o.status === 'paid').reduce((acc, o) => acc + (o.total || 0), 0);
         return {
-            occupied: tables.filter(t => t.status !== 'disponible').length,
+            occupied: tables.filter(t => t.status === 'ocupada' || t.status === 'atendiendo').length,
             revenue: revenueToday,
             mozos: activeMozos.length,
-            pendingOrders: activeOrders.length
+            pendingOrders: activeOrders.reduce((acc, o) => acc + (o.items?.length || 1), 0)
         };
     }, [orders, tables, activeMozos]);
 
-    // Group tables by state for the overview
-    const filteredTables = tables.filter(t => t.tableNumber.toString().includes(searchTerm));
+    // Group tables by state
+    const filteredTables = tables.filter(t => {
+        const matchesSearch = t.tableNumber.toString().includes(searchTerm);
+        if (activeFilter === 'ocupadas') return matchesSearch && (t.status === 'ocupada' || t.status === 'atendiendo');
+        if (activeFilter === 'limpieza') return matchesSearch && t.status === 'limpiando';
+        return matchesSearch;
+    });
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white flex flex-col">
-            {/* Top Bar - Mozos & Stats */}
-            <header className="p-8 border-b border-white/5 space-y-8 bg-slate-900/40">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase">Bar Central</h1>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em] mt-1">Control Operativo de Salon</p>
+        <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans">
+            {/* Header / Infobar */}
+            <header className="px-6 lg:px-10 py-8 border-b border-white/5 bg-slate-950/50 backdrop-blur-3xl sticky top-0 z-30">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                                <ChefHat size={22} />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl lg:text-4xl font-black italic tracking-tighter uppercase leading-none">
+                                    CENTRO <span className="text-emerald-500">OPERATIVO</span>
+                                </h1>
+                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-1">Sala de Control Gastro • {config?.nombre || negocioId}</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-2xl border border-white/5 overflow-x-auto scrollbar-hide">
-                        {activeMozos.map(m => (
-                            <div key={m.id} className="flex items-center gap-3 px-4 py-2 bg-slate-900 rounded-xl border border-white/5 min-w-[150px]">
-                                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                                    <Users size={16} />
+                    {/* Mozos En Vivo */}
+                    <div className="flex items-center gap-3 bg-black/40 p-2 rounded-3xl border border-white/5 shadow-inner">
+                        <div className="px-4 py-2 border-r border-white/10 hidden sm:block">
+                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">Personal Activo</p>
+                            <p className="text-xs font-black text-emerald-500 mt-1 uppercase italic tracking-tighter">Live Tracker</p>
+                        </div>
+                        <div className="flex -space-x-2 px-2">
+                            {activeMozos.slice(0, 5).map(m => (
+                                <div key={m.id} title={m.nombre} className="w-10 h-10 rounded-xl bg-slate-800 border-2 border-slate-950 flex items-center justify-center text-[11px] font-black text-white hover:-translate-y-1 transition-transform cursor-help">
+                                    {(m.nombre || 'M')[0]}
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase italic tracking-tighter leading-none">{m.nombre}</p>
-                                    <p className="text-[8px] font-bold text-emerald-500 uppercase mt-0.5">En Turno</p>
+                            ))}
+                            {activeMozos.length > 5 && (
+                                <div className="w-10 h-10 rounded-xl bg-slate-900 border-2 border-slate-950 flex items-center justify-center text-[10px] font-black text-slate-500">
+                                    +{activeMozos.length - 5}
                                 </div>
-                            </div>
-                        ))}
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                            <Bell size={20} />
+                        </button>
+                        <button className="hidden lg:flex items-center gap-3 px-6 py-3 bg-emerald-500 text-black rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-[0_0_30px_rgba(16,185,129,0.2)] hover:scale-105 transition-all active:scale-95">
+                            <Zap size={14} fill="currentColor" /> Nueva Orden
+                        </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Dashboard Stats Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
                     {[
-                        { label: 'Mesas Ocupadas', val: `${stats.occupied} / ${tables.length}`, icon: LayoutGrid, color: 'amber' },
-                        { label: 'Recaudación Hoy', val: `$${stats.revenue.toLocaleString()}`, icon: TrendingUp, color: 'emerald' },
-                        { label: 'Mozos en Salon', val: stats.mozos, icon: Users, color: 'indigo' },
-                        { label: 'Pedidos Activos', val: stats.pendingOrders, icon: Zap, color: 'rose' }
-                    ].map((s, idx) => (
-                        <div key={idx} className="bg-slate-900/60 p-5 rounded-[28px] border border-white/5 flex items-center justify-between">
-                            <div>
-                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
-                                <p className="text-xl font-black italic tracking-tighter">{s.val}</p>
+                        { label: 'Ocupación', value: `${stats.occupied}/${tables.length}`, sub: 'Mesas Activas', icon: LayoutGrid, color: 'emerald', bg: 'bg-emerald-500/10' },
+                        { label: 'Productividad', value: stats.pendingOrders, sub: 'Items en Marcha', icon: Clock, color: 'blue', bg: 'bg-blue-500/10' },
+                        { label: 'Caja Salon', value: `$${stats.revenue.toLocaleString()}`, sub: 'Recaudación Hoy', icon: TrendingUp, color: 'amber', bg: 'bg-amber-500/10' },
+                        { label: 'Servicio', value: stats.mozos, sub: 'Mozos en Turno', icon: Users, color: 'rose', bg: 'bg-rose-500/10' },
+                    ].map((s, i) => (
+                        <div key={i} className="group relative bg-slate-900/40 p-6 rounded-[32px] border border-white/5 hover:border-white/10 transition-all shadow-xl">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className={`w-12 h-12 ${s.bg} rounded-2xl flex items-center justify-center text-${s.color}-500 border border-${s.color}-500/20 shadow-lg`}>
+                                    <s.icon size={22} />
+                                </div>
+                                <div className="flex items-center gap-1 text-[8px] font-black text-slate-600 uppercase tracking-widest">
+                                    Live <div className={`w-1.5 h-1.5 rounded-full bg-${s.color}-500 animate-ping`} />
+                                </div>
                             </div>
-                            <div className={`w-12 h-12 bg-${s.color}-500/10 text-${s.color}-500 rounded-xl flex items-center justify-center border border-${s.color}-500/20`}>
-                                <s.icon size={20} />
-                            </div>
+                            <h4 className="text-2xl font-black italic tracking-tighter text-white">{s.value}</h4>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">{s.sub}</p>
                         </div>
                     ))}
                 </div>
             </header>
 
-            {/* Main Content */}
-            <div className="flex-1 flex overflow-hidden">
-                {/* Left Side: Tables Grid */}
-                <main className="flex-1 p-8 overflow-y-auto border-r border-white/5 bg-slate-950/20">
-                    <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-4">
-                            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
-                                <LayoutGrid size={16} /> Salón Principal
-                            </h2>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
+            {/* Main Content Areas */}
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-opacity-5">
+                
+                {/* Tables Navigator */}
+                <main className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-10 scrollbar-hide">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/5">
+                            {['todas', 'ocupadas', 'limpieza'].map(f => (
+                                <button 
+                                    key={f}
+                                    onClick={() => setActiveFilter(f)}
+                                    className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeFilter === f ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-slate-500 hover:text-white'}`}
+                                >
+                                    {f}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:w-64">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                                 <input 
                                     type="text"
-                                    placeholder="Nro mesa..."
+                                    placeholder="Buscar Mesa..."
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
-                                    className="bg-slate-900/50 border border-white/5 rounded-xl py-2 pl-9 pr-4 text-[11px] font-bold focus:outline-none focus:border-indigo-500/30 w-32"
+                                    className="w-full bg-slate-900/80 border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40 transition-all placeholder:text-slate-600"
                                 />
                             </div>
+                            <button className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500 border border-white/5">
+                                <Filter size={18} />
+                            </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
                         {filteredTables.map(t => (
                             <TableCard 
                                 key={t.tableNumber}
@@ -117,52 +172,69 @@ export default function BarDashboard() {
                             />
                         ))}
                     </div>
+
+                    {filteredTables.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                            <div className="w-20 h-20 bg-slate-900 rounded-[2rem] flex items-center justify-center text-slate-700">
+                                <Search size={40} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black uppercase italic tracking-tighter text-slate-500">No hay resultados</h3>
+                                <p className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Intenta con otro número de mesa o filtro</p>
+                            </div>
+                        </div>
+                    )}
                 </main>
 
-                {/* Right Side: Activity & Global Products */}
-                <aside className="w-[400px] border-l border-white/5 flex flex-col bg-slate-900/30">
-                    <div className="p-6 border-b border-white/5">
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 flex items-center gap-2">
-                             <Zap size={14} /> Última Actividad
-                        </h2>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                        {[...orders].reverse().slice(0, 8).map((o, idx) => (
-                            <div key={idx} className="flex items-center gap-4 p-4 bg-slate-950/50 rounded-2xl border border-white/5 group hover:border-white/10 transition-all">
-                                <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-slate-600">
-                                    <Clock size={16} />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between">
-                                        <p className="text-[9px] font-black uppercase tracking-tighter text-white italic">Mesa #{o.table}</p>
-                                        <p className="text-[8px] font-bold text-slate-600">{o.createdAt ? new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recién'}</p>
+                {/* Right Analytics Sidebar */}
+                <aside className="w-full lg:w-[450px] bg-slate-950/40 border-l border-white/5 flex flex-col backdrop-blur-xl">
+                    <div className="p-8 border-b border-white/5">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 flex items-center gap-2">
+                                <TrendingUp size={14} /> Actividad en Tiempo Real
+                            </h3>
+                            <button className="text-[8px] font-black uppercase text-slate-500 hover:text-white transition-colors">Ver Todo</button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {[...orders].reverse().slice(0, 5).map((o, idx) => (
+                                <div key={idx} className="group flex items-center gap-4 p-5 bg-slate-900/30 rounded-[2rem] border border-white/5 hover:border-emerald-500/30 transition-all hover:bg-slate-900/50 cursor-pointer">
+                                    <div className="w-12 h-12 rounded-2xl bg-black/40 flex items-center justify-center text-emerald-500 border border-white/5 group-hover:scale-110 transition-transform">
+                                        <ArrowUpRight size={20} />
                                     </div>
-                                    <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{o.productName || (o.items?.length > 0 ? o.items[0].nombre : 'Varios productos')}</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <p className="text-[9px] font-black text-amber-500/80 uppercase">Por: {o.mozoName || 'Sistema'}</p>
-                                        <ArrowUpRight size={10} className="text-slate-700" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start">
+                                            <p className="text-sm font-black italic uppercase tracking-tighter text-white">Mesa #{o.table}</p>
+                                            <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">+$ {o.total || 0}</span>
+                                        </div>
+                                        <p className="text-[11px] font-bold text-slate-500 truncate mt-1">
+                                            {o.items?.length > 0 ? o.items.map(i => i.nombre).join(', ') : o.productName || 'Orden sin detalle'}
+                                        </p>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="p-6 bg-slate-900/60 border-t border-white/5">
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 mb-4">
-                            <UtensilsCrossed size={14} /> Lista de Productos
-                        </h2>
-                        <div className="h-[300px]">
+                    <div className="flex-1 p-8 overflow-hidden flex flex-col">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                                <Coffee size={14} />
+                            </div>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Acceso Rápido Productos</h3>
+                        </div>
+                        <div className="flex-1 overflow-y-auto scrollbar-hide">
                             <ProductSelector 
                                 products={barProducts}
                                 onSelect={(p) => {
                                     if (selectedTable) {
-                                        // Auto add to selected table
-                                        console.log("Add to table", selectedTable.tableNumber, p);
+                                        // Auto add logic here or show confirmation
+                                        console.log("Adding product", p, "to table", selectedTable.tableNumber);
                                     } else {
-                                        alert("Selecciona una mesa primero");
+                                        // Quick generic order?
                                     }
                                 }}
+                                gridCols={2}
                             />
                         </div>
                     </div>
@@ -171,8 +243,14 @@ export default function BarDashboard() {
 
             {/* Modal Detail Overlay */}
             {selectedTable && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="w-full max-w-5xl h-[85vh] bg-slate-950 rounded-[48px] border border-white/10 shadow-3xl overflow-hidden">
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:p-10 bg-[#020617]/90 backdrop-blur-md animate-in fade-in duration-300 pointer-events-auto"
+                    onClick={() => setSelectedTable(null)}
+                >
+                    <div 
+                        className="w-full max-w-7xl h-full max-h-[90vh] bg-[#020617] rounded-[4rem] border-2 border-white/10 shadow-[0_0_100px_rgba(16,185,129,0.1)] overflow-hidden flex flex-col animate-in zoom-in-95 duration-500"
+                        onClick={e => e.stopPropagation()}
+                    >
                         <TableDetail 
                             table={selectedTable} 
                             onClose={() => setSelectedTable(null)} 

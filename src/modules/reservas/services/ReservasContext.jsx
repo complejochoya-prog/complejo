@@ -54,12 +54,24 @@ export default function ReservasProvider({ children }) {
         });
 
         // 4. CONFIG GENERAL
+        const DEFAULT_SCHEDULE = [];
+        for (let h = 8; h <= 23; h++) {
+            DEFAULT_SCHEDULE.push({ 
+                hour: `${h}:00`, 
+                type: h >= 19 ? 'nocturno' : 'diurno', 
+                priceDiurno: 5000, 
+                precioNocturno: 7000 
+            });
+        }
+
         onSnapshot(doc(db, 'negocios', negocioId, 'configuracion', 'general'), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
                 if (data.timeSlots) setTimeSlots(data.timeSlots);
-                if (data.timeSchedule) setTimeSchedule(data.timeSchedule);
+                setTimeSchedule(data.timeSchedule || DEFAULT_SCHEDULE);
                 if (data.blockedSlots) setBlockedSlots(data.blockedSlots);
+            } else {
+                setTimeSchedule(DEFAULT_SCHEDULE);
             }
         });
 
@@ -86,6 +98,12 @@ export default function ReservasProvider({ children }) {
 
     const addBooking = async (bookingData, payment = null) => {
         const id = `res-${Date.now()}`;
+        
+        if (!negocioId) {
+            console.error("Critical Error: negocioId is undefined in addBooking. Check ConfigContext.");
+            throw new Error("No se pudo identificar el negocio para realizar la reserva.");
+        }
+
         const payload = {
             ...bookingData,
             id,
@@ -93,10 +111,17 @@ export default function ReservasProvider({ children }) {
             timestamp: serverTimestamp(),
             status: 'Confirmado'
         };
-        await setDoc(doc(db, 'negocios', negocioId, 'reservas', id), payload);
+
+        try {
+            const reservaRef = doc(db, 'negocios', negocioId, 'reservas', id);
+            await setDoc(reservaRef, payload);
+        } catch (err) {
+            console.error("Firestore Error in addBooking:", err);
+            throw err;
+        }
 
         if (payment) {
-            const { cajaService } = await import('../../../core/services/firestoreService');
+            const { cajaService } = await import('../../../core/services/cajaService');
             await cajaService.addMovement(negocioId, {
                 tipo: 'entrada',
                 categoria: 'Reserva Online',
@@ -125,6 +150,12 @@ export default function ReservasProvider({ children }) {
         return !live;
     };
 
+    const getAvailableSlots = (date) => {
+        // Simple implementation for now: return the base schedule
+        // and let checkAvailability handle the "Occupied" status in the UI
+        return timeSchedule;
+    };
+
     const value = {
         resources,
         timeSlots,
@@ -138,6 +169,7 @@ export default function ReservasProvider({ children }) {
         removeResource,
         addBooking,
         checkAvailability,
+        getAvailableSlots,
         updateTimeSchedule: async (schedule) => {
             await updateDoc(doc(db, 'negocios', negocioId, 'configuracion', 'general'), {
                 timeSchedule: schedule

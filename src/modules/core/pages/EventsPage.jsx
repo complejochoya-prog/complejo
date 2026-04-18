@@ -12,9 +12,13 @@ export default function EventsPage() {
     const [orderSuccess, setOrderSuccess] = useState(false);
 
     useEffect(() => {
-        setPromos(fetchPromos().filter(p => p.active));
+        const load = async () => {
+            const data = await fetchPromos(negocioId);
+            setPromos(data.filter(p => p.active));
+        };
+        load();
         setAnimate(true);
-    }, []);
+    }, [negocioId]);
 
     const handleOrder = (promo) => {
         const res = submitOrder({

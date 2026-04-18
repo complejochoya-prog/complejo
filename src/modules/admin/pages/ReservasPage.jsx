@@ -15,33 +15,32 @@ import {
     XCircle,
     Download
 } from 'lucide-react';
-import { fetchCanchasDisponibles } from '../../client_app/services/clientService';
+import { useParams } from 'react-router-dom';
+import { useReservas } from '../../reservas/services/ReservasContext';
+import { db } from '../../../firebase/config';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function ReservasPage() {
-    const [reservas, setReservas] = useState([]);
-    const [canchas, setCanchas] = useState({});
+    const { negocioId } = useParams();
+    const { bookings: reservas, resources: listEspacios } = useReservas();
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDate, setFilterDate] = useState('');
 
-    const loadReservas = () => {
-        const data = localStorage.getItem('complejo_reservas');
-        setReservas(data ? JSON.parse(data).reverse() : []);
-    };
+    const canchas = {};
+    listEspacios.forEach(c => canchas[c.id || c.id] = c.name || c.nombre || c.id);
 
-    const loadCanchas = async () => {
-        // We use fetchCanchasDisponibles to get the names of the spaces
-        const list = await fetchCanchasDisponibles('giovanni');
-        const map = {};
-        list.forEach(c => map[c.id] = c.nombre);
-        setCanchas(map);
+    const updateReservaStatus = async (id, newStatus) => {
+        try {
+            const ref = doc(db, 'negocios', negocioId, 'reservas', id);
+            await updateDoc(ref, { 
+                status: newStatus,
+                updatedAt: serverTimestamp()
+            });
+        } catch (e) {
+            console.error("Error updating status:", e);
+        }
     };
-
-    useEffect(() => {
-        loadReservas();
-        loadCanchas();
-        window.addEventListener('storage_reservas', loadReservas);
-        return () => window.removeEventListener('storage_reservas', loadReservas);
-    }, []);
 
     const filtered = reservas.filter(res => {
         const matchSearch = ((res.cliente?.nombre || '') + ' ' + (res.cliente?.apellido || '')).toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,16 +55,6 @@ export default function ReservasPage() {
             case 'cancelada': return 'bg-red-500/10 text-red-500 border-red-500/20';
             default: return 'bg-slate-500/10 text-slate-500 border-slate-500/20';
         }
-    };
-
-    const updateReservaStatus = (id, newStatus) => {
-        const allData = JSON.parse(localStorage.getItem('complejo_reservas') || '[]');
-        const newData = allData.map(res => 
-            res.id === id ? { ...res, status: newStatus } : res
-        );
-        localStorage.setItem('complejo_reservas', JSON.stringify(newData));
-        loadReservas();
-        window.dispatchEvent(new Event('storage_reservas'));
     };
 
     // Logic for Visual Grid

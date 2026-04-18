@@ -1,21 +1,41 @@
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { Tag, Plus, Edit2, Trash2, Save, X, Eye, EyeOff, Sparkles, PartyPopper } from 'lucide-react';
 import { fetchPromos, savePromo, deletePromo, togglePromoStatus } from '../services/promosService';
 
 export default function PromosPage() {
+    const { negocioId } = useParams();
     const [promos, setPromos] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedPromo, setSelectedPromo] = useState(null);
     const [formData, setFormData] = useState({ title: '', desc: '', price: '', type: 'promo', img: '', link: '' });
 
     useEffect(() => {
-        load();
-        window.addEventListener('storage_promos', load);
-        return () => window.removeEventListener('storage_promos', load);
-    }, []);
+        loadData();
+    }, [negocioId]);
 
-    const load = () => {
-        setPromos(fetchPromos());
+    const loadData = async () => {
+        const data = await fetchPromos(negocioId);
+        setPromos(data);
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        await savePromo(negocioId, { ...formData, id: selectedPromo?.id });
+        setShowModal(false);
+        loadData();
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('¿Eliminar esta promo?')) {
+            await deletePromo(negocioId, id);
+            loadData();
+        }
+    };
+
+    const handleToggleStatus = async (id, currentStatus) => {
+        await togglePromoStatus(negocioId, id, currentStatus);
+        loadData();
     };
 
     const handleEdit = (prm) => {
@@ -35,12 +55,6 @@ export default function PromosPage() {
         setSelectedPromo(null);
         setFormData({ title: '', desc: '', price: '', type: 'promo', img: '', link: '' });
         setShowModal(true);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        savePromo({ ...formData, id: selectedPromo?.id });
-        setShowModal(false);
     };
 
     return (
@@ -103,7 +117,7 @@ export default function PromosPage() {
                             
                             <div className="flex items-center gap-2">
                                 <button 
-                                    onClick={() => togglePromoStatus(prm.id)}
+                                    onClick={() => handleToggleStatus(prm.id, prm.active)}
                                     className={`p-3 rounded-2xl border transition-all ${prm.active ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}
                                 >
                                     {prm.active ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -115,7 +129,7 @@ export default function PromosPage() {
                                     <Edit2 size={16} />
                                 </button>
                                 <button 
-                                    onClick={() => deletePromo(prm.id)}
+                                    onClick={() => handleDelete(prm.id)}
                                     className="p-3 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-2xl border border-white/5 transition-all"
                                 >
                                     <Trash2 size={16} />
@@ -146,7 +160,7 @@ export default function PromosPage() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                        <form onSubmit={handleSave} className="p-8 space-y-6">
                             <div className="grid grid-cols-2 gap-4 bg-white/5 p-1 rounded-2xl border border-white/5">
                                 <button 
                                     type="button"
