@@ -1,4 +1,8 @@
-const STORAGE_KEY = 'complejo_torneos';
+import { db } from '../../../firebase/config';
+import { 
+    collection, doc, getDocs, setDoc, updateDoc, 
+    deleteDoc, query, orderBy, serverTimestamp 
+} from 'firebase/firestore';
 
 const DEFAULT_TOURNAMENTS = [
     { 
@@ -8,7 +12,6 @@ const DEFAULT_TOURNAMENTS = [
         estado: 'en_curso', 
         equipos: 10, 
         premio: '$50.000', 
-        createdAt: new Date().toISOString(),
         standings: [
             { pos: 1, equipo: 'Los Pibes FC', pj: 5, pg: 4, pe: 1, pp: 0, gf: 15, gc: 3, pts: 13 },
             { pos: 2, equipo: 'Real Bañil', pj: 5, pg: 3, pe: 1, pp: 1, gf: 12, gc: 5, pts: 10 },
@@ -23,9 +26,10 @@ const DEFAULT_TOURNAMENTS = [
             { jugador: 'C. Tevez', equipo: 'Real Bañil', goles: 6 },
         ],
         campeon: null,
-        goleador: null
+        goleador: null,
+        abierto: true
     },
-    { id: 't2', nombre: 'Torneo Padel Amateur', formato: 'Grupos + Playoff', estado: 'inscripcion', equipos: 8, premio: 'Paletas + $20.000', createdAt: new Date().toISOString() },
+    { id: 't2', nombre: 'Torneo Padel Amateur', formato: 'Grupos + Playoff', estado: 'inscripcion', equipos: 8, premio: 'Paletas + $20.000', abierto: true },
     { 
         id: 't3', 
         nombre: 'Copa Relámpago', 
@@ -33,7 +37,6 @@ const DEFAULT_TOURNAMENTS = [
         estado: 'finalizado', 
         equipos: 16, 
         premio: '$100.000', 
-        createdAt: new Date().toISOString(),
         campeon: 'Atlético Rápido',
         goleador: 'Juan Pérez',
         standings: [],
@@ -42,54 +45,51 @@ const DEFAULT_TOURNAMENTS = [
         ],
         scorers: [
             { jugador: 'Juan Pérez', equipo: 'Atlético Rápido', goles: 12 }
-        ]
+        ],
+        abierto: false
     }
 ];
 
 export async function fetchTournaments(negocioId) {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const data = localStorage.getItem(STORAGE_KEY);
-            if (!data) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_TOURNAMENTS));
-                resolve(DEFAULT_TOURNAMENTS);
-            } else {
-                resolve(JSON.parse(data));
-            }
-        }, 300);
-    });
+    if (!negocioId) return [];
+    try {
+        const q = query(collection(db, 'negocios', negocioId, 'tournaments'), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            // Initializing with defaults if none exist
+            return DEFAULT_TOURNAMENTS;
+        }
+        
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+        console.error("Error fetching tournaments:", e);
+        return DEFAULT_TOURNAMENTS;
+    }
 }
 
 export async function saveTournament(negocioId, tournamentData) {
-    const data = localStorage.getItem(STORAGE_KEY);
-    let tournaments = data ? JSON.parse(data) : [...DEFAULT_TOURNAMENTS];
+    if (!negocioId) return false;
+    const id = tournamentData.id || `t_${Date.now()}`;
+    const ref = doc(db, 'negocios', negocioId, 'tournaments', id);
     
-    if (tournamentData.id) {
-        tournaments = tournaments.map(t => t.id === tournamentData.id ? { ...t, ...tournamentData } : t);
-    } else {
-        const newTournament = {
-            ...tournamentData,
-            id: `t_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-            createdAt: new Date().toISOString(),
-            standings: [],
-            matches: [],
-            scorers: [],
-            campeon: null,
-            goleador: null
-        };
-        tournaments.push(newTournament);
-    }
+    await setDoc(ref, {
+        ...tournamentData,
+        id,
+        createdAt: serverTimestamp(),
+        standings: tournamentData.standings || [],
+        matches: tournamentData.matches || [],
+        scorers: tournamentData.scorers || [],
+        campeon: tournamentData.campeon || null,
+        goleador: tournamentData.goleador || null
+    }, { merge: true });
     
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tournaments));
     return true;
 }
 
 export async function deleteTournament(negocioId, tournamentId) {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return false;
-    let tournaments = JSON.parse(data);
-    tournaments = tournaments.filter(t => t.id !== tournamentId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tournaments));
+    if (!negocioId) return false;
+    await deleteDoc(doc(db, 'negocios', negocioId, 'tournaments', tournamentId));
     return true;
 }
 
@@ -112,13 +112,11 @@ export async function fetchScorers(negocioId, tournamentId) {
 }
 
 export async function saveTournamentDetails(negocioId, tournamentId, details) {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return false;
-    let tournaments = JSON.parse(data);
-    tournaments = tournaments.map(t => 
-        t.id === tournamentId ? { ...t, ...details } : t
-    );
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tournaments));
+    if (!negocioId) return false;
+    const ref = doc(db, 'negocios', negocioId, 'tournaments', tournamentId);
+    await updateDoc(ref, {
+        ...details,
+        updatedAt: serverTimestamp()
+    });
     return true;
 }
-

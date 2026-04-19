@@ -4,22 +4,45 @@ import { migrateLocalStorageToFirestore } from './firestoreService';
 import { db } from '../../firebase/config';
 import { doc, getDoc, setDoc, onSnapshot, collection } from 'firebase/firestore';
 
-const ConfigContext = createContext();
+export const ConfigContext = createContext();
 
 export function ConfigProvider({ children }) {
-    const { negocioId } = useParams();
+    const location = useLocation();
+    const params = useParams();
+    
+    // 🔥 Robust NegocioId Detection
+    const [negocioId, setNegocioId] = useState(() => {
+        // 1. Try URL parameters (matched by React Router)
+        if (params.negocioId) return params.negocioId;
+        
+        // 2. Try URL Path parsing (Fallback for direct access)
+        const pathParts = window.location.pathname.split('/');
+        const id = pathParts[1];
+        const reserved = ['home', 'login', 'superadmin', 'help', 'admin', 'giovanni'];
+        return (id && id.length > 0 && !reserved.includes(id)) ? id : 'giovanni';
+    });
+
     const [config, setConfig] = useState(null);
     const [subscription, setSubscription] = useState(null);
     const [activeModules, setActiveModules] = useState([]);
     const [lastSync, setLastSync] = useState(Date.now());
 
+    // Sync negocioId when URL changes
+    useEffect(() => {
+        const pathParts = location.pathname.split('/');
+        const id = pathParts[1];
+        const reserved = ['home', 'login', 'superadmin', 'help', 'admin', 'giovanni'];
+        if (id && id.length > 0 && !reserved.includes(id) && id !== negocioId) {
+            setNegocioId(id);
+        } else if (params.negocioId && params.negocioId !== negocioId) {
+            setNegocioId(params.negocioId);
+        }
+    }, [location.pathname, params.negocioId, negocioId]);
+
     // --- FIREBASE MIGRATION & REALTIME SYNC ---
     useEffect(() => {
         if (negocioId) {
-            // 1. Run migration if needed
             migrateLocalStorageToFirestore(negocioId);
-
-            // 2. Setup a global "pulse" for state updates cross-component
             const unsub = onSnapshot(collection(db, 'negocios', negocioId, 'configuracion'), () => {
                 setLastSync(Date.now());
             });
@@ -47,7 +70,6 @@ export function ConfigProvider({ children }) {
             try {
                 const { ALL_MODULES, getModulesByPlan } = await import('../config/modulePlans');
                 
-                // 1. Load Config
                 const configRef = doc(db, 'negocios', negocioId, 'configuracion', 'general');
                 const configSnap = await getDoc(configRef);
 
@@ -60,7 +82,6 @@ export function ConfigProvider({ children }) {
                     currentPlan = configData.plan || 'Free';
                     rawActiveModules = configData.activeModules || [];
                 } else {
-                    // MOCK FALLBACK FOR DEVELOPMENT / DEMONSTRATION
                     const mocks = {
                         'giovanni': { nombre: 'Complejo Giovanni', plan: 'Premium' },
                         'padel-pro': { nombre: 'Padel Pro Center', plan: 'Basic' },
@@ -72,11 +93,11 @@ export function ConfigProvider({ children }) {
                         currentPlan = mocks[negocioId].plan;
                         setConfig(mocks[negocioId]);
                     } else {
-                        throw new Error("Negocio no encontrado");
+                        // Fallback generic
+                        setConfig({ nombre: negocioId.toUpperCase(), plan: 'Free' });
                     }
                 }
 
-                // Calculate final active modules
                 if (negocioId === 'giovanni') {
                     setActiveModules(ALL_MODULES.map(m => m.id));
                 } else {
@@ -85,7 +106,6 @@ export function ConfigProvider({ children }) {
                     setActiveModules(finalModules);
                 }
 
-                // 2. Load Subscription
                 const subRef = doc(db, 'saas_suscripciones', negocioId);
                 const subSnap = await getDoc(subRef);
 
@@ -103,9 +123,6 @@ export function ConfigProvider({ children }) {
                 if (negocioId === 'giovanni') {
                     setConfig({ nombre: 'Complejo Giovanni', activeModules: ['reservas', 'bar', 'torneos'] });
                     setActiveModules(['reservas', 'bar', 'torneos']);
-                    setError(null);
-                } else {
-                    setError(err.message);
                 }
             } finally {
                 setLoading(false);
@@ -123,7 +140,6 @@ export function ConfigProvider({ children }) {
             const snap = await getDocs(q);
             setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         } catch (e) {
-            console.error("Error loading orders from DB:", e);
             setOrders([]);
         }
     }, [negocioId]);
@@ -135,7 +151,6 @@ export function ConfigProvider({ children }) {
             const data = await fetchEmpleados(negocioId);
             setUsers(data || []);
         } catch (e) {
-            console.error("Error loading employees from DB:", e);
             setUsers([]);
         }
     }, [negocioId]);
@@ -146,9 +161,7 @@ export function ConfigProvider({ children }) {
             const { fetchBarMenu } = await import('../../modules/bar/services/barService');
             const products = await fetchBarMenu(negocioId);
             setBarProducts(Array.isArray(products) ? products : []);
-        } catch (e) {
-            console.error("Error loading products:", e);
-        }
+        } catch (e) {}
     }, [negocioId]);
 
     const loadTables = useCallback(async () => {
@@ -156,11 +169,9 @@ export function ConfigProvider({ children }) {
         try {
             const { tablasService } = await import('./tablasService');
             const data = await tablasService.getTablas(negocioId);
-            
             if (data && data.length > 0) {
                 setTables(data.sort((a,b) => a.tableNumber - b.tableNumber));
             } else {
-                // Initialize default tables if none exist in DB
                 const initial = Array.from({ length: 12 }, (_, i) => ({
                     tableNumber: i + 1,
                     status: 'disponible',
@@ -169,7 +180,6 @@ export function ConfigProvider({ children }) {
                 setTables(initial);
             }
         } catch (e) {
-            console.error("Error loading tables from DB:", e);
             setTables([]);
         }
     }, [negocioId]);
@@ -180,63 +190,50 @@ export function ConfigProvider({ children }) {
             loadUsers();
             loadTables();
             loadBarProducts();
+            
+            const unsubTabs = onSnapshot(collection(db, 'negocios', negocioId, 'tablas'), () => loadTables());
+            const unsubEmps = onSnapshot(collection(db, 'negocios', negocioId, 'empleados'), () => loadUsers());
+            return () => {
+                unsubTabs();
+                unsubEmps();
+            };
         }
-
-        // Subscripciones en tiempo real para cambios críticos (Tablas y Empleados)
-        const unsubTabs = onSnapshot(collection(db, 'negocios', negocioId, 'tablas'), () => loadTables());
-        const unsubEmps = onSnapshot(collection(db, 'negocios', negocioId, 'empleados'), () => loadUsers());
-
-        return () => {
-            unsubTabs();
-            unsubEmps();
-        };
     }, [negocioId, loadOrders, loadUsers, loadTables, loadBarProducts]);
 
-    const addOrder = async (newOrder) => {
-        if (!negocioId) return;
-        try {
-            const { setDoc, doc, serverTimestamp } = await import('firebase/firestore');
-            await setDoc(doc(db, 'negocios', negocioId, 'pedidos', newOrder.id), {
-                ...newOrder,
-                timestamp: serverTimestamp()
-            });
-            loadOrders();
-        } catch(e) {
-            console.error("Error adding order to DB:", e);
-        }
-    };
-
-    const updateOrder = async (orderId, updates) => {
-        if (!negocioId) return;
-        try {
-            const { updateDoc, doc } = await import('firebase/firestore');
-            await updateDoc(doc(db, 'negocios', negocioId, 'pedidos', orderId), updates);
-            loadOrders();
-        } catch(e) {
-            console.error("Error updating order in DB:", e);
-        }
-    };
-
-    const updateTable = async (tableNumber, updates) => {
-        if (!negocioId) return;
-        try {
-            const { tablasService } = await import('./tablasService');
-            await tablasService.updateTable(negocioId, tableNumber, updates);
-            loadTables();
-        } catch(e) {
-            console.error("Error updating table in DB:", e);
-        }
-    };
+    const value = React.useMemo(() => ({ 
+        negocioId, 
+        config,
+        businessInfo: config || {}, // Alias para compatibilidad con módulos antiguos
+        businessData: { ...config, activeModules }, // Alias para compatibilidad
+        subscription, 
+        isExpired, 
+        activeModules, 
+        loading, 
+        error, 
+        orders, 
+        users, 
+        barProducts,
+        tables, 
+        lastSync, 
+        forceSync: () => setLastSync(Date.now())
+    }), [negocioId, config, subscription, isExpired, activeModules, loading, error, orders, users, barProducts, tables, lastSync]);
 
     return (
-        <ConfigContext.Provider value={{ 
-            negocioId, config, subscription, isExpired, activeModules, 
-            loading, error, orders, addOrder, updateOrder, users, barProducts,
-            tables, updateTable, lastSync, forceSync: () => setLastSync(Date.now())
-        }}>
+        <ConfigContext.Provider value={value}>
             {children}
         </ConfigContext.Provider>
     );
 }
 
-export const useConfig = () => useContext(ConfigContext);
+export const useConfig = () => {
+    const context = useContext(ConfigContext);
+    if (!context) {
+        // Si no hay contexto, devolvemos un fallback con negocioId basado en URL
+        const pathParts = window.location.pathname.split('/');
+        const id = pathParts[1];
+        const reserved = ['home', 'login', 'superadmin', 'help', 'admin', 'giovanni'];
+        const fallbackId = (id && id.length > 0 && !reserved.includes(id)) ? id : 'giovanni';
+        return { negocioId: fallbackId, loading: false };
+    }
+    return context;
+};

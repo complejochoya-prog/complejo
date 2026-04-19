@@ -1,37 +1,33 @@
 import { useState, useEffect } from 'react';
-import { fetchTournaments, fetchStandings, fetchMatches, fetchScorers, saveTournament, deleteTournament, saveTournamentDetails } from '../services/tournamentService';
+import { db } from '../../../firebase/config';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { fetchStandings, fetchMatches, fetchScorers, saveTournament, deleteTournament, saveTournamentDetails } from '../services/tournamentService';
 
 export function useTournament(negocioId) {
     const [tournaments, setTournaments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const loadData = async () => {
-        if (!negocioId) return;
-        try {
-            const data = await fetchTournaments(negocioId);
-            setTournaments(data);
-        } catch (err) {
-            setError(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
-        loadData();
-        
-        const handleNativeStorage = (e) => {
-            if (e.key === 'complejo_torneos') loadData();
-        };
+        if (!negocioId) return;
 
-        window.addEventListener('storage_torneos', loadData);
-        window.addEventListener('storage', handleNativeStorage);
+        setLoading(true);
+        const q = query(collection(db, 'negocios', negocioId, 'tournaments'), orderBy('createdAt', 'desc'));
         
-        return () => {
-            window.removeEventListener('storage_torneos', loadData);
-            window.removeEventListener('storage', handleNativeStorage);
-        };
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const list = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setTournaments(list);
+            setLoading(false);
+        }, (err) => {
+            console.error("Error in tournament listener:", err);
+            setError(err);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [negocioId]);
 
     const getStandings = async (tournamentId) => {
@@ -47,30 +43,15 @@ export function useTournament(negocioId) {
     };
 
     const save = async (tournamentData) => {
-        const success = await saveTournament(negocioId, tournamentData);
-        if (success) {
-            window.dispatchEvent(new Event('storage_torneos'));
-            await loadData();
-        }
-        return success;
+        return await saveTournament(negocioId, tournamentData);
     };
 
     const remove = async (tournamentId) => {
-        const success = await deleteTournament(negocioId, tournamentId);
-        if (success) {
-            window.dispatchEvent(new Event('storage_torneos'));
-            await loadData();
-        }
-        return success;
+        return await deleteTournament(negocioId, tournamentId);
     };
 
     const saveDetails = async (tournamentId, details) => {
-        const success = await saveTournamentDetails(negocioId, tournamentId, details);
-        if (success) {
-            window.dispatchEvent(new Event('storage_torneos'));
-            await loadData();
-        }
-        return success;
+        return await saveTournamentDetails(negocioId, tournamentId, details);
     };
 
     return { tournaments, loading, error, getStandings, getMatches, getScorers, save, remove, saveDetails };

@@ -1,15 +1,15 @@
-import { createContext, useContext } from 'react';
-
-export const ConfigContext = createContext({});
+import { 
+    useConfig as useCentralConfig, 
+    ConfigContext as CentralContext 
+} from '../../../core/services/ConfigContext';
 
 /**
- * useConfig Hook
- * Provides business configuration and user state throughout the application.
+ * useConfig Hook Proxy
+ * Redirects to the centralized ConfigContext to avoid duplicate context issues.
  */
 export function useConfig() {
-    const context = useContext(ConfigContext);
-    if (context === undefined) {
-        throw new Error('useConfig must be used within a ConfigProvider');
-    }
-    return context;
+    return useCentralConfig();
 }
+
+// Re-export the context too for components that need it (e.g. for Class Components or direct access)
+export const ConfigContext = CentralContext;

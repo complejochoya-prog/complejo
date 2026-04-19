@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.jsx';
 import { useConfig } from '../../../core/services/ConfigContext';
+import { usePedidos } from '../services/PedidosContext';
 import CartItem from '../components/CartItem';
 import OrderSummary from '../components/OrderSummary';
 import { submitOrder } from '../services/barService';
@@ -10,9 +11,13 @@ import { emit } from "@/core/events/eventBus";
 
 export default function CartPage() {
     const navigate = useNavigate();
-    const { negocioId } = useParams();
-    const { config } = useConfig();
+    const { negocioId: configNegocioId, config } = useConfig();
+    const { negocioId: paramsNegocioId } = useParams();
+    const negocioId = paramsNegocioId || configNegocioId;
+
     const { cart, cartTotal, cartCount, updateQuantity, updateObservaciones, removeFromCart, clearCart } = useCart();
+    const { addOrder } = usePedidos();
+    
     const [loading, setLoading] = useState(false);
     const [orderType, setOrderType] = useState('Comer en el complejo');
     const [mesaNumero, setMesaNumero] = useState('');
@@ -54,7 +59,7 @@ export default function CartPage() {
                 observaciones: item.observaciones
             }));
 
-            const res = await submitOrder(negocioId, {
+            const orderPayload = {
                 items: mappedItems,
                 total: cartTotal,
                 type: orderType,
@@ -67,30 +72,34 @@ export default function CartPage() {
                 status: 'nuevo',
                 hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 tipo: orderType
-            });
-            if (res.success) {
-                const newOrder = {
-                    id: Date.now(),
-                    items: mappedItems,
-                    total: cartTotal,
-                    status: 'nuevo',
-                    estado: 'nuevo',
-                    timestamp: Date.now(),
-                    tipo: orderType,
-                    mesa: mesaNumero,
-                    cliente: clienteNombre || (orderType === 'Comer en el complejo' ? 'Mesa ' + mesaNumero : 'Cliente')
+            };
+
+            // 1. Guardar en Firestore (Fuente de Verdad para la Pantalla de Cocina)
+            const fbRes = await addOrder(orderPayload);
+            
+            // 2. Opcional: Notificar al backend legacy si existe (Sin bloquear si falla)
+            try {
+                await submitOrder(negocioId, orderPayload);
+            } catch (e) {
+                console.warn("[CartPage] Lagacy API failed, but Firestore/Local sync is active.");
+            }
+
+            if (fbRes.success) {
+                const finalOrder = {
+                    ...orderPayload,
+                    id: fbRes.orderId,
+                    timestamp: Date.now()
                 };
 
-                // 🔥 ENVÍA EL PEDIDO A TODO EL SISTEMA
-                emit('pedido_creado', newOrder);
-
                 clearCart();
-
                 navigate(`/${negocioId}/app/pedido-confirmado`, {
-                    state: { order: newOrder }
+                    state: { order: finalOrder }
                 });
+            } else {
+                throw new Error("Error saving to Firestore");
             }
         } catch (error) {
+            console.error("Error placing order:", error);
             alert("Error al enviar el pedido.");
         } finally {
             setLoading(false);
@@ -106,7 +115,7 @@ export default function CartPage() {
                 <h2 className="text-2xl font-black uppercase tracking-tighter italic text-white mb-2">Tu carrito está vacío</h2>
                 <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-8">Parece que aún no has agregado nada del menú</p>
                 <button 
-                    onClick={() => navigate(`/${negocioId}/app/bar`)}
+                    onClick={() => navigate(`/${negocioId}/app/menu`)}
                     className="bg-emerald-500 text-slate-950 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] shadow-xl shadow-emerald-500/20 active:scale-95 transition-all"
                 >
                     Ver el Menú

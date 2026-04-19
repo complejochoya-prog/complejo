@@ -8,6 +8,8 @@ import PrintTicketButton from './PrintTicketButton';
  * Implementa la Máquina de Estados para evitar saltos de flujo (Pendiente -> Preparando -> Listo).
  */
 export default function KitchenOrderCard({ order, onStatusChange }) {
+    const [isUpdating, setIsUpdating] = React.useState(false);
+
     // Definición de estados y transiciones permitidas
     const statusConfig = {
         nuevo: { 
@@ -64,6 +66,17 @@ export default function KitchenOrderCard({ order, onStatusChange }) {
     if (!config) return null;
 
     const Icon = config.icon;
+
+    const handleAction = async () => {
+        setIsUpdating(true);
+        try {
+            await onStatusChange(order.id, config.nextStatus);
+        } catch (e) {
+            console.error("Error updating order status:", e);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     // Lógica visual: No permitimos saltar de 'nuevo' o 'pendiente' a 'listo' directamente
     // (Esta lógica se aplica al botón de acción principal)
@@ -144,11 +157,16 @@ export default function KitchenOrderCard({ order, onStatusChange }) {
                 </div>
                 
                 <button 
-                    onClick={() => onStatusChange(order.id, config.nextStatus)}
-                    className={`group relative flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 text-slate-950 shadow-2xl overflow-hidden ${config.badgeColor} hover:brightness-110`}
+                    onClick={handleAction}
+                    disabled={isUpdating}
+                    className={`group relative flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 text-slate-950 shadow-2xl overflow-hidden ${config.badgeColor} hover:brightness-110 disabled:opacity-50 min-w-[160px] justify-center`}
                 >
-                    <Icon size={14} className="group-hover:translate-x-1 transition-transform" />
-                    {config.btnText}
+                    {isUpdating ? (
+                        <div className="w-4 h-4 border-2 border-slate-950/20 border-t-slate-950 rounded-full animate-spin" />
+                    ) : (
+                        <Icon size={14} className="group-hover:translate-x-1 transition-transform" />
+                    )}
+                    {isUpdating ? 'Pulsando...' : config.btnText}
                 </button>
             </div>
         </div>

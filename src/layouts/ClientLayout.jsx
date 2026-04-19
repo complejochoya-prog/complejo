@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useParams } from 'react-router-dom';
-import { Home, Calendar, Utensils, Award, User, Menu, X, Bell, Zap } from 'lucide-react';
+import { Home, Calendar, Utensils, Award, User, Menu, X, Bell, Zap, Swords } from 'lucide-react';
 import { useConfig } from '../core/services/ConfigContext';
 
 export default function ClientLayout() {
@@ -17,6 +17,7 @@ export default function ClientLayout() {
         { to: `${basePath}/reservas`, label: 'Reservas', icon: Calendar },
         { to: `${basePath}/menu`, label: 'Bar', icon: Utensils },
         { to: `${basePath}/torneos`, label: 'Torneos', icon: Award },
+        { to: `${basePath}/desafio`, label: 'Desafío', icon: Swords },
         { to: `${basePath}/perfil`, label: 'Perfil', icon: User },
     ];
 

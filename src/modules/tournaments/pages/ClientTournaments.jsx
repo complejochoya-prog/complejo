@@ -21,126 +21,135 @@ export default function ClientTournaments() {
         <div className="animate-in slide-in-from-bottom-4 duration-300 min-h-screen bg-slate-950 pb-32">
             <ClientNavbar config={config} user={clientUser} />
             
-            <div className="p-5 space-y-8">
-                <header className="flex items-center justify-between">
+            <div className="px-5 py-8 space-y-8 max-w-7xl mx-auto">
+                <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div>
-                        <h1 className="text-3xl font-black uppercase tracking-tighter italic text-amber-500 leading-none mb-1">Torneos</h1>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Seguí tu liga favorita</p>
+                        <h1 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter italic text-amber-500 leading-none mb-2">Torneos</h1>
+                        <p className="text-[10px] lg:text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">Seguí tu liga favorita y los últimos resultados</p>
                     </div>
-                    <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-500">
-                        <Trophy size={24} />
+                    <div className="w-12 h-12 lg:w-16 lg:h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-xl shadow-amber-500/10">
+                        <Trophy size={24} className="lg:w-8 lg:h-8" />
                     </div>
                 </header>
 
-                {/* Banner de Organización */}
-                <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-[32px] p-6 shadow-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 -mr-6 -mt-6 opacity-20 group-hover:scale-110 transition-transform duration-500">
-                        <Trophy size={120} />
+                {/* Banner de Organización - Desktop Optimized */}
+                <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-800 rounded-[40px] p-8 lg:p-12 shadow-2xl relative overflow-hidden group border border-white/5">
+                    <div className="absolute top-0 right-0 -mr-8 -mt-8 opacity-10 group-hover:scale-110 transition-transform duration-[2s]">
+                        <Trophy size={240} />
                     </div>
-                    <div className="relative z-10 flex flex-col items-start gap-4">
-                        <div>
-                            <h3 className="text-xl font-black uppercase italic tracking-tight text-white leading-tight">¿Querés organizar<br/>tu propio torneo?</h3>
-                            <p className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest mt-1">Ligas empresariales, amateur o entre amigos</p>
+                    <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+                        <div className="text-center lg:text-left">
+                            <h3 className="text-2xl lg:text-4xl font-black uppercase italic tracking-tighter text-white leading-tight">
+                                ¿Querés organizar<br className="hidden lg:block"/> tu propio torneo?
+                            </h3>
+                            <p className="text-[10px] lg:text-xs text-indigo-200 font-bold uppercase tracking-[0.2em] mt-3">
+                                Ligas empresariales, torneos amateur o encuentros entre amigos
+                            </p>
                         </div>
                         <a 
                             href={wspUrl}
                             target="_blank" rel="noopener noreferrer"
-                            className="bg-white text-indigo-900 px-6 py-3 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-105 transition-transform"
+                            className="bg-white text-indigo-700 px-8 py-5 rounded-2xl flex items-center gap-3 text-[12px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-105 active:scale-95 transition-all w-full lg:w-auto justify-center"
                         >
-                            <MessageCircle size={16} />
-                            Contactar a Administración
+                            <MessageCircle size={20} />
+                            Contactar Coordinación
                         </a>
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <h2 className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <Target size={14} className="text-amber-500" /> Torneos Disponibles
-                    </h2>
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-[10px] lg:text-xs text-slate-400 font-black uppercase tracking-[0.3em] flex items-center gap-3">
+                            <Target size={16} className="text-amber-500" /> Torneos Disponibles
+                        </h2>
+                        <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-lg text-[10px] text-slate-500 font-black italic">{tournaments.length} ACTIVOS</span>
+                    </div>
                     
-                    {tournaments.map(t => (
-                        <div 
-                            key={t.id}
-                            className="bg-slate-900 border border-white/5 p-6 rounded-[32px] shadow-lg relative overflow-hidden group active:scale-[0.98] transition-all"
-                        >
-                            <div className={`absolute top-0 right-0 p-6 opacity-10 group-active:opacity-20 transition-opacity`}>
-                                <Trophy size={48} />
-                            </div>
-                            
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
-                                    t.estado === 'en_curso' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
-                                }`}>
-                                    {t.estado.replace('_', ' ')}
-                                </span>
-                                <span className="text-[8px] font-bold uppercase tracking-widest text-slate-600">
-                                    {t.formato}
-                                </span>
-                            </div>
-
-                            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-4 leading-none">
-                                {t.nombre}
-                            </h3>
-
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="flex flex-col">
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Inscripción</span>
-                                    <span className={`text-xs font-black uppercase italic ${t.estado === 'inscripcion' ? 'text-indigo-400' : 'text-slate-500'}`}>
-                                        {t.estado === 'inscripcion' ? 'Habilitada' : 'Cerrada'}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {tournaments.map(t => (
+                            <div 
+                                key={t.id}
+                                className="bg-slate-900/50 border border-white/5 p-8 rounded-[40px] shadow-2xl relative overflow-hidden group transition-all hover:bg-slate-900 hover:border-amber-500/30 flex flex-col"
+                            >
+                                <div className={`absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-700`}>
+                                    <Trophy size={80} />
+                                </div>
+                                
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                                        t.estado === 'en_curso' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                    }`}>
+                                        {t.estado.replace('_', ' ')}
+                                    </span>
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+                                        {t.formato}
                                     </span>
                                 </div>
-                                <div className="flex flex-col border-l border-white/5 pl-4">
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Equipos</span>
-                                    <span className="text-xs font-black text-white">{t.equipos} registrados</span>
+
+                                <h3 className="text-xl lg:text-2xl font-black uppercase italic tracking-tighter text-white mb-6 leading-none group-hover:text-amber-500 transition-colors">
+                                    {t.nombre}
+                                </h3>
+
+                                <div className="grid grid-cols-2 gap-4 mb-8">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Inscripción</span>
+                                        <span className={`text-xs font-black uppercase italic ${t.estado === 'inscripcion' ? 'text-indigo-400' : 'text-slate-500'}`}>
+                                            {t.estado === 'inscripcion' ? 'Habilitada' : 'Cerrada'}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 border-l border-white/10 pl-4">
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Equipos</span>
+                                        <span className="text-xs font-black text-white">{t.equipos} registrados</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="grid grid-cols-3 gap-2">
-                                <button 
-                                    onClick={() => navigate(`${t.id}?tab=standings`)}
-                                    className="bg-slate-950 border border-white/5 py-2 px-1 rounded-xl flex flex-col items-center gap-1 hover:bg-white/5 transition-all text-slate-500 hover:text-indigo-400"
-                                >
-                                    <Table size={14} />
-                                    <span className="text-[7px] font-black uppercase">Posiciones</span>
-                                </button>
-                                <button 
-                                    onClick={() => navigate(`${t.id}?tab=matches`)}
-                                    className="bg-slate-950 border border-white/5 py-2 px-1 rounded-xl flex flex-col items-center gap-1 hover:bg-white/5 transition-all text-slate-500 hover:text-indigo-400"
-                                >
-                                    <Calendar size={14} />
-                                    <span className="text-[7px] font-black uppercase">Fixture</span>
-                                </button>
-                                <button 
-                                    onClick={() => navigate(t.id)}
-                                    className="bg-slate-950 border border-white/5 py-2 px-1 rounded-xl flex flex-col items-center gap-1 hover:bg-white/5 transition-all text-slate-500 hover:text-indigo-400"
-                                >
-                                    <Trophy size={14} />
-                                    <span className="text-[7px] font-black uppercase">Detalles</span>
-                                </button>
-                            </div>
-
-                            {/* Public Registration Section (ONLY if it's an OPEN tournament and in INSCRIPCION) */}
-                            {t.abierto && t.estado === 'inscripcion' && (
-                                <div className="mt-4 pt-4 border-t border-white/5">
+                                <div className="mt-auto grid grid-cols-3 gap-2">
                                     <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            window.open(`https://wa.me/${config?.telefono || '5491100000000'}?text=Hola,%20nos%20queremos%20inscribir%20al%20torneo:%20${t.nombre}`, '_blank');
-                                        }}
-                                        className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 py-3 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95"
+                                        onClick={() => navigate(`${t.id}?tab=standings`)}
+                                        className="bg-slate-950/50 border border-white/5 py-4 px-1 rounded-2xl flex flex-col items-center gap-2 hover:bg-amber-500 hover:text-black transition-all text-slate-500 hover:border-amber-500 shadow-lg"
                                     >
-                                        <MessageCircle size={14} />
-                                        Inscribir mi Equipo
+                                        <Table size={18} />
+                                        <span className="text-[7px] font-black uppercase tracking-widest">Tablas</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => navigate(`${t.id}?tab=matches`)}
+                                        className="bg-slate-950/50 border border-white/5 py-4 px-1 rounded-2xl flex flex-col items-center gap-2 hover:bg-amber-500 hover:text-black transition-all text-slate-500 hover:border-amber-500 shadow-lg"
+                                    >
+                                        <Calendar size={18} />
+                                        <span className="text-[7px] font-black uppercase tracking-widest">Fixture</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => navigate(t.id)}
+                                        className="bg-slate-950/50 border border-white/5 py-4 px-1 rounded-2xl flex flex-col items-center gap-2 hover:bg-amber-500 hover:text-black transition-all text-slate-500 hover:border-amber-500 shadow-lg"
+                                    >
+                                        <Trophy size={18} />
+                                        <span className="text-[7px] font-black uppercase tracking-widest">Detalles</span>
                                     </button>
                                 </div>
-                            )}
-                        </div>
-                    ))}
+
+                                {/* Public Registration Section */}
+                                {t.abierto && t.estado === 'inscripcion' && (
+                                    <div className="mt-6 pt-6 border-t border-white/5">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                window.open(`https://wa.me/${config?.telefono || '5491100000000'}?text=Hola,%20nos%20queremos%20inscribir%20al%20torneo:%20${t.nombre}`, '_blank');
+                                            }}
+                                            className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 py-4 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95"
+                                        >
+                                            <MessageCircle size={16} />
+                                            Inscribite Ya
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                     
                     {tournaments.length === 0 && (
-                        <div className="py-12 bg-slate-900 border border-white/5 rounded-[32px] text-center">
-                            <Trophy size={32} className="mx-auto text-slate-700 opacity-20 mb-3" />
-                            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No hay torneos activos en este momento</p>
+                        <div className="py-24 bg-slate-900/50 border border-white/5 rounded-[48px] text-center space-y-4">
+                            <Trophy size={48} className="mx-auto text-slate-800 opacity-20 mb-3" />
+                            <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-xs">No hay torneos activos en este momento</p>
                         </div>
                     )}
                 </div>

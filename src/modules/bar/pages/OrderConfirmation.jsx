@@ -2,11 +2,15 @@ import React, { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Home, Utensils } from 'lucide-react';
 import { useCart } from '../hooks/useCart.jsx';
+import { useConfig } from '../../../core/services/ConfigContext';
 
 export default function OrderConfirmation() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { negocioId } = useParams();
+    const { negocioId: configNegocioId } = useConfig();
+    const { negocioId: paramsNegocioId } = useParams();
+    const negocioId = paramsNegocioId || configNegocioId || 'giovanni';
+
     const { order } = location.state || {};
     const { clearCart } = useCart();
 
@@ -19,7 +23,7 @@ export default function OrderConfirmation() {
         return (
             <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
                 <button 
-                    onClick={() => navigate(`/${negocioId}/app/menu`)}
+                    onClick={() => navigate(`/${negocioId}/menu`)}
                     className="bg-emerald-500 text-slate-950 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs"
                 >
                     Volver al Menú
@@ -29,7 +33,7 @@ export default function OrderConfirmation() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6 animate-in zoom-in-95 duration-500 flex flex-col items-center justify-center">
+        <div className="min-h-screen bg-slate-950 text-white p-6 animate-in zoom-in-95 duration-500 flex flex-col items-center justify-center pb-32">
             <div className="max-w-md w-full space-y-12">
                 <div className="flex flex-col items-center text-center">
                     <div className="w-24 h-24 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mb-8 animate-bounce">
@@ -79,7 +83,7 @@ export default function OrderConfirmation() {
 
                 <div className="space-y-4">
                     <button 
-                        onClick={() => navigate(`/${negocioId}/app`)}
+                        onClick={() => navigate(`/${negocioId}`)}
                         className="w-full bg-white text-slate-950 py-5 rounded-2xl font-black uppercase tracking-widest text-[12px] flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all"
                     >
                         <Home size={18} />
@@ -87,7 +91,7 @@ export default function OrderConfirmation() {
                     </button>
                     
                     <button 
-                        onClick={() => navigate(`/${negocioId}/app/menu`)}
+                        onClick={() => navigate(`/${negocioId}/menu`)}
                         className="w-full bg-slate-900 text-slate-400 py-5 rounded-2xl font-black uppercase tracking-widest text-[12px] flex items-center justify-center gap-3 border border-white/5 active:scale-95 transition-all"
                     >
                         <Utensils size={18} />

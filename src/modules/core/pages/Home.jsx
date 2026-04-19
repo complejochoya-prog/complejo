@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Calendar, Utensils, Award, Users, PartyPopper, ChevronRight, Star, Zap, Tag, Trophy, Flame, Music, Target } from 'lucide-react';
+import { Calendar, Utensils, Award, Users, PartyPopper, ChevronRight, Star, Zap, Tag, Trophy, Flame, Music, Target, Swords } from 'lucide-react';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { fetchEspacios } from '../../admin/services/espaciosService';
 import { fetchPromos } from '../../admin/services/promosService';
@@ -213,6 +213,30 @@ export default function Home() {
                         <Users size={300} className="absolute -bottom-20 -right-20 text-white/[0.03] group-hover:scale-110 transition-transform duration-[2s]" />
                     </section>
                 </div>
+
+                {/* Desafío CTA Section */}
+                <section className="relative bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 rounded-[56px] p-10 lg:p-14 overflow-hidden group shadow-2xl">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
+                    <div className="absolute bottom-0 right-0 -mr-12 -mb-12 opacity-10 group-hover:scale-110 transition-transform duration-[2s]">
+                        <Swords size={240} />
+                    </div>
+                    <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center gap-8">
+                        <div className="w-20 h-20 rounded-[28px] bg-white/20 backdrop-blur-xl flex items-center justify-center text-white shadow-2xl shrink-0">
+                            <Swords size={40} />
+                        </div>
+                        <div className="flex-1 space-y-4">
+                            <h3 className="text-3xl lg:text-5xl font-black italic uppercase tracking-tighter text-white leading-[0.85]">
+                                ZONA DE <span className="text-black/80">DESAFÍO</span>
+                            </h3>
+                            <p className="text-xs lg:text-sm font-bold text-white/60 uppercase tracking-[0.2em] max-w-lg">
+                                ¿Buscás rival? ¿Necesitás completar equipo? Publicá tu disponibilidad y encontrá partido.
+                            </p>
+                            <Link to={`${basePath}/desafio`} className="inline-flex items-center gap-4 text-xs font-black uppercase tracking-widest text-amber-900 bg-white px-10 py-5 rounded-3xl hover:bg-amber-100 transition-all transform hover:scale-105 shadow-xl">
+                                Entrar al Desafío <ChevronRight size={18} />
+                            </Link>
+                        </div>
+                    </div>
+                </section>
 
                 {/* Final CTA - Social Experience */}
                 <section className="glass-premium rounded-[56px] p-10 lg:p-16 flex flex-col lg:flex-row items-center gap-12 group relative overflow-hidden">

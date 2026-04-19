@@ -3,7 +3,7 @@ import {
     collection, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, addDoc, getDoc, getDocs, limit, serverTimestamp, where
 } from 'firebase/firestore';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useConfig } from '../../core/services/ConfigContext';
+import { useConfig } from '../../../core/services/ConfigContext';
 import { apiRequest } from '../../../core/api/apiClient';
 import { emit, on, off } from '../../../core/events/eventBus';
 
@@ -191,55 +191,70 @@ export default function PedidosProvider({ children }) {
 
     // 🔥 ACCIONES UNIFICADAS (FIRMEZA EN BASE DE DATOS)
     const addOrder = useCallback(async (orderData) => {
-        if (!negocioId) return { success: false, error: 'No Negocio ID' };
+        if (!negocioId) {
+            console.error('[PedidosContext] addOrder failed: No negocioId');
+            return { success: false, error: 'No Negocio ID' };
+        }
         
         try {
             const orderId = orderData.id || `ORD-${Date.now()}`;
-            const secureOrder = { 
+            
+            // 1. Objeto para Firestore (con serverTimestamp)
+            const firestoreOrder = { 
                 ...orderData, 
                 id: orderId,
                 negocioId,
                 status: orderData.status || 'nuevo',
                 estado: orderData.estado || 'nuevo',
-                timestamp: serverTimestamp(), // Firebase time for cross-device consistency
+                timestamp: serverTimestamp(),
                 createdAt: orderData.createdAt || new Date().toISOString()
             };
 
-            // 1. Guardar en Firestore (Fuente de Verdad)
-            const docRef = doc(db, 'negocios', negocioId, 'pedidos', String(orderId));
-            await setDoc(docRef, secureOrder);
+            // 2. Objeto para Local (con Date real para evitar errores de serialización)
+            const localOrder = {
+                ...firestoreOrder,
+                timestamp: new Date().toISOString()
+            };
 
-            // 2. Guardar en Local Storage (Cache/Optimismo)
+            console.log('[PedidosContext] Saving order to Firestore:', orderId);
+            const docRef = doc(db, 'negocios', negocioId, 'pedidos', String(orderId));
+            await setDoc(docRef, firestoreOrder);
+
+            // 3. Cache Local (Optimismo)
             const localKey = `${negocioId}_orders`;
             const prevOrders = JSON.parse(localStorage.getItem(localKey)) || [];
             if (!prevOrders.some(o => o.id === orderId)) {
-                localStorage.setItem(localKey, JSON.stringify([secureOrder, ...prevOrders]));
+                localStorage.setItem(localKey, JSON.stringify([localOrder, ...prevOrders]));
             }
 
             window.dispatchEvent(new Event('storage'));
-            emit('pedido_creado', secureOrder);
+            emit('pedido_creado', localOrder);
 
             return { success: true, orderId };
         } catch (error) {
             console.error("Critical error adding order to Firebase:", error);
-            return { success: false, error };
+            return { success: false, error: error.message || error };
         }
     }, [negocioId]);
 
     const updateOrderStatus = useCallback(async (id, newStatus) => {
-        if (!negocioId) return;
+        if (!negocioId) {
+            console.error('[PedidosContext] Cannot update status: No negocioId');
+            return;
+        }
 
         try {
             console.log('[PedidosContext] Syncing Status update to Firebase:', id, '->', newStatus);
             
-            // 1. Actualización en Firestore
+            // 1. Actualización en Firestore (Usamos setDoc + merge para que sea "Self-Healing")
+            // Si por alguna razón el pedido no existía en la nube, esto lo creará con el estado nuevo.
             const docRef = doc(db, 'negocios', negocioId, 'pedidos', String(id));
-            await updateDoc(docRef, {
+            await setDoc(docRef, {
                 status: newStatus,
                 estado: newStatus,
                 paid: newStatus === 'paid',
                 updatedAt: serverTimestamp()
-            });
+            }, { merge: true });
 
             // 2. Actualización Local (Optimismo UI)
             setOrders(prev => prev.map(o => String(o.id) === String(id) 
@@ -261,6 +276,7 @@ export default function PedidosProvider({ children }) {
 
         } catch (error) {
             console.error("Error syncing status to Firebase:", error);
+            throw error; // Rethrow to let the UI know
         }
     }, [negocioId]);
 

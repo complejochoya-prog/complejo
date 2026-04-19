@@ -93,6 +93,10 @@ import TournamentDetail from './modules/tournaments/pages/TournamentDetail';
 import RegisterTeam from './modules/tournaments/pages/RegisterTeam';
 import ClientTournaments from './modules/tournaments/pages/ClientTournaments';
 
+// Desafío Module (Bolsa de Jugadores)
+import DesafioProvider from './modules/desafio/services/DesafioContext';
+import DesafioPage from './modules/desafio/pages/DesafioPage';
+
 // Access Control (FASE 16)
 import AccessDashboard from './modules/access_control/pages/AccessDashboard';
 import QRCheckInPage from './modules/access_control/pages/QRCheckInPage';
@@ -192,6 +196,7 @@ function BusinessApp() {
                 <CartProvider>
                     <PedidosProvider>
                         <ReservasProvider>
+                        <DesafioProvider>
                             <BusinessAppWrapper>
 
                         <Routes>
@@ -207,6 +212,7 @@ function BusinessApp() {
                             <Route path="reservas" element={<BookingFlow />} />
                             <Route path="torneos" element={<ClientTournaments />} />
                             <Route path="torneos/:tournamentId" element={<TournamentDetail />} />
+                            <Route path="desafio" element={<DesafioPage />} />
                             <Route path="jugadores" element={<MissingPage name="Ranking de Jugadores" />} />
                             <Route path="membresia" element={<MissingPage name="Membresía" />} />
                             <Route path="galeria" element={<MissingPage name="Galería" />} />
@@ -343,6 +349,7 @@ function BusinessApp() {
                         <Route path="*" element={<Navigate to="" replace />} />
                     </Routes>
                             </BusinessAppWrapper>
+                        </DesafioProvider>
                         </ReservasProvider>
                     </PedidosProvider>
 

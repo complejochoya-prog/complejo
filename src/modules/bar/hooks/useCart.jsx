@@ -12,7 +12,7 @@ export function CartProvider({ children }) {
         localStorage.setItem('giovanni_cart', JSON.stringify(cart));
     }, [cart]);
 
-    const addToCart = (product) => {
+    const addToCart = React.useCallback((product) => {
         setCart(prev => {
             const exists = prev.find(item => item.id === product.id);
             if (exists) {
@@ -22,13 +22,13 @@ export function CartProvider({ children }) {
             }
             return [...prev, { ...product, quantity: 1, observaciones: '' }];
         });
-    };
+    }, []);
 
-    const removeFromCart = (productId) => {
+    const removeFromCart = React.useCallback((productId) => {
         setCart(prev => prev.filter(item => item.id !== productId));
-    };
+    }, []);
 
-    const updateQuantity = (productId, delta) => {
+    const updateQuantity = React.useCallback((productId, delta) => {
         setCart(prev => prev.map(item => {
             if (item.id === productId) {
                 const newQty = Math.max(1, item.quantity + delta);
@@ -36,17 +36,17 @@ export function CartProvider({ children }) {
             }
             return item;
         }));
-    };
+    }, []);
 
-    const updateObservaciones = (productId, obs) => {
+    const updateObservaciones = React.useCallback((productId, obs) => {
         setCart(prev => prev.map(item => 
             item.id === productId ? { ...item, observaciones: obs } : item
         ));
-    };
+    }, []);
 
-    const clearCart = () => {
+    const clearCart = React.useCallback(() => {
         setCart([]);
-    };
+    }, []);
 
     const cartTotal = cart.reduce((acc, item) => acc + (item.precio * item.quantity), 0);
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
