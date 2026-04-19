@@ -55,7 +55,7 @@ export default function KitchenBarScreen() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col overflow-hidden animate-in fade-in duration-500">
+        <div className="min-h-screen bg-slate-950 flex flex-col overflow-hidden">
             {/* Header */}
             <header className="px-6 py-5 bg-slate-900 border-b border-white/5 flex items-center justify-between shrink-0 shadow-2xl relative z-20">
                 <div className="flex items-center gap-4">
@@ -110,7 +110,7 @@ export default function KitchenBarScreen() {
                                         return timeA - timeB;
                                     })
                                     .map(order => (
-                                        <div key={`order-container-${order.id}`} className="transition-all duration-300">
+                                        <div key={`order-container-${order.id}`}>
                                             <KitchenOrderCard 
                                                 order={{...order, estado: order.status || order.estado}} 
                                                 onStatusChange={changeStatus} 

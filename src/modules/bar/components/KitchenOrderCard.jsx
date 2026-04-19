@@ -82,7 +82,7 @@ export default function KitchenOrderCard({ order, onStatusChange }) {
     // (Esta lógica se aplica al botón de acción principal)
     
     return (
-        <div className={`border-l-4 p-5 rounded-[24px] shadow-2xl transition-all ${config.color} animate-in slide-in-from-bottom-4 border-r border-white/5`}>
+        <div className={`border-l-4 p-5 rounded-[24px] shadow-2xl ${config.color} border-r border-white/5`}>
             <div className="flex justify-between items-start mb-4">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
