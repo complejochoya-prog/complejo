@@ -34,13 +34,19 @@ export default function ReservasProvider({ children }) {
         });
 
         // 2. ACTIVE BOOKINGS (Reservas Online)
-        const qBookings = query(collection(db, 'negocios', negocioId, 'reservas'), where('status', '!=', 'Cancelado'), orderBy('timestamp', 'desc'));
+        // 🔥 Simplified query to avoid index requirement error
+        const qBookings = query(collection(db, 'negocios', negocioId, 'reservas'), orderBy('timestamp', 'desc'));
         onSnapshot(qBookings, (snap) => {
-            setBookings(snap.docs.map(d => ({
-                id: d.id,
-                ...d.data(),
-                timestamp: d.data().timestamp?.toDate() || new Date()
-            })));
+            const list = snap.docs
+                .map(d => ({
+                    id: d.id,
+                    ...d.data(),
+                    timestamp: d.data().timestamp?.toDate() || new Date()
+                }))
+                .filter(b => b.status !== 'Cancelado'); // Filter in-memory to avoid index requirement
+            setBookings(list);
+        }, (err) => {
+            console.error("Error in bookings listener:", err);
         });
 
         // 3. LIVE USAGE (Presencial)

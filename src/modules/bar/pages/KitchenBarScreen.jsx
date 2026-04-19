@@ -4,7 +4,8 @@ import { useConfig } from '../../../core/services/ConfigContext';
 import KitchenOrderCard from '../components/KitchenOrderCard';
 import { History, Package, Clock, Utensils, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { on } from "@/core/events/eventBus";
+// Removed problematic eventBus import if not used correctly or causing build 404s
+// import { on } from "@/core/events/eventBus";
 
 export default function KitchenBarScreen() {
     const navigate = useNavigate();
@@ -103,9 +104,13 @@ export default function KitchenBarScreen() {
 
                             <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
                                 {filteredOrders
-                                    .sort((a, b) => a.timestamp - b.timestamp) // Sort by oldest first in kitchen
+                                    .sort((a, b) => {
+                                        const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+                                        const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+                                        return timeA - timeB;
+                                    })
                                     .map(order => (
-                                        <div key={order.id} className="animate-in slide-in-from-top-2 duration-300">
+                                        <div key={`order-container-${order.id}`} className="transition-all duration-300">
                                             <KitchenOrderCard 
                                                 order={{...order, estado: order.status || order.estado}} 
                                                 onStatusChange={changeStatus} 
