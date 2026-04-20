@@ -237,3 +237,5 @@ export const useConfig = () => {
     }
     return context;
 };
+
+export default ConfigProvider;
