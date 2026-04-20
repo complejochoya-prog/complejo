@@ -7,7 +7,8 @@ import {
     query, 
     where, 
     limit,
-    serverTimestamp 
+    serverTimestamp,
+    addDoc
 } from 'firebase/firestore';
 
 export const cajaService = {
@@ -25,12 +26,17 @@ export const cajaService = {
     },
 
     addMovement: async (negocioId, data) => {
-        const id = `mov-${Date.now()}`;
+        const ref = collection(db, 'negocios', negocioId, 'caja_movements');
         const payload = {
             ...data,
-            id,
-            negocioId,
-            timestamp: serverTimestamp(),
+            monto: parseFloat(data.monto) || 0,
+            tipo: data.tipo || 'entrada',
+            categoria: data.categoria || 'Varios',
+            descripcion: data.descripcion || '',
+            metodoPago: data.metodoPago || 'efectivo',
+            origen: data.origen || 'general',
+            usuario: data.usuario || 'Sistema',
+            metadata: data.metadata || {},
             fecha: new Date().toISOString().split('T')[0],
             hora: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
         };

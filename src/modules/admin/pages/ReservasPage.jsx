@@ -19,6 +19,7 @@ import { useParams } from 'react-router-dom';
 import { useReservas } from '../../reservas/services/ReservasContext';
 import { db } from '../../../firebase/config';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { addMovement } from '../../../core/services/cajaService'; // Import integration
 
 export default function ReservasPage() {
     const { negocioId } = useParams();
@@ -32,13 +33,33 @@ export default function ReservasPage() {
 
     const updateReservaStatus = async (id, newStatus) => {
         try {
+            const resData = reservas.find(r => r.id === id);
+            
             const ref = doc(db, 'negocios', negocioId, 'reservas', id);
             await updateDoc(ref, { 
                 status: newStatus,
                 updatedAt: serverTimestamp()
             });
+
+            // 🔥 INTEGRACIÓN CAJA MÁGICA: Record income if confirmed
+            if (newStatus === 'confirmada' && resData) {
+                await addMovement(negocioId, {
+                    monto: parseFloat(resData.precio) || 0,
+                    tipo: 'entrada',
+                    categoria: 'Reserva Cancha',
+                    metodoPago: resData.metodoPago || resData.pago?.toLowerCase() || 'efectivo',
+                    descripcion: `Reserva: ${resData.cliente?.nombre || ''} - ${canchas[resData.canchaId] || 'Cancha'}`,
+                    origen: 'reservas',
+                    usuario: 'Admin', // In a real app, get current user
+                    metadata: {
+                        reservaId: id,
+                        cliente: resData.cliente?.nombre,
+                        fecha: resData.fecha
+                    }
+                });
+            }
         } catch (e) {
-            console.error("Error updating status:", e);
+            console.error("Error updating status/caja:", e);
         }
     };
 

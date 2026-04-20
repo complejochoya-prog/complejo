@@ -5,9 +5,10 @@ import ProductSelector from '../components/ProductSelector';
 import OrderList from '../components/OrderList';
 import PaymentPanel from '../components/PaymentPanel';
 import { processPayment } from '../services/barService';
+import { addMovement } from '../../../core/services/cajaService'; // Import integration
 
 export default function TableDetail({ table, onClose }) {
-    const { orders, addOrder, updateOrder, barProducts, users, updateTable } = useConfig();
+    const { orders, addOrder, updateOrder, barProducts, users, updateTable, negocioId } = useConfig();
     const [view, setView] = useState('detail'); // 'detail', 'add_product', 'payment'
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -71,7 +72,8 @@ export default function TableDetail({ table, onClose }) {
     const handleConfirmPayment = async (method) => {
         setIsProcessing(true);
         try {
-            await processPayment('giovanni', {
+            // 1. Process payment via Bar service
+            await processPayment(negocioId, {
                 table: table.tableNumber,
                 total,
                 paymentMethod: method,
@@ -79,10 +81,26 @@ export default function TableDetail({ table, onClose }) {
                 items: tableOrders.map(o => ({ id: o.productId, nombre: o.productName, cantidad: o.quantity, precio: o.price }))
             });
 
-            // Mark orders as paid
+            // 2. 🔥 INTEGACIÓN CAJA MÁGICA: Record Movement
+            const itemSummary = tableOrders.map(o => `${o.productName} (x${o.quantity})`).join(', ');
+            await addMovement(negocioId, {
+                monto: total,
+                tipo: 'entrada',
+                categoria: 'Venta Bar',
+                metodoPago: method,
+                descripcion: `Mesa ${table.tableNumber}: ${itemSummary}`,
+                origen: 'bar',
+                usuario: table.mozoName || 'Sistema',
+                metadata: {
+                    mesa: table.tableNumber,
+                    items: tableOrders.length
+                }
+            });
+
+            // 3. Mark orders as paid
             tableOrders.forEach(o => updateOrder(o.id, { status: 'paid', paidAt: new Date().toISOString(), paymentMethod: method }));
 
-            // Reset table
+            // 4. Reset table
             updateTable(table.tableNumber, {
                 status: 'disponible',
                 mozoId: null,
@@ -92,6 +110,7 @@ export default function TableDetail({ table, onClose }) {
 
             onClose();
         } catch (e) {
+            console.error("Error al procesar pago/caja:", e);
             alert("Error al procesar el pago");
         } finally {
             setIsProcessing(false);
