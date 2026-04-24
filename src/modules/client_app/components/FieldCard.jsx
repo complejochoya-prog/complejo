@@ -26,7 +26,9 @@ export default function FieldCard({ field }) {
         if (isBar) {
             navigate(`/${base}/menu`);
         } else {
-            navigate(`/${base}/app/reservar/${field.id}`);
+            navigate(`/${base}/reservas`, { 
+                state: { preselectedResource: field } 
+            });
         }
     };
 

@@ -27,9 +27,10 @@ export default function ReservasPage() {
     
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDate, setFilterDate] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Próximas');
 
     const canchas = {};
-    listEspacios.forEach(c => canchas[c.id || c.id] = c.name || c.nombre || c.id);
+    listEspacios.forEach(c => canchas[c.id] = c.name || c.title || c.nombre || c.id);
 
     const updateReservaStatus = async (id, newStatus) => {
         try {
@@ -67,7 +68,16 @@ export default function ReservasPage() {
         const matchSearch = ((res.cliente?.nombre || '') + ' ' + (res.cliente?.apellido || '')).toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (res.cliente?.telefono || '').includes(searchTerm);
         const matchDate = filterDate ? res.fecha === filterDate : true;
-        return matchSearch && matchDate;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const isPast = res.fecha < today;
+        
+        let matchStatus = true;
+        if (statusFilter === 'Próximas') matchStatus = !isPast;
+        else if (statusFilter === 'Historial') matchStatus = isPast;
+        else if (statusFilter !== 'Todos') matchStatus = res.status?.toLowerCase() === statusFilter.toLowerCase();
+
+        return matchSearch && matchDate && matchStatus;
     });
 
     const getStatusColor = (status) => {
@@ -139,12 +149,17 @@ export default function ReservasPage() {
                 </div>
                 <div className="relative group">
                     <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500 transition-colors" size={18} />
-                    <select className="w-full bg-slate-900 border border-white/5 rounded-2xl pl-14 pr-6 py-4 text-xs font-bold focus:outline-none focus:border-indigo-500 transition-all appearance-none uppercase tracking-widest">
-                        <option>Todos los Estados</option>
-                        <option>Confirmadas</option>
-                        <option>Pendientes</option>
-                        <option>Completadas</option>
-                        <option>Canceladas</option>
+                    <select 
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-full bg-slate-900 border border-white/5 rounded-2xl pl-14 pr-6 py-4 text-xs font-bold focus:outline-none focus:border-indigo-500 transition-all appearance-none uppercase tracking-widest"
+                    >
+                        <option value="Todos">Todos</option>
+                        <option value="Próximas">Próximas (Futuras y Hoy)</option>
+                        <option value="Historial">Historial (Pasadas)</option>
+                        <option value="Confirmada">Confirmadas</option>
+                        <option value="Pendiente">Pendientes</option>
+                        <option value="Cancelada">Canceladas</option>
                     </select>
                 </div>
             </div>
@@ -247,7 +262,7 @@ export default function ReservasPage() {
                                         <div className="flex items-center gap-2">
                                             <MapPin size={14} className="text-slate-500" />
                                             <span className="text-xs font-black uppercase italic tracking-tight text-slate-300">
-                                                {canchas[res.canchaId] || 'Cargando...'}
+                                                {canchas[res.canchaId] || 'Espacio Eliminado'}
                                             </span>
                                         </div>
                                     </td>
@@ -288,9 +303,18 @@ export default function ReservasPage() {
                                             <button 
                                                 onClick={() => updateReservaStatus(res.id, 'cancelada')}
                                                 className={`p-2 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-xl border border-white/5 transition-all ${res.status === 'cancelada' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                title="Cancelar Reserva"
                                             >
                                                 <XCircle size={16} />
                                             </button>
+                                            <a 
+                                                href={`https://wa.me/${res.cliente?.telefono?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${res.cliente?.nombre}, te contactamos de Complejo Giovanni por tu reserva en ${canchas[res.canchaId] || 'el complejo'} el día ${res.fecha} a las ${res.hora} hs. (Ref: ${res.id})`)}`}
+                                                target="_blank" rel="noopener noreferrer"
+                                                className="p-2 bg-white/5 hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-400 rounded-xl border border-white/5 transition-all"
+                                                title="Contactar por WhatsApp"
+                                            >
+                                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                            </a>
                                             <button className="p-2 bg-white/5 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-400 rounded-xl border border-white/5 transition-all">
                                                 <MoreHorizontal size={16} />
                                             </button>

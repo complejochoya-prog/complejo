@@ -21,12 +21,20 @@ import {
 } from 'lucide-react';
 import TableDetail from './TableDetail';
 
+import { usePedidos } from '../services/PedidosContext';
+import { useMesas } from '../services/MesasContext';
+import { tablasService } from '../../../core/services/tablasService';
+import { Plus } from 'lucide-react';
+
 export default function BarDashboard() {
     const { negocioId } = useParams();
-    const { orders, tables, barProducts, users, config } = useConfig();
+    const { tables: configTables, barProducts, users, config } = useConfig();
+    const { orders } = usePedidos();
+    const { mesas, marcarMesaOcupada } = useMesas();
     const [selectedTable, setSelectedTable] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('todas'); // 'todas', 'ocupadas', 'limpieza'
+    const [pendingQuickProduct, setPendingQuickProduct] = useState(null);
 
     // Filter Mozos
     const activeMozos = users.filter(u => 
@@ -34,17 +42,37 @@ export default function BarDashboard() {
         (u.estado === 'activo' || u.active === true)
     );
 
+    // Create 12 default tables if none exist
+    const tables = useMemo(() => {
+        const staticTables = (configTables && configTables.length > 0) ? configTables : Array.from({ length: 12 }, (_, i) => ({ tableNumber: i + 1, status: 'disponible' }));
+        return staticTables.map(st => {
+            const currentOrders = (orders || []).filter(o => (String(o.table) === String(st.tableNumber) || String(o.mesa) === String(st.tableNumber)) && o.status !== 'paid');
+            const mozoAsignado = currentOrders.length > 0 ? currentOrders[0].mozoName : null;
+            
+            // Get state from MesasContext
+            const liveMesa = (mesas || []).find(m => String(m.numero) === String(st.tableNumber));
+            const baseStatus = liveMesa?.estado || 'disponible';
+            
+            return {
+                ...st,
+                status: currentOrders.length > 0 && baseStatus === 'disponible' ? 'ocupada' : baseStatus,
+                currentOrders,
+                mozoName: mozoAsignado
+            };
+        });
+    }, [configTables, orders, mesas]);
+
     // Stats
     const stats = useMemo(() => {
-        const activeOrders = orders.filter(o => o.status !== 'paid');
-        const revenueToday = orders.filter(o => o.status === 'paid').reduce((acc, o) => acc + (o.total || 0), 0);
+        const activeOrders = (orders || []).filter(o => o.status !== 'paid');
+        const revenueToday = (orders || []).filter(o => o.status === 'paid').reduce((acc, o) => acc + (o.total || 0), 0);
         return {
             occupied: tables.filter(t => t.status === 'ocupada' || t.status === 'atendiendo').length,
             revenue: revenueToday,
-            mozos: activeMozos.length,
-            pendingOrders: activeOrders.reduce((acc, o) => acc + (o.items?.length || 1), 0)
+            activeMozos: new Set(activeOrders.map(o => o.mozoName).filter(Boolean)).size,
+            avgWaitTime: '12m'
         };
-    }, [orders, tables, activeMozos]);
+    }, [tables, orders]);
 
     // Group tables by state
     const filteredTables = tables.filter(t => {
@@ -53,6 +81,72 @@ export default function BarDashboard() {
         if (activeFilter === 'limpieza') return matchesSearch && t.status === 'limpiando';
         return matchesSearch;
     });
+
+    const handleAddTable = async () => {
+        const newTableNumber = tables.length > 0 ? Math.max(...tables.map(t => t.tableNumber)) + 1 : 1;
+        try {
+            await tablasService.updateTabla(negocioId, newTableNumber, { status: 'disponible' });
+        } catch (e) {
+            console.error("Error al agregar mesa", e);
+        }
+    };
+
+    const handleDeleteTable = async (tableNumber) => {
+        if (window.confirm(`¿Estás seguro de que deseas eliminar la mesa ${tableNumber}?`)) {
+            try {
+                await tablasService.deleteTabla(negocioId, tableNumber);
+            } catch (e) {
+                console.error("Error al eliminar mesa", e);
+            }
+        }
+    };
+
+    const { addOrder } = usePedidos();
+
+    const handleTableClick = (t) => {
+        if (pendingQuickProduct) {
+            // Quick Order Flow
+            addOrder({
+                id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                table: t.tableNumber,
+                mesa: t.tableNumber,
+                productId: pendingQuickProduct.id,
+                productName: pendingQuickProduct.nombre,
+                price: pendingQuickProduct.precio,
+                quantity: 1,
+                total: pendingQuickProduct.precio,
+                items: [{
+                    id: pendingQuickProduct.id,
+                    nombre: pendingQuickProduct.nombre,
+                    precio: pendingQuickProduct.precio,
+                    cantidad: 1,
+                    sector: ['Pizzas', 'Empanadas', 'Papas', 'Platos', 'Pastas', 'Burgers', 'Ensaladas', 'Lomos', 'Carnes', 'Tacos', 'Postres', 'Tortas'].includes(pendingQuickProduct.categoria) ? 'cocina' : 'barra',
+                }],
+                productos: [{
+                    id: pendingQuickProduct.id,
+                    nombre: pendingQuickProduct.nombre,
+                    precio: pendingQuickProduct.precio,
+                    cantidad: 1,
+                    sector: ['Pizzas', 'Empanadas', 'Papas', 'Platos', 'Pastas', 'Burgers', 'Ensaladas', 'Lomos', 'Carnes', 'Tacos', 'Postres', 'Tortas'].includes(pendingQuickProduct.categoria) ? 'cocina' : 'barra',
+                }],
+                mozoId: t.mozoId || '',
+                mozoName: t.mozoName || 'Sistema',
+                origin: "bar",
+                status: "nuevo",
+                estado: "nuevo",
+                timestamp: new Date().toISOString(),
+                createdAt: new Date().toISOString()
+            });
+            // Ocupar mesa si estaba disponible
+            if (t.status === 'disponible') {
+                 if (marcarMesaOcupada) marcarMesaOcupada(t.tableNumber);
+            }
+            setPendingQuickProduct(null);
+            setSelectedTable(t); // Also open it so they can confirm
+        } else {
+            setSelectedTable(t);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans">
@@ -131,8 +225,17 @@ export default function BarDashboard() {
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-opacity-5">
                 
                 {/* Tables Navigator */}
-                <main className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-10 scrollbar-hide">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                <main className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-10 scrollbar-hide relative">
+                    
+                    {/* Quick Order Banner */}
+                    {pendingQuickProduct && (
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-emerald-500 text-slate-950 px-6 py-3 rounded-full font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 flex items-center gap-3 animate-in slide-in-from-top-4">
+                            <span>Selecciona una mesa para cargar: {pendingQuickProduct.nombre}</span>
+                            <button onClick={() => setPendingQuickProduct(null)} className="ml-2 bg-slate-950/20 rounded-full w-6 h-6 flex items-center justify-center hover:bg-slate-950/40">✕</button>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
                         <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/5">
                             {['todas', 'ocupadas', 'limpieza'].map(f => (
                                 <button 
@@ -167,10 +270,21 @@ export default function BarDashboard() {
                             <TableCard 
                                 key={t.tableNumber}
                                 table={t}
-                                currentOrders={orders.filter(o => o.table === t.tableNumber && o.status !== 'paid')}
-                                onClick={() => setSelectedTable(t)}
+                                currentOrders={(orders || []).filter(o => (String(o.table) === String(t.tableNumber) || String(o.mesa) === String(t.tableNumber)) && o.status !== 'paid')}
+                                onClick={handleTableClick}
+                                onDelete={handleDeleteTable}
                             />
                         ))}
+                        {/* Botón Agregar Mesa */}
+                        <button 
+                            onClick={handleAddTable}
+                            className="w-full h-full min-h-[200px] rounded-[32px] border-2 border-dashed border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all flex flex-col items-center justify-center text-slate-500 hover:text-emerald-500 group"
+                        >
+                            <div className="w-16 h-16 rounded-2xl bg-white/5 group-hover:bg-emerald-500/20 flex items-center justify-center mb-4 transition-colors">
+                                <Plus size={32} />
+                            </div>
+                            <span className="font-black uppercase tracking-widest text-xs">Agregar Mesa</span>
+                        </button>
                     </div>
 
                     {filteredTables.length === 0 && (
@@ -228,10 +342,9 @@ export default function BarDashboard() {
                                 products={barProducts}
                                 onSelect={(p) => {
                                     if (selectedTable) {
-                                        // Auto add logic here or show confirmation
-                                        console.log("Adding product", p, "to table", selectedTable.tableNumber);
+                                        // If modal is open, shouldn't hit here due to z-index usually, but just in case
                                     } else {
-                                        // Quick generic order?
+                                        setPendingQuickProduct(p);
                                     }
                                 }}
                                 gridCols={2}

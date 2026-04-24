@@ -36,9 +36,9 @@ const menuGroups = [
         label: 'Configuración',
         icon: Settings,
         items: [
-            { path: 'espacios', label: 'Áreas & Canchas', icon: LayoutDashboard },
+            { path: 'espacios', label: 'Espacios', icon: LayoutDashboard },
             { path: 'horarios', label: 'Horarios & Bloqueos', icon: Clock },
-            { path: 'promos', label: 'Ofertas & Promos', icon: Tag },
+            { path: 'admin/promos', label: 'Ofertas & Promos', icon: Tag },
             { path: 'pantallas', label: 'Pantallas TVs', icon: Monitor },
         ]
     },
@@ -48,6 +48,7 @@ const menuGroups = [
         icon: Sparkles,
         items: [
             { path: 'admin/torneos', label: 'Torneos', icon: Trophy },
+            { path: 'admin/escuela', label: 'Escuela de Fútbol', icon: Users },
             { path: 'smart-center', label: 'Smart Center', icon: Zap },
             { path: 'analytics-ai', label: 'Motor C-IA', icon: Sparkles },
             { path: 'accesos', label: 'Accesos QR', icon: Lock },

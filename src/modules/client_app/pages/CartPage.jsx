@@ -45,7 +45,7 @@ export default function CartPage() {
             
             if (res.success) {
                 clearCart();
-                navigate(`/${negocioId}/app/pedido-confirmado`, { state: { order: orderData } });
+                navigate(`/${negocioId}/pedido-confirmado`, { state: { order: orderData } });
             }
         } catch (err) {
             console.error(err);

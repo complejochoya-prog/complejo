@@ -49,7 +49,8 @@ export default function MozoCheckout() {
                 descripcion: `Mesa ${selectedOrder.table} - Cobro realizado por ${mozo.name}`,
                 metodo_pago: (details.method || 'efectivo').toLowerCase(),
                 origen: 'bar',
-                mozo: mozo.name
+                mozo: mozo.name,
+                receiptImage: details.receipt // Pass the base64 image
             });
 
             targetOrders.forEach(o => {

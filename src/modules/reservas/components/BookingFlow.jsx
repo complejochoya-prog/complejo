@@ -88,6 +88,7 @@ export default function BookingFlow() {
                 );
                 return {
                     ...res,
+                    active: res.active !== false,
                     img: res.img || serviceMatch?.img || 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=800',
                     desc: res.desc || serviceMatch?.desc || 'Instalación profesional de alta calidad.',
                     capacidad: res.capacidad || serviceMatch?.capacidad || null
@@ -141,15 +142,16 @@ export default function BookingFlow() {
     }, [categories, selectedCategory]);
 
     // Pre-select resource
+    const { fieldId } = useParams();
     useEffect(() => {
-        if (location.state?.preselectedResource) {
-            const pre = location.state.preselectedResource;
+        const pre = location.state?.preselectedResource || (fieldId ? { id: fieldId } : null);
+        if (pre) {
             const match = resources.find(r =>
-                r.id === pre.id || r.name.toLowerCase() === pre.name.toLowerCase()
+                r.id === pre.id || r.name?.toLowerCase() === (pre.name || '').toLowerCase()
             );
             if (match) setSelectedResource(match);
         }
-    }, [location.state, resources]);
+    }, [location.state, resources, fieldId]);
 
     // Calendar logic
     const [currentMonthDate, setCurrentMonthDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -190,7 +192,8 @@ export default function BookingFlow() {
         }
 
         if (typeof checkAvailability === 'function') {
-            if (!checkAvailability(selectedResource.id, dateStr, slotHour)) return 'Ocupado';
+            const requestedAmount = parseInt(formData.cantidadPersonas) || 1;
+            if (!checkAvailability(selectedResource.id, dateStr, slotHour, requestedAmount)) return 'Ocupado';
         }
         return 'Disponible';
     };
@@ -228,20 +231,33 @@ export default function BookingFlow() {
             return;
         }
 
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        const timeStr = rentalMode === 'hora' ? selectedSlot.hour : `${startSlot.hour} - ${endSlot.hour}`;
+        const requestedAmount = parseInt(formData.cantidadPersonas) || 1;
+
+        if (rentalMode === 'hora' && typeof checkAvailability === 'function') {
+            if (!checkAvailability(selectedResource.id, dateStr, selectedSlot.hour, requestedAmount)) {
+                alert("La cantidad de personas solicitada supera el cupo disponible para este horario.");
+                return;
+            }
+        }
+
         setBookingLoading(true);
         try {
             // Integration with createReserva from context (which uses Firestore)
-            const dateStr = selectedDate.toISOString().split('T')[0];
-            const timeStr = rentalMode === 'hora' ? selectedSlot.hour : `${startSlot.hour} - ${endSlot.hour}`;
             const endTimeStr = rentalMode === 'hora' ? null : endSlot.hour;
 
             if (addBooking) {
                 await addBooking({
                     resource: selectedResource,
+                    canchaId: selectedResource.id, // For Admin ReservasPage
                     fullDate: dateStr,
+                    fecha: dateStr, // For Admin ReservasPage
                     time: timeStr,
+                    hora: timeStr, // For Admin ReservasPage
                     endTime: endTimeStr,
                     price: currentPrice,
+                    precio: currentPrice, // For Admin ReservasPage
                     cliente: formData,
                     pago: paymentMethod,
                     rentalMode,

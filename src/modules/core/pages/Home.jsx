@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Calendar, Utensils, Award, Users, PartyPopper, ChevronRight, Star, Zap, Tag, Trophy, Flame, Music, Target, Swords } from 'lucide-react';
+import { Calendar, Utensils, Zap, Tag, PartyPopper, ChevronRight, Swords, Clock, MapPin, Star, ShieldCheck, Trophy, CloudSun, Thermometer, Droplets } from 'lucide-react';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { fetchEspacios } from '../../admin/services/espaciosService';
 import { fetchPromos } from '../../admin/services/promosService';
@@ -11,16 +11,52 @@ export default function Home() {
     const [animate, setAnimate] = useState(false);
     const [espacios, setEspacios] = useState([]);
     const [promos, setPromos] = useState([]);
+    const [weather, setWeather] = useState({ temp: '--', condition: 'Cargando...', icon: CloudSun });
 
     useEffect(() => { 
-        setAnimate(true); 
+        // Initial delay for smooth entrance
+        setTimeout(() => setAnimate(true), 100);
         const load = async () => {
             const dataEsp = await fetchEspacios(negocioId);
             const dataPromo = await fetchPromos(negocioId);
-            setEspacios(dataEsp.filter(e => e.active));
-            setPromos(dataPromo.filter(p => p.active));
+            setEspacios(dataEsp.filter(e => e.active !== false));
+            setPromos(dataPromo.filter(p => p.active !== false));
         };
         load();
+
+        // Fetch Weather
+        const fetchWeather = async (lat, lon) => {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code`);
+                const data = await res.json();
+                const code = data.current.weather_code;
+                let condition = 'Despejado';
+                if (code > 0 && code < 4) condition = 'Parcialmente Nublado';
+                if (code >= 45 && code <= 48) condition = 'Niebla';
+                if (code >= 51 && code <= 67) condition = 'Lluvia';
+                if (code >= 71 && code <= 77) condition = 'Nieve';
+                if (code >= 80 && code <= 82) condition = 'Chubascos';
+                if (code >= 95) condition = 'Tormenta';
+
+                setWeather({
+                    temp: Math.round(data.current.temperature_2m),
+                    humidity: data.current.relative_humidity_2m,
+                    condition
+                });
+            } catch (error) {
+                console.error("Weather error:", error);
+            }
+        };
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
+                () => fetchWeather(-34.6037, -58.3816) // Default to BA if denied
+            );
+        } else {
+            fetchWeather(-34.6037, -58.3816);
+        }
+
         window.addEventListener('storage_espacios', load);
         window.addEventListener('storage_promos', load);
         return () => {
@@ -29,145 +65,138 @@ export default function Home() {
         };
     }, [negocioId]);
 
-    const activePromo = promos.find(p => p.type === 'promo') || { title: 'PROMOCIÓN SEMANAL', desc: 'Consultá nuestras ofertas.' };
-    const firstEvent = promos.find(p => p.type === 'evento') || { title: 'FESTEJÁ TU CUMPLE', desc: 'Armamos tu evento a medida.' };
-
+    const activePromo = promos.find(p => p.type === 'promo') || { title: 'PROMOCIÓN SEMANAL', desc: 'Consultá nuestras ofertas exclusivas y ahorrá en tu próxima reserva.' };
+    
     const basePath = `/${negocioId}`;
-    const businessName = config?.nombre || negocioId?.toUpperCase() || 'COMPLEJO GIOVANNI';
+    const businessName = config?.nombre || negocioId?.toUpperCase() || 'GIOVANNI SPORTS';
 
     return (
-        <div className={`relative min-h-screen overflow-hidden transition-all duration-1000 ${animate ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`relative min-h-screen bg-[#030303] text-white overflow-hidden transition-opacity duration-1000 ${animate ? 'opacity-100' : 'opacity-0'}`}>
             
-            {/* Animated Background Layers */}
-            <div className="fixed inset-0 z-0 bg-slate-950">
-                <div className="absolute inset-0 animate-mesh opacity-30" />
-                <div className="absolute inset-0 bg-grid-white" />
-                
-                {/* Glowing Orbs */}
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-amber-500/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+            {/* Ambient Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-amber-500/10 rounded-full blur-[150px]" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-orange-600/10 rounded-full blur-[150px]" />
+                {/* Removed noise.svg to prevent 404 */}
             </div>
 
-            <div className="relative z-10 p-4 lg:p-10 space-y-12 pb-32 max-w-7xl mx-auto">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 lg:px-12 pt-8 pb-32 space-y-16 lg:space-y-24">
                 
-                {/* Header Welcome Section */}
-                <header className="space-y-2 mt-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="h-[1px] w-8 bg-amber-500" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Bienvenido a {businessName}</span>
+                {/* Hero Section */}
+                <section className="relative min-h-[75vh] lg:min-h-[85vh] flex flex-col justify-center rounded-[40px] overflow-hidden group">
+                    <div className="absolute inset-0 bg-black">
+                        <img
+                            src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=2000&auto=format&fit=crop"
+                            className="w-full h-full object-cover opacity-40 scale-105 group-hover:scale-100 transition-transform duration-[10s] ease-out"
+                            alt="Hero Background"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-black/50" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#030303] via-transparent to-transparent" />
                     </div>
-                    <h1 className="text-4xl lg:text-7xl font-black italic tracking-tighter uppercase leading-[0.8] text-white">
-                        VIVÍ LA <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600 text-glow">EXPERIENCIA</span>
-                    </h1>
-                </header>
 
-                {/* Moving Text Marquee (Letras con movimientos) */}
-                <div className="relative w-full overflow-hidden py-4 border-y border-white/5 bg-white/5 backdrop-blur-sm -mx-4 lg:-mx-10 px-4 lg:px-10">
-                    <div className="flex animate-marquee whitespace-nowrap">
-                        {[1, 2, 3, 4].map((_, i) => (
-                            <div key={i} className="flex items-center gap-12 mr-12">
-                                <span className="text-2xl font-black italic uppercase tracking-tighter text-white/40 flex items-center gap-4">
-                                    <Target className="text-amber-500" size={24} /> FÚTBOL 5 & 7
+                    <div className="relative z-20 p-6 lg:p-16 flex flex-col lg:flex-row items-start lg:items-end justify-between gap-10 lg:gap-12 mt-auto">
+                        <div className="space-y-6 w-full lg:w-2/3">
+                            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                                 </span>
-                                <span className="text-2xl font-black italic uppercase tracking-tighter text-white/40 flex items-center gap-4">
-                                    <Trophy className="text-amber-500" size={24} /> TORNEOS RELÁMPAGO
-                                </span>
-                                <span className="text-2xl font-black italic uppercase tracking-tighter text-white/40 flex items-center gap-4">
-                                    <Flame className="text-amber-500" size={24} /> PARRILLA & BAR
-                                </span>
-                                <span className="text-2xl font-black italic uppercase tracking-tighter text-white/40 flex items-center gap-4">
-                                    <Music className="text-amber-500" size={24} /> EVENTOS SOCIALES
-                                </span>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">Complejo Deportivo Premium</span>
                             </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Hero Banner with enhanced depth */}
-                <section className="relative h-[300px] lg:h-[500px] rounded-[48px] overflow-hidden group shadow-2xl shadow-black">
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent z-10" />
-                    <img
-                        src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=2000&auto=format&fit=crop"
-                        className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-[3s] ease-out"
-                        alt="Cancha de Fútbol"
-                    />
-
-                    <div className="absolute inset-x-8 bottom-10 lg:bottom-16 lg:left-16 z-20 space-y-4">
-                        <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-2xl">
-                            <Zap size={14} className="text-amber-500" fill="currentColor" />
-                            <span className="text-[10px] lg:text-xs font-black uppercase tracking-widest text-white">RESERVAS ONLINE 24/7</span>
+                            
+                            <h1 className="text-5xl lg:text-8xl font-black uppercase tracking-tighter leading-[0.95] text-white">
+                                <span className="block opacity-90">{businessName}</span>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 italic block mt-2">TU LUGAR</span>
+                            </h1>
+                            
+                            <p className="text-sm lg:text-lg font-medium text-white/60 max-w-xl leading-relaxed">
+                                Instalaciones de primer nivel. Reservas instantáneas. 
+                                Gastronomía excepcional. Elevamos tu juego dentro y fuera de la cancha.
+                            </p>
                         </div>
-                        <h2 className="text-5xl lg:text-8xl font-black italic tracking-tighter uppercase leading-[0.8] text-white max-w-2xl">
-                            DOMINÁ EL <span className="text-amber-500 italic">CAMPO</span>
-                        </h2>
-                        <div className="flex gap-4">
-                           <Link to={`${basePath}/reservas`} className="px-8 py-4 bg-amber-500 text-black rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white transition-all transform hover:-translate-y-1 shadow-xl shadow-amber-500/20">
-                               Reservar Ahora
-                           </Link>
-                           <Link to={`${basePath}/menu`} className="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white/20 transition-all transform hover:-translate-y-1">
-                               Ver Bar
-                           </Link>
+
+                        {/* Weather Widget Glass Card */}
+                        <div className="w-full lg:w-1/3 glass-premium p-6 lg:p-8 rounded-[32px] border border-white/10 relative overflow-hidden group/card hover:border-blue-500/30 transition-colors">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity" />
+                            <div className="relative z-10 space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center border border-blue-500/30 text-blue-400">
+                                        <CloudSun size={24} />
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Estado del tiempo</p>
+                                        <p className="text-xs font-bold text-blue-400 uppercase tracking-tighter mt-0.5">{weather.condition}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-end gap-4">
+                                    <div className="flex items-start">
+                                        <span className="text-6xl font-black tracking-tighter text-white">{weather.temp}</span>
+                                        <span className="text-2xl font-black text-blue-500 mt-2">°C</span>
+                                    </div>
+                                    <div className="pb-2 space-y-1">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase tracking-widest">
+                                            <Droplets size={12} className="text-blue-500" />
+                                            <span>{weather.humidity || 0}% Hum.</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase tracking-widest">
+                                            <Thermometer size={12} className="text-amber-500" />
+                                            <span>Sensación Real</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Link to={`${basePath}/reservas`} className="flex items-center justify-center gap-2 w-full py-4 bg-white text-black rounded-xl font-black uppercase tracking-widest text-xs hover:bg-blue-500 hover:text-white transition-all shadow-lg shadow-blue-500/10">
+                                    RESERVAR <ChevronRight size={16} />
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Main Action - Floating Style */}
-                <section className="relative -mt-20 z-30 px-4 max-w-4xl mx-auto">
-                    <div className="animate-float">
-                        <Link to={`${basePath}/reservas`} className="flex items-center justify-between glass-premium p-8 lg:p-10 rounded-[40px] shadow-2xl group transition-all">
-                            <div className="flex items-center gap-6">
-                                <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-[28px] bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-2xl relative overflow-hidden group-hover:rotate-6 transition-transform">
-                                    <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                                    <Calendar className="text-black relative z-10" size={32} />
-                                </div>
-                                <div>
-                                    <h3 className="text-2xl lg:text-3xl font-black italic uppercase tracking-tighter leading-none text-white">PANEL DE JUEGO</h3>
-                                    <p className="text-[10px] lg:text-xs font-bold uppercase tracking-[0.2em] mt-2 text-white/50">Tu victoria comienza con una reserva</p>
-                                </div>
-                            </div>
-                            <div className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-black transition-all">
-                                <ChevronRight size={28} />
-                            </div>
+                {/* Facilities (Arenas) Grid */}
+                <section className="space-y-12">
+                    <div className="flex flex-col md:flex-row items-end justify-between gap-4">
+                        <div className="space-y-2">
+                            <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter italic">
+                                NUESTROS <span className="text-amber-500">ESPACIOS</span>
+                            </h2>
+                            <p className="text-xs font-bold text-white/50 uppercase tracking-[0.2em]">Campos homologados para alta competición</p>
+                        </div>
+                        <Link to={`${basePath}/reservas`} className="group flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-500 hover:text-white transition-colors">
+                            Ver Disponibilidad <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
-                </section>
 
-                {/* Espacios Deportivos - Modern Cards */}
-                <section className="space-y-8">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                            <h3 className="text-2xl lg:text-4xl font-black uppercase tracking-tighter italic text-white line-through decoration-amber-500 decoration-4">ARENAS</h3>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Canchas homologadas para alta competición</p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                         {espacios.map((espacio, i) => {
-                             const isBar = (espacio.name || '').toLowerCase().includes('bar') || 
-                                         (espacio.desc || '').toLowerCase().includes('bar') ||
-                                         (espacio.tipo || '').toLowerCase().includes('bar');
+                            const isBar = (espacio.name || '').toLowerCase().includes('bar') || 
+                                        (espacio.desc || '').toLowerCase().includes('bar') ||
+                                        (espacio.tipo || '').toLowerCase().includes('bar');
                             const targetPath = isBar ? `${basePath}/menu` : `${basePath}/app/reservar/${espacio.id}`;
 
                             return (
-                                <Link key={espacio.id || i} to={targetPath} className="group relative h-[450px] rounded-[48px] overflow-hidden bg-slate-900 border border-white/5 shadow-2xl transition-all hover:border-amber-500/30">
-                                    <img src={espacio.img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-40 group-hover:opacity-80" alt={espacio.name} />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                                <Link key={espacio.id || i} to={targetPath} className="group relative h-[400px] lg:h-[480px] rounded-[32px] overflow-hidden bg-white/5 border border-white/5 hover:border-amber-500/50 transition-all duration-500">
+                                    <img src={espacio.img || 'https://images.unsplash.com/photo-1551958219-acbc608c6377?q=80&w=800'} className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" alt={espacio.name} />
                                     
-                                    <div className="absolute top-8 right-8">
-                                        <div className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
-                                            {isBar ? <Utensils size={20} /> : <Zap size={20} />}
-                                        </div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
+                                    
+                                    <div className="absolute top-6 left-6 flex gap-2">
+                                        <span className="px-3 py-1.5 bg-black/50 backdrop-blur-md border border-white/10 text-white text-[9px] font-black uppercase tracking-widest rounded-lg">
+                                            {espacio.category || 'Deportes'}
+                                        </span>
                                     </div>
 
-                                    <div className="absolute bottom-10 left-10 right-10 space-y-2">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="px-3 py-1 bg-amber-500/10 backdrop-blur-md border border-amber-500/20 text-amber-500 text-[8px] font-black uppercase tracking-widest rounded-full">
-                                                {espacio.category || 'Recreativo'}
-                                            </span>
+                                    <div className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white group-hover:bg-amber-500 group-hover:text-black group-hover:border-transparent transition-all">
+                                        {isBar ? <Utensils size={18} /> : <Zap size={18} />}
+                                    </div>
+
+                                    <div className="absolute bottom-0 left-0 right-0 p-8 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                                        <div className="h-1 w-12 bg-amber-500 mb-4 rounded-full" />
+                                        <h4 className="text-3xl font-black uppercase tracking-tight text-white leading-none mb-2">{espacio.name}</h4>
+                                        <p className="text-sm font-medium text-white/60 line-clamp-2">{espacio.desc}</p>
+                                        
+                                        <div className="mt-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                                            {isBar ? 'Ver Menú' : 'RESERVAR'} <ChevronRight size={14} />
                                         </div>
-                                        <div className="h-1 w-12 bg-amber-500 mb-4 group-hover:w-full transition-all duration-500" />
-                                        <h4 className="text-2xl font-black uppercase tracking-tight text-white leading-none">{espacio.name}</h4>
-                                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-amber-500/80 transition-colors">{espacio.desc}</p>
                                     </div>
                                 </Link>
                             );
@@ -175,98 +204,132 @@ export default function Home() {
                     </div>
                 </section>
 
-                {/* Promociones y Eventos - Bento Grid Style */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <section className="lg:col-span-2 bg-gradient-to-br from-blue-600 to-indigo-950 rounded-[56px] p-10 lg:p-14 relative overflow-hidden group shadow-2xl">
-                        <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-white/10 blur-[100px] animate-pulse" />
-                        <div className="relative z-10 space-y-6">
-                            <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
-                                <Tag size={14} className="text-white" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white">OFERTA ACTIVA</span>
-                            </div>
-                            <h3 className="text-4xl lg:text-7xl font-black italic uppercase tracking-tighter text-white leading-[0.8]">
-                                {activePromo.title.toUpperCase()}
-                            </h3>
-                            <p className="text-sm lg:text-lg text-blue-100/60 font-medium max-w-md">
-                                {activePromo.desc}
-                            </p>
-                            <Link to={`${basePath}/eventos`} className="inline-flex items-center gap-3 px-8 py-4 bg-white text-blue-900 rounded-3xl text-[10px] font-black uppercase tracking-widest shadow-2xl hover:bg-amber-500 hover:text-black transition-all transform hover:scale-105">
-                                RECLAMAR PROMO <ChevronRight size={16} />
-                            </Link>
+                {/* Experiences / Promo Bento Grid */}
+                <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                    
+                    {/* Main Promo Box */}
+                    <div className="col-span-1 lg:col-span-8 relative rounded-[40px] overflow-hidden bg-gradient-to-br from-indigo-900 to-black p-8 lg:p-14 group border border-white/5">
+                        <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity">
+                            <div className="absolute top-[-50%] right-[-20%] w-[100%] h-[200%] bg-[radial-gradient(ellipse_at_center,rgba(79,70,229,0.4)_0%,transparent_70%)] rotate-12" />
                         </div>
-                    </section>
-
-                    <section className="bg-slate-900 border border-white/10 rounded-[56px] p-10 relative overflow-hidden group shadow-2xl">
                         <div className="relative z-10 h-full flex flex-col justify-between">
                             <div className="space-y-6">
-                                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                                    <PartyPopper className="text-amber-500" size={28} />
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-md border border-white/20">
+                                    <Tag size={12} className="text-amber-400" />
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-white/90">Destacado</span>
                                 </div>
-                                <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white leading-tight">
-                                    TÚ EVENTO, <br /> <span className="text-amber-500">NUESTRA</span> REGLA
+                                <h3 className="text-4xl lg:text-6xl font-black uppercase tracking-tighter leading-[0.9] text-white">
+                                    {activePromo.title}
                                 </h3>
+                                <p className="text-base lg:text-lg font-medium text-indigo-100/70 max-w-lg">
+                                    {activePromo.desc}
+                                </p>
                             </div>
-                            <Link to={`${basePath}/eventos`} className="mt-8 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all text-center">
-                                Reservar Fecha
-                            </Link>
+                            <div className="mt-12">
+                                <Link to={`${basePath}/promos`} className="inline-flex items-center justify-center px-8 py-4 bg-white text-black rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform shadow-xl shadow-white/10">
+                                    Ver Ofertas
+                                </Link>
+                            </div>
                         </div>
-                        <Users size={300} className="absolute -bottom-20 -right-20 text-white/[0.03] group-hover:scale-110 transition-transform duration-[2s]" />
-                    </section>
-                </div>
-
-                {/* Desafío CTA Section */}
-                <section className="relative bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 rounded-[56px] p-10 lg:p-14 overflow-hidden group shadow-2xl">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
-                    <div className="absolute bottom-0 right-0 -mr-12 -mb-12 opacity-10 group-hover:scale-110 transition-transform duration-[2s]">
-                        <Swords size={240} />
                     </div>
-                    <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center gap-8">
-                        <div className="w-20 h-20 rounded-[28px] bg-white/20 backdrop-blur-xl flex items-center justify-center text-white shadow-2xl shrink-0">
-                            <Swords size={40} />
-                        </div>
-                        <div className="flex-1 space-y-4">
-                            <h3 className="text-3xl lg:text-5xl font-black italic uppercase tracking-tighter text-white leading-[0.85]">
-                                ZONA DE <span className="text-black/80">DESAFÍO</span>
+
+                    {/* Events / Social Box */}
+                    <div className="col-span-1 lg:col-span-4 relative rounded-[40px] overflow-hidden bg-[#0a0a0a] border border-white/10 p-8 lg:p-10 group hover:border-amber-500/30 transition-colors">
+                        <PartyPopper className="absolute -bottom-10 -right-10 text-white/[0.02] w-64 h-64 group-hover:rotate-12 transition-transform duration-700" />
+                        <div className="relative z-10 flex flex-col h-full">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-black mb-8 shadow-lg shadow-amber-500/20">
+                                <Star size={24} fill="currentColor" />
+                            </div>
+                            <h3 className="text-3xl font-black uppercase tracking-tighter leading-none mb-4">
+                                EVENTOS <br/><span className="text-white/40 italic">ÚNICOS</span>
                             </h3>
-                            <p className="text-xs lg:text-sm font-bold text-white/60 uppercase tracking-[0.2em] max-w-lg">
-                                ¿Buscás rival? ¿Necesitás completar equipo? Publicá tu disponibilidad y encontrá partido.
+                            <p className="text-sm text-white/50 font-medium mb-12">
+                                Celebra cumpleaños, eventos corporativos o torneos privados con nosotros.
                             </p>
-                            <Link to={`${basePath}/desafio`} className="inline-flex items-center gap-4 text-xs font-black uppercase tracking-widest text-amber-900 bg-white px-10 py-5 rounded-3xl hover:bg-amber-100 transition-all transform hover:scale-105 shadow-xl">
-                                Entrar al Desafío <ChevronRight size={18} />
+                            <a 
+                                href={`https://wa.me/${config?.telefono || '5493834555555'}?text=Hola! Quiero planificar un evento en ${businessName}`} 
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-auto inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-500 hover:text-white transition-colors"
+                            >
+                                Contactar por WhatsApp <ChevronRight size={16} />
+                            </a>
+                        </div>
+                    </div>
+
+                    {/* Desafío Box */}
+                    <div className="col-span-1 lg:col-span-12 relative rounded-[40px] overflow-hidden p-8 lg:p-14 group flex flex-col lg:flex-row items-center gap-8 lg:gap-10 bg-gradient-to-r from-red-950 to-black border border-red-900/50">
+                        {/* Removed noise.svg to prevent 404 */}
+                        <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-red-600/20 blur-[80px] rounded-full pointer-events-none" />
+                        
+                        <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-3xl bg-red-600/10 border border-red-500/20 flex items-center justify-center shrink-0 relative z-10 shadow-inner">
+                            <Swords size={48} className="text-red-500" />
+                        </div>
+                        
+                        <div className="relative z-10 flex-1 text-center lg:text-left">
+                            <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter italic text-white mb-2">
+                                ZONA DE DESAFÍO
+                            </h3>
+                            <p className="text-sm lg:text-base font-medium text-red-200/60 max-w-2xl mx-auto lg:mx-0">
+                                ¿Te falta uno para el partido? ¿Querés medirte contra otros equipos? Entrá a la bolsa de jugadores y encontrá tu próximo reto.
+                            </p>
+                        </div>
+
+                        <div className="relative z-10 shrink-0">
+                            <Link to={`${basePath}/desafio`} className="inline-flex items-center justify-center px-10 py-5 bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-500 transition-colors shadow-lg shadow-red-900/50">
+                                Ingresar al Desafío
                             </Link>
                         </div>
                     </div>
                 </section>
 
-                {/* Final CTA - Social Experience */}
-                <section className="glass-premium rounded-[56px] p-10 lg:p-16 flex flex-col lg:flex-row items-center gap-12 group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-grid-white opacity-20 pointer-events-none" />
-                    <div className="relative z-10 w-32 h-32 lg:w-44 lg:h-44 rounded-[40px] bg-slate-800 flex items-center justify-center text-amber-500 shadow-2xl">
-                        <Utensils size={64} className="group-hover:rotate-12 transition-transform" />
-                        <div className="absolute inset-0 bg-amber-500/20 blur-3xl animate-pulse" />
+                {/* Escuela de Fútbol Bento Section */}
+                <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                    <div className="col-span-1 lg:col-span-12 relative rounded-[40px] overflow-hidden p-8 lg:p-14 group flex flex-col lg:flex-row items-center gap-8 lg:gap-10 bg-gradient-to-r from-blue-950 to-black border border-blue-900/50">
+                        <div className="absolute -right-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/20 blur-[80px] rounded-full pointer-events-none" />
+                        
+                        <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-3xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shrink-0 relative z-10 shadow-inner">
+                            <Trophy size={48} className="text-blue-500" />
+                        </div>
+                        
+                        <div className="relative z-10 flex-1 text-center lg:text-left">
+                            <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter italic text-white mb-2">
+                                ESCUELA DE FÚTBOL
+                            </h3>
+                            <p className="text-sm lg:text-base font-medium text-blue-200/60 max-w-2xl mx-auto lg:mx-0">
+                                Formación integral para los futuros cracks. Entrenamientos dinámicos, valores deportivos y la mejor infraestructura para que aprendan jugando.
+                            </p>
+                        </div>
+
+                        <div className="relative z-10 shrink-0">
+                            <Link to={`${basePath}/escuela`} className="inline-flex items-center justify-center px-10 py-5 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50">
+                                Info e Inscripciones
+                            </Link>
+                        </div>
                     </div>
-                    <div className="relative z-10 flex-1 text-center lg:text-left space-y-4">
-                        <h3 className="text-4xl lg:text-6xl font-black italic uppercase tracking-tighter text-white leading-none">
-                            EL TERCER <br /> <span className="text-amber-500">TIEMPO</span>
-                        </h3>
-                        <p className="text-xs lg:text-sm font-bold text-slate-400 uppercase tracking-[0.2em] max-w-xl mx-auto lg:mx-0">
-                            No es solo fútbol. Es la pizza que compartís después, la cerveza fría y las risas con tu equipo. Descubrí nuestro Bar & Grill.
+                </section>
+
+                {/* The Bar Section - Full Width Image CTA */}
+                <section className="relative h-[500px] lg:h-[600px] rounded-[40px] lg:rounded-[48px] overflow-hidden group">
+                    <img src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1934&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-[10s]" alt="Bar and Restaurant" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                    
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                        <div className="w-20 h-20 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-amber-500 mb-8 shadow-2xl">
+                            <Utensils size={32} />
+                        </div>
+                        <h2 className="text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.85] text-white mb-6">
+                            EL TERCER <br/><span className="italic text-amber-500">TIEMPO</span>
+                        </h2>
+                        <p className="text-base lg:text-lg font-medium text-white/70 max-w-xl mb-10">
+                            La experiencia no termina en la cancha. Disfrutá de nuestra gastronomía premium, cervezas tiradas y el mejor ambiente para compartir la victoria.
                         </p>
-                        <Link to={`${basePath}/menu`} className="inline-flex items-center gap-4 text-xs font-black uppercase tracking-widest text-black bg-amber-500 px-10 py-5 rounded-3xl hover:bg-white transition-all transform hover:scale-105 shadow-xl shadow-amber-500/20">
-                            Explorar Menú <ChevronRight size={18} />
+                        <Link to={`${basePath}/menu`} className="inline-flex items-center gap-3 px-10 py-5 bg-amber-500 text-black rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white transition-colors shadow-xl shadow-amber-500/20">
+                            Ver Menú del Bar <ChevronRight size={18} />
                         </Link>
                     </div>
-                    <div className="relative z-10 hidden xl:flex gap-6">
-                        <div className="relative group/img">
-                            <img src="https://images.unsplash.com/photo-1541544741938-0af808871cc0?q=80&w=400" className="w-40 h-56 rounded-[40px] object-cover hover:scale-105 transition-all shadow-2xl" alt="Burger" />
-                            <div className="absolute inset-0 rounded-[40px] ring-1 ring-white/20 inset-y-0" />
-                        </div>
-                        <div className="relative group/img pt-12">
-                            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=400" className="w-40 h-56 rounded-[40px] object-cover hover:scale-105 transition-all shadow-2xl" alt="Pizza" />
-                            <div className="absolute inset-0 rounded-[40px] ring-1 ring-white/20 inset-y-0" />
-                        </div>
-                    </div>
                 </section>
+                
             </div>
         </div>
     );

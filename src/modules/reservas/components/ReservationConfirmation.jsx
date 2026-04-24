@@ -5,7 +5,7 @@ import { useReservas } from '../services/ReservasContext';
 import {
     CheckCircle2, Calendar, Clock, MapPin, MessageCircle,
     ArrowLeft, ShieldCheck, Banknote, CreditCard, Upload,
-    Copy, Check, FileImage, Sun, Moon, ChevronRight
+    Copy, Check, FileImage, Sun, Moon, ChevronRight, Info
 } from 'lucide-react';
 
 export default function ReservationConfirmation() {
@@ -54,10 +54,14 @@ export default function ReservationConfirmation() {
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setReceipt({
-                name: file.name,
-                url: URL.createObjectURL(file)
-            });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setReceipt({
+                    name: file.name,
+                    data: reader.result // Base64
+                });
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -85,9 +89,13 @@ export default function ReservationConfirmation() {
                 hoursCount: bookingData.hoursCount,
                 paymentMethod,
                 hasReceipt: !!receipt,
+                receiptImage: receipt?.data || null, // Actual image data
                 displayTime: bookingData.displayTime,
                 paymentStatus: 'Sin Pagar',
                 createdAt: new Date().toISOString()
+            }, {
+                amount: bookingData.price,
+                receiptImage: receipt?.data // Pass the base64 image
             });
 
             setSubmitStatus('success');

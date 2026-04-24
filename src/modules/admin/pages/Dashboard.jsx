@@ -22,13 +22,20 @@ export default function Dashboard() {
     const loadStats = async () => {
         if (!negocioId) return;
         
-        // Fetch bookings for today
-        const { fetchReservas } = await import('../../reservas/services/reservasService');
-        const allRes = await fetchReservas(negocioId);
-        const dateStr = new Date().toISOString().split('T')[0];
-        const hoy = allRes.filter(r => r.fecha === dateStr);
-        setReservasHoyCount(hoy.length);
-        setRecentReservas([...allRes].reverse().slice(0, 4));
+        try {
+            const { db } = await import('../../../firebase/config');
+            const { collection, getDocs, query } = await import('firebase/firestore');
+            const q = query(collection(db, 'negocios', negocioId, 'reservas'));
+            const snap = await getDocs(q);
+            const allRes = snap.docs.map(d => d.data());
+            
+            const dateStr = new Date().toISOString().split('T')[0];
+            const hoy = (allRes || []).filter(r => r.fecha === dateStr);
+            setReservasHoyCount(hoy.length);
+            setRecentReservas([...(allRes || [])].reverse().slice(0, 4));
+        } catch (error) {
+            console.error("Error loading dashboard stats:", error);
+        }
     };
 
     useEffect(() => {
@@ -36,16 +43,16 @@ export default function Dashboard() {
     }, [negocioId]);
 
     const stats = [
-        { label: 'Ingresos Hoy', value: '$45,200', change: '+12%', icon: TrendingUp, color: 'text-emerald-400', bg: 'from-emerald-500/20 to-emerald-500/5', border: 'border-emerald-500/20' },
-        { label: 'Reservas Hoy', value: `${reservasHoyCount}`, change: '80%', icon: Calendar, color: 'text-amber-400', bg: 'from-amber-500/20 to-amber-500/5', border: 'border-amber-500/20' },
-        { label: 'Clientes Nuevos', value: '12', change: '+4', icon: Users, color: 'text-blue-400', bg: 'from-blue-500/20 to-blue-500/5', border: 'border-blue-500/20' },
-        { label: 'Stock Bajo', value: '5', change: 'Crítico', icon: Package, color: 'text-red-400', bg: 'from-red-500/20 to-red-500/5', border: 'border-red-500/20' },
+        { label: 'Ingresos Hoy', value: '$45,200', change: '+12%', icon: TrendingUp, color: 'text-emerald-400', bg: 'from-emerald-500/20 to-emerald-500/5', border: 'border-emerald-500/20', path: `${basePath}/caja` },
+        { label: 'Reservas Hoy', value: `${reservasHoyCount}`, change: '80%', icon: Calendar, color: 'text-amber-400', bg: 'from-amber-500/20 to-amber-500/5', border: 'border-amber-500/20', path: `${basePath}/admin/reservas` },
+        { label: 'Clientes Nuevos', value: '12', change: '+4', icon: Users, color: 'text-blue-400', bg: 'from-blue-500/20 to-blue-500/5', border: 'border-blue-500/20', path: `${basePath}/admin/reservas` },
+        { label: 'Stock Bajo', value: '5', change: 'Crítico', icon: Package, color: 'text-red-400', bg: 'from-red-500/20 to-red-500/5', border: 'border-red-500/20', path: `${basePath}/inventario/bar` },
     ];
 
     const quickActions = [
         { label: 'Reservas', icon: Calendar, path: `${basePath}/admin/reservas`, color: 'bg-amber-500' },
         { label: 'Bar', icon: Beer, path: `${basePath}/bar`, color: 'bg-emerald-500' },
-        { label: 'Caja', icon: CreditCard, path: `${basePath}/caja`, color: 'bg-blue-500' },
+        { label: 'Caja', icon: CreditCard, path: `${basePath}/admin/caja`, color: 'bg-blue-500' },
         { label: 'Empleados', icon: Users, path: `${basePath}/empleados`, color: 'bg-purple-500' },
     ];
 
@@ -77,12 +84,13 @@ export default function Dashboard() {
             {/* Stats Grid - Responsive */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
                 {stats.map((stat, i) => (
-                    <div
+                    <Link
                         key={i}
-                        className={`relative bg-gradient-to-br ${stat.bg} border ${stat.border} p-4 lg:p-6 rounded-[24px] lg:rounded-[32px] group hover:scale-[1.02] transition-all duration-300 overflow-hidden`}
+                        to={stat.path}
+                        className={`block relative bg-gradient-to-br ${stat.bg} border ${stat.border} p-4 lg:p-6 rounded-[24px] lg:rounded-[32px] group hover:scale-[1.05] active:scale-[0.98] transition-all duration-300 overflow-hidden cursor-pointer`}
                         style={{ animationDelay: `${i * 100}ms` }}
                     >
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
                         <div className="relative z-10">
                             <div className="flex items-center justify-between mb-3 lg:mb-4">
                                 <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-white/10 flex items-center justify-center`}>
@@ -93,7 +101,7 @@ export default function Dashboard() {
                             <p className="text-[8px] lg:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
                             <p className="text-xl lg:text-3xl font-black italic tracking-tighter">{stat.value}</p>
                         </div>
-                    </div>
+                    </Link>
                 ))}
             </div>
 

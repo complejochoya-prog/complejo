@@ -1,5 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { db } from '../../../firebase/config';
+import { 
+    collection, 
+    query, 
+    where, 
+    onSnapshot, 
+    limit 
+} from 'firebase/firestore';
 import {
     fetchCajaStatus,
     addMovement as serviceAddMovement,
@@ -8,6 +16,7 @@ import {
     closeCaja as serviceCloseCaja,
     fetchSessionsHistory,
     fetchAllMovements,
+    calculateStats,
 } from '../services/cajaService';
 
 export default function useCaja() {
@@ -29,63 +38,79 @@ export default function useCaja() {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const loadCaja = useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await fetchCajaStatus();
-            setSession(data.session);
-            setStats(data.stats);
-            setMovements(data.movements);
-        } catch (error) {
-            console.error('Error loading caja:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    const loadHistory = useCallback(async () => {
-        try {
-            const data = await fetchSessionsHistory();
-            setHistory(data);
-        } catch (error) {
-            console.error('Error loading history:', error);
-        }
-    }, []);
+    // 1. Listen to active session
+    useEffect(() => {
+        if (!negocioId) return;
+        const q = query(collection(db, 'negocios', negocioId, 'caja_sesiones'), where('status', '==', 'open'), limit(1));
+        return onSnapshot(q, (snap) => {
+            const data = snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+            setSession(data ? { ...data, isOpen: true } : null);
+        });
+    }, [negocioId]);
 
     useEffect(() => {
-        loadCaja();
-        loadHistory();
-    }, [loadCaja, loadHistory]);
+        if (!negocioId) return;
+        const today = new Date().toISOString().split('T')[0];
+        const q = query(
+            collection(db, 'negocios', negocioId, 'caja_movements'),
+            where('fecha', '==', today)
+        );
+
+        return onSnapshot(q, (snap) => {
+            const movs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            // Sort manually in frontend to avoid needing a composite index
+            const sortedMovs = movs.sort((a, b) => {
+                const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+                const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+                return timeB - timeA;
+            });
+            setMovements(sortedMovs);
+            setLoading(false);
+        }, (err) => {
+            console.error("Movements listener error:", err);
+            setLoading(false);
+        });
+    }, [negocioId]);
+
+    // 3. Recalculate stats whenever session or movements change
+    useEffect(() => {
+        const newStats = calculateStats(movements, session);
+        setStats(newStats);
+    }, [movements, session]);
+
+    // 4. History (static)
+    useEffect(() => {
+        if (negocioId) {
+            fetchSessionsHistory(negocioId).then(setHistory);
+        }
+    }, [negocioId]);
 
     const recordMovement = async (data) => {
-        const res = await serviceAddMovement(data);
-        if (res.success) await loadCaja();
-        return res;
+        return await serviceAddMovement(negocioId, data);
     };
 
     const removeMovement = async (movementId) => {
-        const res = await serviceDeleteMovement(movementId);
-        if (res.success) await loadCaja();
-        return res;
+        return await serviceDeleteMovement(negocioId, movementId);
     };
 
     const startSession = async (initialBalance) => {
-        const res = await serviceOpenCaja(initialBalance);
-        if (res.success) await loadCaja();
-        return res;
+        return await serviceOpenCaja(negocioId, initialBalance);
     };
 
     const endSession = async () => {
-        const res = await serviceCloseCaja();
+        const res = await serviceCloseCaja(negocioId);
         if (res.success) {
-            await loadCaja();
-            await loadHistory();
+            fetchSessionsHistory(negocioId).then(setHistory);
         }
         return res;
     };
 
     const getFilteredMovements = async (filters) => {
         return fetchAllMovements(filters);
+    };
+
+    const refreshHistory = () => {
+        if (negocioId) fetchSessionsHistory(negocioId).then(setHistory);
     };
 
     return {
@@ -99,7 +124,7 @@ export default function useCaja() {
         startSession,
         endSession,
         getFilteredMovements,
-        refresh: loadCaja,
-        refreshHistory: loadHistory,
+        refresh: () => {}, // No longer needed as it is real-time
+        refreshHistory,
     };
 }

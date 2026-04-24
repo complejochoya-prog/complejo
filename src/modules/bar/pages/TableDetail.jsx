@@ -6,67 +6,158 @@ import OrderList from '../components/OrderList';
 import PaymentPanel from '../components/PaymentPanel';
 import { processPayment } from '../services/barService';
 import { addMovement } from '../../../core/services/cajaService'; // Import integration
+import { usePedidos } from '../services/PedidosContext';
+import { useMesas } from '../services/MesasContext';
 
 export default function TableDetail({ table, onClose }) {
-    const { orders, addOrder, updateOrder, barProducts, users, updateTable, negocioId } = useConfig();
+    const { barProducts, users, negocioId } = useConfig();
+    const { orders, addOrder, updateOrder } = usePedidos();
+    const { marcarMesaOcupada, marcarMesaDisponible } = useMesas();
     const [view, setView] = useState('detail'); // 'detail', 'add_product', 'payment'
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const tableOrders = orders.filter(o => o.table === table.tableNumber && o.status !== 'paid');
-    const total = tableOrders.reduce((acc, o) => acc + (o.price * o.quantity), 0);
-    const mozos = users.filter(u => u.rol?.toLowerCase() === 'mozo' && (u.estado === 'activo' || u.activo === true));
+    const tableOrders = (orders || []).filter(o => (String(o.table) === String(table.tableNumber) || String(o.mesa) === String(table.tableNumber)) && o.status !== 'paid');
+    
+    // Normalize items for OrderList (handling both single-product orders and multi-product carts)
+    const normalizedItems = [];
+    tableOrders.forEach(o => {
+        const lineItems = o.products || o.items;
+        if (lineItems && lineItems.length > 0) {
+            lineItems.forEach((p, idx) => {
+                normalizedItems.push({
+                    id: `${o.id}_${p.id}_${idx}`,
+                    _orderId: o.id,
+                    _productId: p.id,
+                    productName: p.nombre || p.productName || 'Producto',
+                    price: p.precio || p.price || 0,
+                    quantity: p.quantity || p.cantidad || 1,
+                    isMulti: true,
+                    status: o.status || o.estado || 'nuevo',
+                    timestamp: o.timestamp || o.createdAt
+                });
+            });
+        } else {
+            normalizedItems.push({
+                id: o.id,
+                _orderId: o.id,
+                productName: o.productName || 'Orden General',
+                price: o.price || o.total || 0,
+                quantity: o.quantity || 1,
+                isMulti: false,
+                status: o.status || o.estado || 'nuevo',
+                timestamp: o.timestamp || o.createdAt
+            });
+        }
+    });
+
+    const total = tableOrders.reduce((acc, o) => acc + (o.total || (o.price * o.quantity) || 0), 0);
+    const mozos = (users || []).filter(u => u.rol?.toLowerCase() === 'mozo' && (u.estado === 'activo' || u.activo === true));
 
     const handleAddProduct = (product) => {
-        const existing = tableOrders.find(o => o.productId === product.id && o.status === 'active');
+        const existing = tableOrders.find(o => o.productId === product.id && (o.status === 'active' || o.status === 'nuevo' || o.estado === 'nuevo'));
         
         if (existing) {
-            updateOrder(existing.id, { quantity: existing.quantity + 1 });
+            updateOrder(existing.id, { 
+                quantity: existing.quantity + 1,
+                total: (existing.quantity + 1) * existing.price,
+                items: [{
+                    id: product.id,
+                    nombre: product.nombre,
+                    precio: product.precio,
+                    cantidad: existing.quantity + 1
+                }],
+                productos: [{
+                    id: product.id,
+                    nombre: product.nombre,
+                    precio: product.precio,
+                    cantidad: existing.quantity + 1
+                }]
+            });
         } else {
             addOrder({
                 id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                 table: table.tableNumber,
+                mesa: table.tableNumber,
                 productId: product.id,
                 productName: product.nombre,
                 price: product.precio,
                 quantity: 1,
-                mozoId: table.mozoId,
-                mozoName: table.mozoName,
+                total: product.precio,
+                items: [{
+                    id: product.id,
+                    nombre: product.nombre,
+                    precio: product.precio,
+                    cantidad: 1,
+                    sector: ['Pizzas', 'Empanadas', 'Papas', 'Platos', 'Pastas', 'Burgers', 'Ensaladas', 'Lomos', 'Carnes', 'Tacos', 'Postres', 'Tortas'].includes(product.categoria) ? 'cocina' : 'barra',
+                }],
+                productos: [{
+                    id: product.id,
+                    nombre: product.nombre,
+                    precio: product.precio,
+                    cantidad: 1,
+                    sector: ['Pizzas', 'Empanadas', 'Papas', 'Platos', 'Pastas', 'Burgers', 'Ensaladas', 'Lomos', 'Carnes', 'Tacos', 'Postres', 'Tortas'].includes(product.categoria) ? 'cocina' : 'barra',
+                }],
+                mozoId: table.mozoId || '',
+                mozoName: table.mozoName || 'Barra',
                 origin: "bar",
-                status: "active",
+                status: "nuevo",
+                estado: "nuevo",
+                timestamp: new Date().toISOString(),
                 createdAt: new Date().toISOString()
             });
         }
 
         // Si la mesa estaba disponible, pasarla a ocupada
         if (table.status === 'disponible') {
-            updateTable(table.tableNumber, { 
-                status: 'ocupada',
-                openedAt: new Date().toISOString()
-            });
+            if (marcarMesaOcupada) marcarMesaOcupada(table.tableNumber);
         }
         
         setView('detail');
     };
 
-    const handleUpdateQuantity = (orderId, delta) => {
-        const order = tableOrders.find(o => o.id === orderId);
-        if (order) {
-            const newQty = order.quantity + delta;
-            if (newQty <= 0) {
-                // Remove logic could go here or deleteOrder function
-                const nextOrders = orders.filter(o => o.id !== orderId);
-                localStorage.setItem('giovanni_orders', JSON.stringify(nextOrders));
-                window.dispatchEvent(new Event('storage'));
-            } else {
-                updateOrder(orderId, { quantity: newQty });
-            }
+    const handleUpdateQuantity = (itemId, delta) => {
+        const item = normalizedItems.find(i => i.id === itemId);
+        if (!item) return;
+
+        if (item.isMulti) {
+             const order = orders.find(o => o.id === item._orderId);
+             if (order) {
+                 const lineItems = order.products || order.items || [];
+                 const newProducts = [...lineItems];
+                 const pIdx = newProducts.findIndex(p => p.id === item._productId);
+                 if (pIdx >= 0) {
+                     newProducts[pIdx].quantity = Math.max(0, (newProducts[pIdx].quantity || newProducts[pIdx].cantidad || 1) + delta);
+                     newProducts[pIdx].cantidad = newProducts[pIdx].quantity;
+                     if (newProducts[pIdx].quantity === 0) {
+                         newProducts.splice(pIdx, 1);
+                     }
+                 }
+                 const newTotal = newProducts.reduce((acc, p) => acc + (p.precio || p.price) * (p.quantity || p.cantidad || 1), 0);
+                 
+                 if (newProducts.length === 0) {
+                     // Si no quedan productos, borrar toda la orden
+                     handleRemoveOrder(order.id);
+                 } else {
+                     updateOrder(order.id, { products: newProducts, items: newProducts, total: newTotal });
+                 }
+             }
+        } else {
+             const order = orders.find(o => o.id === item._orderId);
+             if (order) {
+                 const newQty = order.quantity + delta;
+                 if (newQty <= 0) {
+                     handleRemoveOrder(order.id);
+                 } else {
+                     updateOrder(order.id, { quantity: newQty });
+                 }
+             }
         }
     };
 
     const handleRemoveOrder = (orderId) => {
-        const nextOrders = orders.filter(o => o.id !== orderId);
-        localStorage.setItem('giovanni_orders', JSON.stringify(nextOrders));
-        window.dispatchEvent(new Event('storage'));
+        // Find order in Context and mark as cancelled or just use updateOrder if possible. 
+        // For now, we will update its status to 'cancelled' so it hides.
+        updateOrder(orderId, { status: 'cancelled', estado: 'cancelado' });
     };
 
     const handleConfirmPayment = async (method) => {
@@ -78,11 +169,11 @@ export default function TableDetail({ table, onClose }) {
                 total,
                 paymentMethod: method,
                 mozoName: table.mozoName || 'Sistema',
-                items: tableOrders.map(o => ({ id: o.productId, nombre: o.productName, cantidad: o.quantity, precio: o.price }))
+                items: normalizedItems.map(o => ({ id: o._productId || o.id, nombre: o.productName, cantidad: o.quantity, precio: o.price }))
             });
 
             // 2. 🔥 INTEGACIÓN CAJA MÁGICA: Record Movement
-            const itemSummary = tableOrders.map(o => `${o.productName} (x${o.quantity})`).join(', ');
+            const itemSummary = normalizedItems.map(o => `${o.productName} (x${o.quantity})`).join(', ');
             await addMovement(negocioId, {
                 monto: total,
                 tipo: 'entrada',
@@ -93,7 +184,7 @@ export default function TableDetail({ table, onClose }) {
                 usuario: table.mozoName || 'Sistema',
                 metadata: {
                     mesa: table.tableNumber,
-                    items: tableOrders.length
+                    items: normalizedItems.length
                 }
             });
 
@@ -101,12 +192,7 @@ export default function TableDetail({ table, onClose }) {
             tableOrders.forEach(o => updateOrder(o.id, { status: 'paid', paidAt: new Date().toISOString(), paymentMethod: method }));
 
             // 4. Reset table
-            updateTable(table.tableNumber, {
-                status: 'disponible',
-                mozoId: null,
-                mozoName: null,
-                openedAt: null
-            });
+            if (marcarMesaDisponible) marcarMesaDisponible(table.tableNumber);
 
             onClose();
         } catch (e) {
@@ -189,11 +275,19 @@ export default function TableDetail({ table, onClose }) {
                         </div>
                     </div>
 
-                    <OrderList 
-                        orders={tableOrders} 
-                        onUpdateQuantity={handleUpdateQuantity}
-                        onRemove={handleRemoveOrder}
-                    />
+                        <OrderList 
+                            orders={normalizedItems} 
+                            onUpdateQuantity={handleUpdateQuantity}
+                            onRemove={(itemId) => {
+                                const item = normalizedItems.find(i => i.id === itemId);
+                                if (item && item.isMulti) {
+                                    // Hack to remove specific item: just pass delta to make it 0
+                                    handleUpdateQuantity(itemId, -item.quantity);
+                                } else if (item) {
+                                    handleRemoveOrder(item._orderId);
+                                }
+                            }}
+                        />
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-white/5 flex items-center justify-between">

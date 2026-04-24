@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.jsx';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { usePedidos } from '../services/PedidosContext';
+import { useMesas } from '../services/MesasContext';
 import CartItem from '../components/CartItem';
 import OrderSummary from '../components/OrderSummary';
 import { submitOrder } from '../services/barService';
@@ -17,6 +18,7 @@ export default function CartPage() {
 
     const { cart, cartTotal, cartCount, updateQuantity, updateObservaciones, removeFromCart, clearCart } = useCart();
     const { addOrder } = usePedidos();
+    const { marcarMesaOcupada } = useMesas();
     
     const [loading, setLoading] = useState(false);
     const [orderType, setOrderType] = useState('Comer en el complejo');
@@ -68,6 +70,7 @@ export default function CartPage() {
                 direccion: deliveryAddress,
                 ubicacionLink: deliveryLocation,
                 mesa: mesaNumero,
+                table: mesaNumero, // Agregado para compatibilidad con el resto del sistema
                 estado: 'nuevo',
                 status: 'nuevo',
                 hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -86,6 +89,9 @@ export default function CartPage() {
             }
 
             if (fbRes.success) {
+                if (orderType === 'Comer en el complejo' && mesaNumero) {
+                    marcarMesaOcupada(mesaNumero);
+                }
                 const finalOrder = {
                     ...orderPayload,
                     id: fbRes.orderId,
@@ -93,7 +99,7 @@ export default function CartPage() {
                 };
 
                 clearCart();
-                navigate(`/${negocioId}/app/pedido-confirmado`, {
+                navigate(`/${negocioId}/pedido-confirmado`, {
                     state: { order: finalOrder }
                 });
             } else {

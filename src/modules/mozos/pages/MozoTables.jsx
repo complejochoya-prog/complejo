@@ -2,6 +2,7 @@ import ReactDOM from 'react-dom';
 import React, { useState, useMemo } from 'react';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { usePedidos } from '../../bar/services/PedidosContext';
+import { useMesas } from '../../bar/services/MesasContext';
 import TableCard from '../components/TableCard';
 import OrderCard from '../components/OrderCard';
 import PaymentModal from '../components/PaymentModal';
@@ -18,13 +19,15 @@ import {
     Receipt,
     Timer,
     CreditCard,
-    MessageSquare
+    MessageSquare,
+    Users
 } from 'lucide-react';
 import { getMozoSession } from '../services/mozoService';
 
 export default function MozoTables() {
-    const { negocioId, barProducts, updateOrder: updateConfigOrder } = useConfig();
+    const { negocioId, barProducts, updateOrder: updateConfigOrder, tables: configTables } = useConfig();
     const { orders, addOrder, updateOrderStatus } = usePedidos();
+    const { mesas, marcarMesaOcupada, marcarMesaDisponible } = useMesas();
     
     // 🔥 ELIMINADO EL MERGE CON LOCALSTORAGE: 
     // Ahora dependemos 100% de lo que viene de Firebase para que todos los mozos vean lo mismo.
@@ -131,7 +134,7 @@ export default function MozoTables() {
 
     // All unpaid orders for selected table (active = not paid)
     const activeOrdersForTable = orders?.filter(o => 
-        o.table === selectedTable && 
+        (String(o.table) === String(selectedTable) || String(o.mesa) === String(selectedTable)) && 
         o.status !== 'paid' && 
         !o.paid
     ) || [];
@@ -179,17 +182,22 @@ export default function MozoTables() {
                             Mapa de Mesas
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 px-1">
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-                                <TableCard 
-                                    key={n} 
-                                    number={n} 
-                                    activeOrders={orders?.filter(o => o.table === n && o.status !== 'paid' && !o.paid) || []}
-                                    onClick={(num) => {
-                                        if ('vibrate' in navigator) navigator.vibrate(30);
-                                        setSelectedTable(num);
-                                    }}
-                                />
-                            ))}
+                            {((configTables && configTables.length > 0) ? [...configTables].sort((a,b) => a.tableNumber - b.tableNumber) : []).map(t => {
+                                const n = t.tableNumber;
+                                const mesaData = mesas?.find(m => parseInt(m.numero) === n);
+                                return (
+                                    <TableCard 
+                                        key={n} 
+                                        number={n} 
+                                        activeOrders={orders?.filter(o => (String(o.table) === String(n) || String(o.mesa) === String(n)) && o.status !== 'paid' && !o.paid) || []}
+                                        mesaEstado={mesaData?.estado || t.status || 'disponible'}
+                                        onClick={(num) => {
+                                            if ('vibrate' in navigator) navigator.vibrate(30);
+                                            setSelectedTable(num);
+                                        }}
+                                    />
+                                );
+                            })}
                         </div>
                     </>
                 ) : (
@@ -208,9 +216,30 @@ export default function MozoTables() {
                         <div className="bg-gradient-to-br from-amber-500/10 to-[#141210] border border-amber-500/20 p-6 rounded-[32px] flex items-center justify-between relative overflow-hidden shadow-2xl">
                             <div className="absolute -right-4 -top-4 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none"></div>
                             
-                            <div className="relative z-10">
-                                <h3 className="text-3xl font-black uppercase tracking-tighter text-white drop-shadow-md mb-2">Mesa {selectedTable}</h3>
-                                <p className="text-[11px] text-amber-500/80 font-bold uppercase tracking-widest flex items-center gap-2">
+                            <div className="relative z-10 flex flex-col gap-2">
+                                <h3 className="text-3xl font-black uppercase tracking-tighter text-white drop-shadow-md mb-0 flex items-center gap-3">
+                                    Mesa {selectedTable}
+                                    {mesas?.find(m => String(m.numero) === String(selectedTable))?.estado === 'ocupada' && (
+                                        <span className="bg-indigo-500/20 text-indigo-400 text-[9px] px-2 py-1 rounded-full border border-indigo-500/30">
+                                            Ocupada
+                                        </span>
+                                    )}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <button 
+                                        onClick={() => marcarMesaOcupada(selectedTable)}
+                                        className="text-[9px] font-black uppercase bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 transition-colors"
+                                    >
+                                        Sentar Gente
+                                    </button>
+                                    <button 
+                                        onClick={() => marcarMesaDisponible(selectedTable)}
+                                        className="text-[9px] font-black uppercase bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 transition-colors"
+                                    >
+                                        Liberar Mesa
+                                    </button>
+                                </div>
+                                <p className="text-[11px] text-amber-500/80 font-bold uppercase tracking-widest flex items-center gap-2 mt-2">
                                     <Receipt size={14} /> Cuenta Total: <span className="text-white font-black text-lg">${totalDeudaMesa.toLocaleString()}</span>
                                 </p>
                             </div>
@@ -407,7 +436,8 @@ export default function MozoTables() {
                                         descripcion: `Mesa ${String(orderToPay.table || orderToPay.mesa)} - Cuenta completa - Mozo ${mozo.name}`,
                                         metodo_pago: (details.method || 'efectivo').toLowerCase(),
                                         origen: 'bar',
-                                        mozo: mozo.name
+                                        mozo: mozo.name,
+                                        receiptImage: details.receipt
                                     });
                                 } catch (cajaErr) {
                                     console.warn('[Mozo] Caja registration failed (non-blocking):', cajaErr);
@@ -426,6 +456,9 @@ export default function MozoTables() {
                                         paidAt: new Date().toISOString()
                                     });
                                 }
+                                
+                                // Liberar mesa!
+                                marcarMesaDisponible(String(orderToPay.table || orderToPay.mesa));
                                 
                                 setIsPaymentOpen(false);
                                 setOrderToPay(null);

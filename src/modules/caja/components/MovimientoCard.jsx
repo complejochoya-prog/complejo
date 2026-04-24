@@ -9,7 +9,9 @@ import {
     Smartphone,
     Trash2,
     Bike,
-    Hash
+    Hash,
+    Image as ImageIcon,
+    X,
 } from 'lucide-react';
 
 const methodConfig = {
@@ -27,7 +29,9 @@ const origenLabels = {
 };
 
 export default function MovimientoCard({ movimiento, onDelete }) {
+    const [showImage, setShowImage] = React.useState(false);
     const isEntry = movimiento.tipo === 'entrada';
+    const imageUrl = movimiento.receiptImage || movimiento.metadata?.receiptImage;
     const method = methodConfig[movimiento.metodo_pago] || methodConfig.efectivo;
     const MethodIcon = method.icon;
     const origin = origenLabels[movimiento.origen] || { label: movimiento.origen, icon: '❓', color: 'text-slate-400' };
@@ -88,6 +92,15 @@ export default function MovimientoCard({ movimiento, onDelete }) {
                         {isEntry ? '+' : '-'}${Number(movimiento.monto).toLocaleString('es-AR')}
                     </div>
                     <div className="flex justify-end gap-2">
+                         {imageUrl && (
+                            <button
+                                onClick={() => setShowImage(true)}
+                                className="p-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all shadow-lg active:scale-90"
+                                title="Ver Comprobante"
+                            >
+                                <ImageIcon size={14} />
+                            </button>
+                        )}
                          {onDelete && (
                             <button
                                 onClick={() => onDelete(movimiento.id)}
@@ -99,6 +112,29 @@ export default function MovimientoCard({ movimiento, onDelete }) {
                     </div>
                 </div>
             </div>
+
+            {/* Image Preview Modal */}
+            {showImage && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md" onClick={() => setShowImage(false)} />
+                    <div className="relative max-w-lg w-full bg-slate-900 rounded-[40px] border border-white/10 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                            <h3 className="text-lg font-black uppercase italic text-white">Comprobante</h3>
+                            <button onClick={() => setShowImage(false)} className="p-2 rounded-xl bg-white/5 text-slate-400 hover:text-white">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-2">
+                            <img src={imageUrl} className="w-full rounded-[32px] shadow-2xl" alt="Comprobante" />
+                        </div>
+                        <div className="p-6 text-center">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                {movimiento.descripcion || 'Transferencia'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

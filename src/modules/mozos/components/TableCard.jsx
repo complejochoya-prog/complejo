@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
 import { Users, Timer, ArrowRight, Utensils, Receipt, Bell } from 'lucide-react';
 
-export default function TableCard({ number, activeOrders, onClick }) {
+export default function TableCard({ number, activeOrders, mesaEstado, onClick }) {
     const isBusy = activeOrders && activeOrders.length > 0;
+    const isExplicitlyOccupied = mesaEstado === 'ocupada';
     
     // Check states
     const hasReadyFood = activeOrders?.some(o => o.estado === 'listo');
@@ -37,7 +38,7 @@ export default function TableCard({ number, activeOrders, onClick }) {
             // Waiting for kitchen
             cardStyle = "border-amber-500/30 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.05)]";
             iconStyle = "bg-gradient-to-br from-amber-400 to-amber-600 text-[#0c0a09] shadow-lg shadow-amber-500/20";
-            statusText = "Mesa Ocupada";
+            statusText = "Esperando Comida";
             statusColor = "text-amber-400";
             IconState = Utensils;
         } else {
@@ -48,6 +49,13 @@ export default function TableCard({ number, activeOrders, onClick }) {
             statusColor = "text-emerald-400";
             IconState = Receipt;
         }
+    } else if (isExplicitlyOccupied) {
+        // No orders, but explicitly marked as occupied by waiter or customer scan
+        cardStyle = "border-indigo-500/30 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.05)]";
+        iconStyle = "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20";
+        statusText = "Ocupada (Sin Órdenes)";
+        statusColor = "text-indigo-400";
+        IconState = Users;
     }
     
     return (
@@ -96,8 +104,8 @@ export default function TableCard({ number, activeOrders, onClick }) {
                 )}
             </div>
 
-            <div className={`absolute top-5 right-5 transition-opacity ${isBusy ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                <ArrowRight size={18} className={isBusy ? statusColor : 'text-white/20'} />
+            <div className={`absolute top-5 right-5 transition-opacity ${(isBusy || isExplicitlyOccupied) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <ArrowRight size={18} className={(isBusy || isExplicitlyOccupied) ? statusColor : 'text-white/20'} />
             </div>
         </button>
     );

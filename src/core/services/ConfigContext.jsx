@@ -178,6 +178,12 @@ export function ConfigProvider({ children }) {
                     id: `table-${i+1}`
                 }));
                 setTables(initial);
+                // Guardar las mesas por defecto en Firebase para que existan realmente
+                initial.forEach(async (t) => {
+                    try {
+                        await tablasService.updateTabla(negocioId, t.tableNumber, { status: 'disponible' });
+                    } catch (e) {}
+                });
             }
         } catch (e) {
             setTables([]);

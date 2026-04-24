@@ -132,20 +132,34 @@ export default function ReservasProvider({ children }) {
                 tipo: 'entrada',
                 categoria: 'Reserva Online',
                 monto: payment.amount || bookingData.price || 0,
-                descripcion: `Reserva: ${bookingData.resource?.name || 'Espacio'}`,
-                origen: 'reserva'
+                descripcion: `Reserva: ${bookingData.resource?.name || 'Espacio'} - ${bookingData.clientName}`,
+                metodo_pago: (bookingData.paymentMethod || 'transferencia').toLowerCase(),
+                origen: 'reserva',
+                receiptImage: payment.receiptImage // Pass the base64 image
             });
         }
     };
 
-    const checkAvailability = (resourceId, date, slotTime) => {
-        // Logic remains in-memory as state is already real-time
-        const occupied = bookings.some(b => 
+    const checkAvailability = (resourceId, date, slotTime, requestedAmount = 1) => {
+        const resource = resources.find(r => r.id === resourceId);
+        let capacity = 1; // Default: exclusive booking
+        if (resource?.capacidad && !isNaN(parseInt(resource.capacidad))) {
+            capacity = parseInt(resource.capacidad);
+        }
+
+        const overlappingBookings = bookings.filter(b => 
             b.resource?.id === resourceId && 
-            b.fullDate === date && 
-            (b.time === slotTime || (b.rentalMode === 'franja' && slotTime >= b.time && slotTime < b.endTime))
+            b.status !== 'Cancelada' &&
+            (b.fullDate === date || b.fecha === date) && 
+            (b.time === slotTime || b.hora === slotTime || (b.rentalMode === 'franja' && slotTime >= b.time && slotTime < b.endTime))
         );
-        if (occupied) return false;
+
+        let totalPeopleBooked = 0;
+        overlappingBookings.forEach(b => {
+            totalPeopleBooked += parseInt(b.cliente?.cantidadPersonas) || 1;
+        });
+
+        if (totalPeopleBooked + requestedAmount > capacity) return false;
 
         const live = liveUsage.some(u => 
             u.resourceId === resourceId && 
@@ -153,7 +167,9 @@ export default function ReservasProvider({ children }) {
             u.status !== 'finished' && 
             u.slot === slotTime
         );
-        return !live;
+        if (live && capacity === 1) return false; // Simple live usage check for exclusive spaces
+        
+        return true;
     };
 
     const getAvailableSlots = (date) => {

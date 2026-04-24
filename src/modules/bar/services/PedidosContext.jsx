@@ -190,6 +190,23 @@ export default function PedidosProvider({ children }) {
     }, []);
 
     // 🔥 ACCIONES UNIFICADAS (FIRMEZA EN BASE DE DATOS)
+    
+    // Helper: Firestore rechaza campos con valor `undefined`. Esta función los elimina recursivamente.
+    const sanitizeForFirestore = (obj) => {
+        if (obj === null || obj === undefined) return null;
+        if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+        if (typeof obj === 'object' && !(obj instanceof Date)) {
+            const clean = {};
+            for (const [key, value] of Object.entries(obj)) {
+                if (value !== undefined) {
+                    clean[key] = sanitizeForFirestore(value);
+                }
+            }
+            return clean;
+        }
+        return obj;
+    };
+
     const addOrder = useCallback(async (orderData) => {
         if (!negocioId) {
             console.error('[PedidosContext] addOrder failed: No negocioId');
@@ -200,7 +217,7 @@ export default function PedidosProvider({ children }) {
             const orderId = orderData.id || `ORD-${Date.now()}`;
             
             // 1. Objeto para Firestore (con serverTimestamp)
-            const firestoreOrder = { 
+            const rawOrder = { 
                 ...orderData, 
                 id: orderId,
                 negocioId,
@@ -209,6 +226,11 @@ export default function PedidosProvider({ children }) {
                 timestamp: serverTimestamp(),
                 createdAt: orderData.createdAt || new Date().toISOString()
             };
+
+            // 🛡️ Sanitizar: eliminar todos los campos `undefined` antes de enviar a Firestore
+            const firestoreOrder = sanitizeForFirestore(rawOrder);
+            // Re-aplicar serverTimestamp (sanitize lo puede convertir en objeto plano)
+            firestoreOrder.timestamp = serverTimestamp();
 
             // 2. Objeto para Local (con Date real para evitar errores de serialización)
             const localOrder = {
@@ -280,16 +302,39 @@ export default function PedidosProvider({ children }) {
         }
     }, [negocioId]);
 
+    const updateOrder = useCallback(async (id, updates) => {
+        if (!negocioId) return;
+        try {
+            const cleanUpdates = sanitizeForFirestore(updates);
+            cleanUpdates.updatedAt = serverTimestamp();
+            const docRef = doc(db, 'negocios', negocioId, 'pedidos', String(id));
+            await setDoc(docRef, cleanUpdates, { merge: true });
+            
+            // Optimistic update
+            setOrders(prev => prev.map(o => String(o.id) === String(id) ? { ...o, ...updates } : o));
+            
+            // Sync LocalStorage
+            const localKey = `${negocioId}_orders`;
+            let localData = JSON.parse(localStorage.getItem(localKey)) || [];
+            localData = localData.map(o => String(o.id) === String(id) ? { ...o, ...updates } : o);
+            localStorage.setItem(localKey, JSON.stringify(localData));
+            window.dispatchEvent(new Event('storage'));
+        } catch (error) {
+            console.error("Error updating order:", error);
+        }
+    }, [negocioId]);
+
     // Performance: useMemo to recalculate context values ONLY when dependencies change
     const value = useMemo(() => ({
         orders,
         barProducts,
         loading,
         addOrder,
+        updateOrder,
         updateOrderStatus,
         setOrders,
         isBarOpen: () => true 
-    }), [orders, barProducts, loading, addOrder, updateOrderStatus, setOrders]);
+    }), [orders, barProducts, loading, addOrder, updateOrder, updateOrderStatus, setOrders]);
 
     return (
         <PedidosContext.Provider value={value}>

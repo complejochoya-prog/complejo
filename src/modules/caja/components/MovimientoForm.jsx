@@ -26,6 +26,7 @@ const INITIAL_STATE = {
     monto: '',
     metodo_pago: 'efectivo',
     observaciones: '',
+    receiptImage: null,
 };
 
 export default function MovimientoForm({ isOpen, onClose, onSave }) {
@@ -33,6 +34,17 @@ export default function MovimientoForm({ isOpen, onClose, onSave }) {
     const [saving, setSaving] = useState(false);
 
     if (!isOpen) return null;
+
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({ ...prev, receiptImage: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -48,6 +60,7 @@ export default function MovimientoForm({ isOpen, onClose, onSave }) {
                 metodo_pago: formData.metodo_pago,
                 origen: origenMap[formData.categoria] || 'manual',
                 observaciones: formData.observaciones,
+                receiptImage: formData.receiptImage, // Base64 string
             });
             setFormData({ ...INITIAL_STATE });
             onClose();
@@ -202,6 +215,35 @@ export default function MovimientoForm({ isOpen, onClose, onSave }) {
                             placeholder="Notas adicionales..."
                         />
                     </div>
+
+                    {/* Receipt Upload (only for Transferencia) */}
+                    {formData.metodo_pago === 'transferencia' && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 px-1">
+                                Comprobante de Pago
+                            </label>
+                            {formData.receiptImage ? (
+                                <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-black group">
+                                    <img src={formData.receiptImage} alt="Receipt Preview" className="w-full h-full object-contain" />
+                                    <button 
+                                        type="button"
+                                        onClick={() => set('receiptImage', null)}
+                                        className="absolute top-2 right-2 p-2 bg-red-500 rounded-xl text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/[0.08] rounded-2xl bg-slate-950/50 hover:bg-slate-950 hover:border-indigo-500/30 cursor-pointer transition-all group">
+                                    <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                                        <Plus size={20} />
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Subir Comprobante</span>
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                                </label>
+                            )}
+                        </div>
+                    )}
 
                     {/* Submit */}
                     <button

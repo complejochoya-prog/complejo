@@ -39,7 +39,7 @@ export default function PWALayout() {
 
     const navItems = [
         { path: '', label: 'Inicio', icon: Home },
-        { path: 'reservas', label: 'Mis Turnos', icon: CalendarRange },
+        { path: 'EXTERNAL_RESERVAS', label: 'Reservar', icon: CalendarRange },
         { path: 'menu', label: 'Bar', icon: Coffee },
         { path: 'torneos', label: 'Torneos', icon: Trophy },
         { path: 'perfil', label: 'Perfil', icon: User },
@@ -47,6 +47,9 @@ export default function PWALayout() {
 
     // Helper para comparar ruta actual exacta (incluyendo trailing)
     const isActive = (path) => {
+        if (path === 'EXTERNAL_RESERVAS') {
+            return location.pathname === `/${negocioId}/reservas` || location.pathname === `/${negocioId}/reservas/`;
+        }
         const fullPath = `/${negocioId}/app${path ? `/${path}` : ''}`;
         if (path === '') {
             return location.pathname === `/${negocioId}/app` || location.pathname === `/${negocioId}/app/`;
@@ -108,7 +111,7 @@ export default function PWALayout() {
                         return (
                             <Link 
                                 key={item.path}
-                                to={`/${negocioId}/app${item.path ? `/${item.path}` : ''}`}
+                                to={item.path === 'EXTERNAL_RESERVAS' ? `/${negocioId}/reservas` : `/${negocioId}/app${item.path ? `/${item.path}` : ''}`}
                                 className={`flex flex-col items-center justify-center p-3 rounded-2xl w-full transition-all duration-300 ${
                                     active ? 'text-indigo-400 -translate-y-2 relative' : 'text-slate-500 hover:text-white'
                                 }`}

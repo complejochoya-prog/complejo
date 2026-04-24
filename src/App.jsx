@@ -38,7 +38,8 @@ import AnalyticsPage from './modules/admin/pages/AnalyticsPage';
 import PagosPage from './modules/admin/pages/PagosPage';
 import ClientesPage from './modules/admin/pages/ClientesPage';
 import EspaciosPage from './modules/admin/pages/EspaciosPage';
-import PromosPage from './modules/admin/pages/PromosPage';
+import AdminPromosPage from './modules/admin/pages/PromosPage';
+import PromosPage from './modules/core/pages/PromosPage';
 import ReservasPage from './modules/admin/pages/ReservasPage';
 import HorariosPage from './modules/admin/pages/HorariosPage';
 import EventsPage from './modules/core/pages/EventsPage';
@@ -65,7 +66,6 @@ import TVRanking from './apps/tv/pages/TVRanking';
 import PWALayout from './apps/pwa/layouts/PWALayout';
 import ClientHome from './modules/client_app/pages/ClientHome';
 import ClientReservations from './modules/client_app/pages/ClientReservations';
-import ClientFieldDetail from './modules/client_app/pages/ClientFieldDetail';
 import ClientProfile from './modules/client_app/pages/ClientProfile';
 import ReservationSuccess from './modules/client_app/pages/ReservationSuccess';
 
@@ -77,6 +77,7 @@ import OrderConfirmation from './modules/bar/pages/OrderConfirmation';
 import KitchenBarScreen from './modules/bar/pages/KitchenBarScreen';
 import KitchenOrderHistory from './modules/bar/pages/KitchenOrderHistory';
 import PedidosProvider from './modules/bar/services/PedidosContext';
+import MesasProvider from './modules/bar/services/MesasContext';
 import ReservasProvider from './modules/reservas/services/ReservasContext';
 import BookingFlow from './modules/reservas/components/BookingFlow';
 
@@ -147,6 +148,10 @@ import DeliveryRoutes from './modules/delivery/routes/deliveryRoutes';
 // Mozos Module (FASE 22)
 import MozoRoutes from './modules/mozos/routes/mozoRoutes';
 
+// Escuela Module (New)
+import EscuelaHome from './modules/escuela/pages/EscuelaHome';
+import EscuelaAdmin from './modules/escuela/pages/EscuelaAdmin';
+
 // Landing page (when no negocioId is specified)
 function LandingRedirect() {
     return <Navigate to="/giovanni" replace />;
@@ -195,6 +200,7 @@ function BusinessApp() {
             <AuthProvider>
                 <CartProvider>
                     <PedidosProvider>
+                        <MesasProvider>
                         <ReservasProvider>
                         <DesafioProvider>
                             <BusinessAppWrapper>
@@ -210,7 +216,9 @@ function BusinessApp() {
                             <Route path="/" element={<Home />} />
                             <Route path="menu" element={<BarMenu />} />
                             <Route path="reservas" element={<BookingFlow />} />
+                            <Route path="app/reservar/:fieldId" element={<BookingFlow />} />
                             <Route path="torneos" element={<ClientTournaments />} />
+                            <Route path="escuela" element={<EscuelaHome />} />
                             <Route path="torneos/:tournamentId" element={<TournamentDetail />} />
                             <Route path="desafio" element={<DesafioPage />} />
                             <Route path="jugadores" element={<MissingPage name="Ranking de Jugadores" />} />
@@ -221,6 +229,8 @@ function BusinessApp() {
                             {/* Bar Module Routes (Requested URLs) */}
                             <Route path="carrito" element={<CartPage />} />
                             <Route path="pedido-confirmado" element={<OrderConfirmation />} />
+                            <Route path="app/pedido-confirmado" element={<OrderConfirmation />} />
+                            <Route path="promos" element={<PromosPage />} />
                         </Route>
 
                         {/* ── ADMIN AREA (admin + encargado) ── */}
@@ -264,7 +274,8 @@ function BusinessApp() {
                             <Route path="clientes" element={<ModuleGuard moduleId="clientes"><ClientesPage /></ModuleGuard>} />
                             <Route path="espacios" element={<ModuleGuard moduleId="reservas"><EspaciosPage /></ModuleGuard>} />
                             <Route path="horarios" element={<ModuleGuard moduleId="reservas"><HorariosPage /></ModuleGuard>} />
-                            <Route path="promos" element={<ModuleGuard moduleId="marketing"><PromosPage /></ModuleGuard>} />
+                            <Route path="admin/promos" element={<ModuleGuard moduleId="marketing"><AdminPromosPage /></ModuleGuard>} />
+                            <Route path="promos-admin" element={<Navigate to="admin/promos" replace />} />
                             
                             <Route path="reportes" element={<ModuleGuard moduleId="analytics"><MissingPage name="Reportes" /></ModuleGuard>} />
                             <Route path="editor-home" element={<MissingPage name="Editor de Home" />} />
@@ -279,6 +290,7 @@ function BusinessApp() {
                             <Route path="finanzas" element={<ModuleGuard moduleId="finanzas"><FinanceDashboard /></ModuleGuard>} />
                             <Route path="finanzas/gastos" element={<ModuleGuard moduleId="finanzas"><ExpensesManager /></ModuleGuard>} />
                             <Route path="finanzas/facturas" element={<ModuleGuard moduleId="finanzas"><InvoicesManager /></ModuleGuard>} />
+                            <Route path="admin/escuela" element={<ModuleGuard moduleId="escuela"><EscuelaAdmin /></ModuleGuard>} />
                         </Route>
 
                         {/* ── INTERNAL APPS (FASE 7 — Role-specific) ── */}
@@ -313,19 +325,17 @@ function BusinessApp() {
                         <Route path="app/mozos/*" element={<MozoRoutes />} />
                         <Route path="app" element={<PWALayout />}>
                             <Route index element={<ClientHome />} />
-                            <Route path="reservar/:fieldId" element={<ClientFieldDetail />} />
                             <Route path="reserva-confirmada" element={<ReservationSuccess />} />
-                            <Route path="reservas" element={<ClientReservations />} />
                             <Route path="menu" element={<BarMenu />} />
                             <Route path="bar" element={<Navigate to="menu" replace />} />
                             <Route path="carrito" element={<CartPage />} />
-                            <Route path="pedido-confirmado" element={<OrderConfirmation />} />
                             <Route path="torneos" element={<ClientTournaments />} />
                             <Route path="perfil" element={<ClientProfile />} />
                         </Route>
                         
                         {/* Delivery App Routes (Standalone, without Client PWA Layout) */}
                         <Route path="app/delivery/*" element={<DeliveryRoutes />} />
+                        <Route path="admin/app/delivery/*" element={<DeliveryRoutes />} />
 
                         {/* ── EMPLOYEE INTERNAL (FASE 14) ── */}
                         <Route path="staff" element={
@@ -351,6 +361,7 @@ function BusinessApp() {
                             </BusinessAppWrapper>
                         </DesafioProvider>
                         </ReservasProvider>
+                        </MesasProvider>
                     </PedidosProvider>
 
                 </CartProvider>

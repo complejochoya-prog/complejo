@@ -37,12 +37,13 @@ const DEFAULT_ESPACIOS = [
 export const fetchEspacios = async (negocioId) => {
     if (!negocioId) return [];
     try {
-        const q = query(collection(db, 'negocios', negocioId, 'espacios'), orderBy('order', 'asc'));
+        const q = query(collection(db, 'negocios', negocioId, 'espacios'));
         const snap = await getDocs(q);
         
         if (snap.empty) return DEFAULT_ESPACIOS;
         
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return data.sort((a, b) => (a.order || 999) - (b.order || 999));
     } catch (e) {
         console.error("Error fetching espacios:", e);
         return DEFAULT_ESPACIOS;
@@ -51,6 +52,7 @@ export const fetchEspacios = async (negocioId) => {
 
 export const saveEspacio = async (negocioId, espacio, currentList = []) => {
     if (!negocioId) return false;
+    const isNew = !espacio.id;
     const id = espacio.id || `esp-${Date.now()}`;
     const ref = doc(db, 'negocios', negocioId, 'espacios', id);
     
@@ -61,6 +63,7 @@ export const saveEspacio = async (negocioId, espacio, currentList = []) => {
         ...espacio,
         id,
         order,
+        ...(isNew ? { active: true } : {}),
         updatedAt: serverTimestamp()
     }, { merge: true });
     

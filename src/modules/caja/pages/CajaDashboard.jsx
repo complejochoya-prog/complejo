@@ -4,6 +4,7 @@ import useCaja from '../hooks/useCaja';
 import CajaResumen from '../components/CajaResumen';
 import MovimientoCard from '../components/MovimientoCard';
 import MovimientoForm from '../components/MovimientoForm';
+import TransferGallery from '../components/TransferGallery';
 import {
     Plus,
     Lock,
@@ -24,6 +25,7 @@ import {
     ChevronRight,
     Zap,
     LayoutGrid,
+    Eye,
 } from 'lucide-react';
 
 export default function CajaDashboard() {
@@ -46,6 +48,7 @@ export default function CajaDashboard() {
     const [filterType, setFilterType] = useState('all'); 
     const [isAperturando, setIsAperturando] = useState(false);
     const [montoInicial, setMontoInicial] = useState('');
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
     if (loading)
         return (
@@ -242,7 +245,18 @@ export default function CajaDashboard() {
                                                 <m.icon size={18} className={m.color} />
                                                 <span className="text-[11px] font-black uppercase tracking-widest text-slate-300">{m.label}</span>
                                             </div>
-                                            <span className="text-lg font-black text-white italic tracking-tighter">${(m.val || 0).toLocaleString()}</span>
+                                            <div className="flex items-center gap-4">
+                                                {m.label === 'Transferencia' && (
+                                                    <button 
+                                                        onClick={() => setIsGalleryOpen(true)}
+                                                        className="p-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all group/btn"
+                                                        title="Ver Comprobantes"
+                                                    >
+                                                        <Eye size={14} className="group-hover/btn:scale-110 transition-transform" />
+                                                    </button>
+                                                )}
+                                                <span className="text-lg font-black text-white italic tracking-tighter">${(m.val || 0).toLocaleString()}</span>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -381,6 +395,11 @@ export default function CajaDashboard() {
                     </div>
                 </div>
             )}
+            <TransferGallery 
+                isOpen={isGalleryOpen} 
+                onClose={() => setIsGalleryOpen(false)} 
+                movements={movements} 
+            />
         </div>
     );
 }

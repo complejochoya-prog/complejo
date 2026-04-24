@@ -1,5 +1,21 @@
 import React from 'react';
 import { Trash2, Minus, Plus, Clock } from 'lucide-react';
+import OrderTimer from './OrderTimer';
+
+const getStatusConfig = (status) => {
+    const s = String(status).toLowerCase();
+    const config = {
+        nuevo: { text: 'NUEVO', color: 'bg-blue-500 text-white' },
+        pendiente: { text: 'PENDIENTE', color: 'bg-slate-500 text-white' },
+        preparando: { text: 'EN COCINA', color: 'bg-orange-500 text-white' },
+        en_cocina: { text: 'EN COCINA', color: 'bg-orange-500 text-white' },
+        listo: { text: 'LISTO', color: 'bg-emerald-500 text-white' },
+        listo_para_salir: { text: 'LISTO', color: 'bg-emerald-500 text-white' },
+        entregado: { text: 'ENTREGADO', color: 'bg-indigo-500 text-white' },
+        paid: { text: 'PAGADO', color: 'bg-green-500 text-white' },
+    };
+    return config[s] || { text: s.toUpperCase(), color: 'bg-slate-700 text-white' };
+};
 
 export default function OrderList({ orders, onUpdateQuantity, onRemove }) {
     if (orders.length === 0) {
@@ -22,8 +38,22 @@ export default function OrderList({ orders, onUpdateQuantity, onRemove }) {
                             {item.quantity}
                         </div>
                         <div>
-                            <p className="text-xs font-black text-white uppercase italic tracking-tighter">{item.productName}</p>
-                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">${item.price.toLocaleString()}</p>
+                            <div className="flex items-center gap-2 mb-1">
+                                <p className="text-xs font-black text-white uppercase italic tracking-tighter">{item.productName}</p>
+                                {item.status && (
+                                    <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${getStatusConfig(item.status).color}`}>
+                                        {getStatusConfig(item.status).text}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">${item.price.toLocaleString()}</p>
+                                {item.timestamp && !['entregado', 'paid', 'pagado'].includes(item.status) && (
+                                    <div className="scale-75 origin-left">
+                                        <OrderTimer startTime={item.timestamp} label="" active={true} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 

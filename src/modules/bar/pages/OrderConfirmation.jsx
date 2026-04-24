@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Home, Utensils } from 'lucide-react';
 import { useCart } from '../hooks/useCart.jsx';
 import { useConfig } from '../../../core/services/ConfigContext';
+import { usePedidos } from '../services/PedidosContext';
 
 export default function OrderConfirmation() {
     const location = useLocation();
@@ -16,7 +17,7 @@ export default function OrderConfirmation() {
     const { orders } = usePedidos();
 
     // Filtramos todos los pedidos de esta mesa/cliente que no estén pagados
-    const tableOrders = orders.filter(o => 
+    const tableOrders = (orders || []).filter(o => 
         (o.mesa === order?.mesa && order?.mesa) || 
         (o.cliente === order?.cliente && order?.cliente)
     ).filter(o => o.status !== 'paid' && o.estado !== 'paid');
@@ -27,12 +28,12 @@ export default function OrderConfirmation() {
 
     if (!order) {
         return (
-            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+            <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 text-center">
                 <button 
-                    onClick={() => navigate(`/${negocioId}/menu`)}
-                    className="bg-emerald-500 text-slate-950 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs"
+                    onClick={() => navigate(`/${negocioId}`)}
+                    className="bg-emerald-500 text-black px-10 py-5 rounded-[24px] font-black uppercase tracking-widest text-xs shadow-xl shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all"
                 >
-                    Volver al Menú
+                    Volver al Inicio
                 </button>
             </div>
         );
@@ -74,12 +75,11 @@ export default function OrderConfirmation() {
                                                 <span className="text-sm font-bold text-slate-300">{item.nombre}</span>
                                             </div>
                                         </div>
-                                        )}
+                                        <span className="text-sm font-black text-white">${(item.precio * (item.cantidad || item.quantity)).toLocaleString()}</span>
                                     </div>
-                                    <span className="text-sm font-black text-white">${(item.precio * (item.cantidad || item.quantity)).toLocaleString()}</span>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ))}
 
                         <div className="pt-6 border-t border-white/5 flex justify-between items-end">
                             <span className="text-xs font-black uppercase tracking-widest text-slate-400">Total Pagado</span>

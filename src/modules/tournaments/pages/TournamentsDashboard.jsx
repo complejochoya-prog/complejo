@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { Trophy, Plus, Settings, Filter, Search, X, Trash2 } from 'lucide-react';
+import { Trophy, Plus, Settings, Filter, Search, X, Trash2, Users } from 'lucide-react';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { useTournament } from '../hooks/useTournament';
 import TournamentCard from '../components/TournamentCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+
+import EscuelaAdmin from '../../escuela/pages/EscuelaAdmin';
 
 export default function TournamentsDashboard() {
     const { negocioId } = useConfig();
     const { tournaments, loading, save, remove } = useTournament(negocioId);
     const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState('torneos');
     const [isCreating, setIsCreating] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -64,67 +67,89 @@ export default function TournamentsDashboard() {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-4xl lg:text-5xl font-black tracking-tighter uppercase italic leading-[0.9] text-white flex items-center gap-4">
-                        <Trophy size={48} className="text-amber-400 drop-shadow-lg" />
-                        Gestión de <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Torneos</span>
-                    </h1>
-                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-2 pl-1">
-                        Control de ligas, equipos y resultados en tiempo real
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button className="bg-slate-900 border border-white/10 p-4 rounded-2xl text-slate-400 hover:text-white transition-colors">
-                        <Filter size={20} />
-                    </button>
-                    <button 
-                        onClick={() => setIsCreating(true)}
-                        className="bg-indigo-600 text-white px-6 py-4 rounded-2xl flex items-center gap-3 font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/20 hover:bg-indigo-500 transition-all hover:scale-105 active:scale-95"
-                    >
-                        <Plus size={18} strokeWidth={3} />
-                        Nuevo Torneo
-                    </button>
-                </div>
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-2 p-1.5 bg-slate-900/50 border border-white/5 rounded-2xl w-fit">
+                <button 
+                    onClick={() => setActiveTab('torneos')}
+                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'torneos' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-white'}`}
+                >
+                    Gestión de Torneos
+                </button>
+                <button 
+                    onClick={() => setActiveTab('escuela')}
+                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'escuela' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-white'}`}
+                >
+                    Escuela de Fútbol
+                </button>
             </div>
 
-            {/* Smart Stats Bar */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                    { label: 'En Curso', val: tournaments.filter(t => t.estado === 'en_curso').length, color: 'emerald' },
-                    { label: 'Inscripción', val: tournaments.filter(t => t.estado === 'inscripcion').length, color: 'amber' },
-                    { label: 'Finalizados', val: tournaments.filter(t => t.estado === 'finalizado').length, color: 'slate' },
-                    { label: 'Equipos Totales', val: tournaments.reduce((acc, t) => acc + t.equipos, 0), color: 'indigo' },
-                ].map((stat, i) => (
-                    <div key={i} className="bg-slate-900/50 border border-white/5 p-4 rounded-3xl">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-1">{stat.label}</span>
-                        <span className={`text-2xl font-black italic text-${stat.color}-400`}>{stat.val}</span>
+            {activeTab === 'torneos' ? (
+                <>
+                    {/* Header */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div>
+                            <h1 className="text-4xl lg:text-5xl font-black tracking-tighter uppercase italic leading-[0.9] text-white flex items-center gap-4">
+                                <Trophy size={48} className="text-amber-400 drop-shadow-lg" />
+                                Gestión de <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Torneos</span>
+                            </h1>
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-2 pl-1">
+                                Control de ligas, equipos y resultados en tiempo real
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button className="bg-slate-900 border border-white/10 p-4 rounded-2xl text-slate-400 hover:text-white transition-colors">
+                                <Filter size={20} />
+                            </button>
+                            <button 
+                                onClick={() => setIsCreating(true)}
+                                className="bg-indigo-600 text-white px-6 py-4 rounded-2xl flex items-center gap-3 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-600/20 hover:bg-indigo-500 transition-all hover:scale-105 active:scale-95"
+                            >
+                                <Plus size={18} strokeWidth={3} />
+                                Nuevo Torneo
+                            </button>
+                        </div>
                     </div>
-                ))}
-            </div>
 
-            {/* Tournaments Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tournaments.map(t => (
-                    <TournamentCard 
-                        key={t.id} 
-                        tournament={t} 
-                        onClick={() => handleEdit(t)}
-                        onDelete={(id, e) => {
-                            e.stopPropagation();
-                            setDeletingId(id);
-                            setIsDeleting(true);
-                        }}
-                    />
-                ))}
-                {tournaments.length === 0 && (
-                    <div className="col-span-full py-20 text-center bg-slate-900/30 border border-dashed border-white/5 rounded-[40px]">
-                        <Trophy size={40} className="mx-auto text-slate-700 mb-4 opacity-20" />
-                        <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No hay torneos creados aún</p>
+                    {/* Smart Stats Bar */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            { label: 'En Curso', val: tournaments.filter(t => t.estado === 'en_curso').length, color: 'emerald' },
+                            { label: 'Inscripción', val: tournaments.filter(t => t.estado === 'inscripcion').length, color: 'amber' },
+                            { label: 'Finalizados', val: tournaments.filter(t => t.estado === 'finalizado').length, color: 'slate' },
+                            { label: 'Equipos Totales', val: tournaments.reduce((acc, t) => acc + t.equipos, 0), color: 'indigo' },
+                        ].map((stat, i) => (
+                            <div key={i} className="bg-slate-900/50 border border-white/5 p-4 rounded-3xl">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-1">{stat.label}</span>
+                                <span className={`text-2xl font-black italic text-${stat.color}-400`}>{stat.val}</span>
+                            </div>
+                        ))}
                     </div>
-                )}
-            </div>
+
+                    {/* Tournaments Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {tournaments.map(t => (
+                            <TournamentCard 
+                                key={t.id} 
+                                tournament={t} 
+                                onClick={() => handleEdit(t)}
+                                onDelete={(id, e) => {
+                                    e.stopPropagation();
+                                    setDeletingId(id);
+                                    setIsDeleting(true);
+                                }}
+                            />
+                        ))}
+                        {tournaments.length === 0 && (
+                            <div className="col-span-full py-20 text-center bg-slate-900/30 border border-dashed border-white/5 rounded-[40px]">
+                                <Trophy size={40} className="mx-auto text-slate-700 mb-4 opacity-20" />
+                                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No hay torneos creados aún</p>
+                            </div>
+                        )}
+                    </div>
+                </>
+            ) : (
+                <EscuelaAdmin />
+            )}
 
             {/* Create Modal */}
             {isCreating && (

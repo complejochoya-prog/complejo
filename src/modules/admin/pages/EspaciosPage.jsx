@@ -140,7 +140,7 @@ export default function EspaciosPage() {
                     .map((esp) => (
                     <div 
                         key={esp.id} 
-                        className={`group bg-slate-900 border ${esp.active ? 'border-white/5' : 'border-red-500/20 grayscale'} rounded-[40px] overflow-hidden flex flex-col transition-all hover:border-amber-500/30 shadow-2xl`}
+                        className={`group bg-slate-900 border ${esp.active !== false ? 'border-white/5' : 'border-red-500/20 grayscale'} rounded-[40px] overflow-hidden flex flex-col transition-all hover:border-amber-500/30 shadow-2xl`}
                     >
                         <div className="relative h-48 overflow-hidden">
                             <img src={esp.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={esp.name} />
@@ -148,10 +148,10 @@ export default function EspaciosPage() {
                             
                             <div className="absolute top-4 right-4 flex gap-2">
                                 <button 
-                                    onClick={() => handleToggleStatus(esp.id, esp.active)}
-                                    className={`p-2 rounded-xl backdrop-blur-md border ${esp.active ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border-red-500/30 text-red-500'}`}
+                                    onClick={() => handleToggleStatus(esp.id, esp.active !== false)}
+                                    className={`p-2 rounded-xl backdrop-blur-md border ${esp.active !== false ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border-red-500/30 text-red-500'}`}
                                 >
-                                    {esp.active ? <Eye size={16} /> : <EyeOff size={16} />}
+                                    {esp.active !== false ? <Eye size={16} /> : <EyeOff size={16} />}
                                 </button>
                             </div>
                         </div>

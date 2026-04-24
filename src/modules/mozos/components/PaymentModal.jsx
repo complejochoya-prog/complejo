@@ -8,13 +8,28 @@ export default function PaymentModal({ isOpen, order, onClose, onConfirm }) {
 
     if (!isOpen || !order) return null;
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setReceipt(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleConfirm = async () => {
+        if (method === 'Transferencia' && !receipt) {
+            alert("Por favor suba la foto del comprobante");
+            return;
+        }
         setLoading(true);
-        // Simulate process
+        // Simulation delay
         setTimeout(() => {
             onConfirm({ method, receipt });
             setLoading(false);
-        }, 1500);
+        }, 1200);
     };
 
     return (
@@ -61,13 +76,24 @@ export default function PaymentModal({ isOpen, order, onClose, onConfirm }) {
 
                     {method === 'Transferencia' && (
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Comprobante (Opcional)</label>
-                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/5 rounded-3xl bg-slate-950/50 hover:bg-slate-950 hover:border-sky-500/20 cursor-pointer transition-all">
-                                <Upload size={24} className="text-slate-600 mb-2" />
-                                <span className="text-[10px] font-bold text-slate-500 uppercase">Subir Foto</span>
-                                <input type="file" className="hidden" onChange={(e) => setReceipt(e.target.files[0])} />
-                            </label>
-                            {receipt && <p className="text-[10px] text-sky-400 font-bold text-center">✓ {receipt.name}</p>}
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Comprobante de Pago</label>
+                            {receipt ? (
+                                <div className="relative aspect-video rounded-3xl overflow-hidden border border-white/10 bg-black group">
+                                    <img src={receipt} alt="Preview" className="w-full h-full object-contain" />
+                                    <button 
+                                        onClick={() => setReceipt(null)}
+                                        className="absolute top-2 right-2 p-2 bg-red-500 rounded-xl text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/5 rounded-3xl bg-slate-950/50 hover:bg-slate-950 hover:border-sky-500/20 cursor-pointer transition-all">
+                                    <Upload size={24} className="text-slate-600 mb-2" />
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Subir Foto</span>
+                                    <input type="file" className="hidden" accept="image/*" capture="environment" onChange={handleFileChange} />
+                                </label>
+                            )}
                         </div>
                     )}
 

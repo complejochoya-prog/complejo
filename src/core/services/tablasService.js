@@ -4,7 +4,8 @@ import {
     doc, 
     setDoc, 
     getDocs, 
-    serverTimestamp 
+    serverTimestamp,
+    deleteDoc
 } from 'firebase/firestore';
 
 export const tablasService = {
@@ -18,5 +19,8 @@ export const tablasService = {
             tableNumber, 
             updatedAt: serverTimestamp() 
         }, { merge: true });
+    },
+    deleteTabla: async (negocioId, tableNumber) => {
+        await deleteDoc(doc(db, 'negocios', negocioId, 'tablas', `table-${tableNumber}`));
     }
 };
