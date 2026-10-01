@@ -31,17 +31,27 @@ export const getCajaStatus = async (negocioId) => {
 };
 
 export const addMovement = async (negocioId, data) => {
+    if (!negocioId) return { success: false, error: "negocioId is required" };
     const ref = collection(db, 'negocios', negocioId, 'caja_movements');
+    
+    // Clean all undefined values to prevent Firestore rejection
+    const cleanData = {};
+    for (const [k, v] of Object.entries(data || {})) {
+        if (v !== undefined) {
+            cleanData[k] = v;
+        }
+    }
+
     const payload = {
-        ...data,
-        monto: parseFloat(data.monto) || 0,
-        tipo: data.tipo || 'entrada',
-        categoria: data.categoria || 'Varios',
-        descripcion: data.descripcion || '',
-        metodoPago: data.metodoPago || data.metodo_pago || 'efectivo',
-        origen: data.origen || 'general',
-        usuario: data.usuario || 'Sistema',
-        metadata: data.metadata || {},
+        ...cleanData,
+        monto: parseFloat(cleanData.monto) || 0,
+        tipo: cleanData.tipo || 'entrada',
+        categoria: cleanData.categoria || 'Varios',
+        descripcion: cleanData.descripcion || '',
+        metodoPago: cleanData.metodoPago || cleanData.metodo_pago || 'efectivo',
+        origen: cleanData.origen || 'general',
+        usuario: cleanData.usuario || cleanData.mozo || cleanData.repartidor || 'Sistema',
+        metadata: cleanData.metadata || {},
         fecha: new Date().toISOString().split('T')[0],
         hora: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
         createdAt: new Date().toISOString(),

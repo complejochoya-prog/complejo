@@ -13,15 +13,16 @@ export default function MozoRoutes() {
             <Route path="login" element={<MozoLogin />} />
             
             {/* The MozoApp acts as a layout for the mozo module */}
-            <Route path="" element={<MozoApp />}>
-                <Route index element={<MozoDashboard />} />
+            <Route element={<MozoApp />}>
+                <Route index element={<MozoTables />} />
+                <Route path="dashboard" element={<MozoDashboard />} />
                 <Route path="mesas" element={<MozoTables />} />
                 <Route path="pedidos" element={<MozoOrders />} />
                 <Route path="cobrar" element={<MozoCheckout />} />
             </Route>
 
-            {/* Fallback to login if not matched */}
-            <Route path="*" element={<Navigate to="login" replace />} />
+            {/* Fallback to mesas if not matched */}
+            <Route path="*" element={<Navigate to="mesas" replace />} />
         </Routes>
     );
 }

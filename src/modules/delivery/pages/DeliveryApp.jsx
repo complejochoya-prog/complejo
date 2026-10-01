@@ -12,8 +12,8 @@ export default function DeliveryApp() {
     const { orders, updateOrder, updateOrderStatus } = usePedidos();
     
     // Auth State
-    const [userId, setUserId] = useState(null);
-    const [userName, setUserName] = useState('');
+    const [userId, setUserId] = useState(() => localStorage.getItem('delivery_userId'));
+    const [userName, setUserName] = useState(() => localStorage.getItem('delivery_userName') || '');
     
     // UI State
     const [activeTab, setActiveTab] = useState('COCINA');
@@ -25,7 +25,9 @@ export default function DeliveryApp() {
     const lastNotifiedCount = useRef(0);
 
     useEffect(() => {
-        notificationSound.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        try {
+            notificationSound.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        } catch {}
     }, []);
 
     useEffect(() => {
@@ -35,7 +37,7 @@ export default function DeliveryApp() {
             navigate(`/${negocioId}/app/delivery/login`);
         } else {
             setUserId(uid);
-            setUserName(name);
+            setUserName(name || '');
         }
     }, [navigate, negocioId]);
 
@@ -73,38 +75,45 @@ export default function DeliveryApp() {
     };
 
     const handlePaymentConfirm = async (paymentDetails) => {
+        if (!selectedOrder) return;
         const orderId = selectedOrder.id;
         triggerFeedback();
         
-        updateOrder(orderId, {
-            estado: 'entregado',
-            status: 'entregado',
-            paid: true,
-            paymentMethod: paymentDetails.method,
-            receiptImage: paymentDetails.receipt || null,
-            horaEntregado: new Date().toISOString()
-        });
-
         try {
-            const { registerExternalMovement } = await import('../../caja/services/cajaService');
-            await registerExternalMovement(negocioId, {
-                tipo: 'entrada',
-                categoria: 'Delivery bar',
-                descripcion: `Entrega #${orderId.slice(-4)} - ${selectedOrder.cliente} (${selectedOrder.direccion})`,
-                monto: selectedOrder.total,
-                metodo_pago: (paymentDetails.method || 'efectivo').toLowerCase(),
-                origen: 'delivery',
-                repartidor: userName,
-                usuario: userName,
-                receiptImage: paymentDetails.receipt // Base64 image
-            });
-        } catch (err) {
-            console.error("Error al registrar caja:", err);
-        }
+            if (updateOrder) {
+                updateOrder(orderId, {
+                    estado: 'entregado',
+                    status: 'entregado',
+                    paid: true,
+                    paymentMethod: paymentDetails.method || 'Efectivo',
+                    receiptImage: paymentDetails.receipt || null,
+                    horaEntregado: new Date().toISOString()
+                });
+            }
 
-        setPaymentModalOpen(false);
-        setSelectedOrder(null);
-        setActiveTab('HISTORIAL');
+            try {
+                const { registerExternalMovement } = await import('../../caja/services/cajaService');
+                await registerExternalMovement(negocioId, {
+                    tipo: 'entrada',
+                    categoria: 'Delivery bar',
+                    descripcion: `Entrega #${String(orderId).slice(-4)} - ${selectedOrder.cliente || 'Cliente'} (${selectedOrder.direccion || ''})`,
+                    monto: Number(selectedOrder.total) || 0,
+                    metodo_pago: (paymentDetails.method || 'efectivo').toLowerCase(),
+                    origen: 'delivery',
+                    repartidor: userName || 'Rider',
+                    usuario: userName || 'Rider',
+                    receiptImage: paymentDetails.receipt || null
+                });
+            } catch (err) {
+                console.warn("[DeliveryApp] Error no-bloqueante al registrar caja:", err);
+            }
+        } catch (e) {
+            console.error("[DeliveryApp] Error al confirmar cobro:", e);
+        } finally {
+            setPaymentModalOpen(false);
+            setSelectedOrder(null);
+            setActiveTab('HISTORIAL');
+        }
     };
 
     const allOrders = orders || [];

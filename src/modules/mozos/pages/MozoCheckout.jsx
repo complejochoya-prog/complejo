@@ -5,62 +5,79 @@ import { Wallet, ChevronRight, Receipt, CreditCard, Banknote, Landmark } from 'l
 import PaymentModal from '../components/PaymentModal';
 import { getMozoSession } from '../services/mozoService';
 
+import { useMesas } from '../../bar/services/MesasContext';
+
 export default function MozoCheckout() {
     const { negocioId } = useConfig();
     const { orders, updateOrderStatus } = usePedidos();
+    const { marcarMesaDisponible } = useMesas();
     const mozo = getMozoSession();
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
     const pendingBills = useMemo(() => {
         // Group pending orders by table
-        const pending = orders.filter(o => o.status !== 'paid');
+        const pending = (orders || []).filter(o => o.status !== 'paid' && !o.paid);
         const grouped = {};
         
         pending.forEach(o => {
-            if (!grouped[o.table]) {
-                grouped[o.table] = {
-                    table: o.table,
+            const tableNum = o.table || o.mesa;
+            if (!tableNum) return;
+            if (!grouped[tableNum]) {
+                grouped[tableNum] = {
+                    table: tableNum,
                     total: 0,
                     orders: [],
                     mozoName: o.mozoName || 'Sistema',
                     lastActivity: o.createdAt
                 };
             }
-            grouped[o.table].total += (o.total || 0);
-            grouped[o.table].orders.push(o);
+            grouped[tableNum].total += (o.total || 0);
+            grouped[tableNum].orders.push(o);
         });
 
-        return Object.values(grouped).sort((a, b) => a.table - b.table);
+        return Object.values(grouped).sort((a, b) => Number(a.table) - Number(b.table));
     }, [orders]);
 
     const handleConfirmPayment = async (details) => {
         try {
-            const { registerExternalMovement } = await import('../../caja/services/cajaService');
-            
-            // For each order in the table (if we pay by table) or single order
             const targetOrders = selectedOrder.orders || [selectedOrder];
-            const totalToPay = selectedOrder.total || selectedOrder.monto;
+            const totalToPay = selectedOrder.total || selectedOrder.monto || 0;
+            const tableNum = String(selectedOrder.table || selectedOrder.mesa || '');
 
-            await registerExternalMovement(negocioId, {
-                tipo: 'entrada',
-                categoria: 'Venta mozo',
-                monto: totalToPay,
-                descripcion: `Mesa ${selectedOrder.table} - Cobro realizado por ${mozo.name}`,
-                metodo_pago: (details.method || 'efectivo').toLowerCase(),
-                origen: 'bar',
-                mozo: mozo.name,
-                receiptImage: details.receipt // Pass the base64 image
-            });
+            // 1. Register in Caja (non-blocking)
+            try {
+                const { registerExternalMovement } = await import('../../caja/services/cajaService');
+                await registerExternalMovement(negocioId, {
+                    tipo: 'entrada',
+                    categoria: 'Venta mozo',
+                    monto: totalToPay,
+                    descripcion: `Mesa ${tableNum} - Cobro realizado por ${mozo.name || 'Mozo'}`,
+                    metodo_pago: (details.method || 'efectivo').toLowerCase(),
+                    origen: 'bar',
+                    mozo: mozo.name || 'Mozo',
+                    receiptImage: details.receipt || null
+                });
+            } catch (cajaErr) {
+                console.warn('[MozoCheckout] Caja movement warning:', cajaErr);
+            }
 
-            targetOrders.forEach(o => {
-                updateOrderStatus(String(o.id), 'paid');
-            });
+            // 2. Mark orders as paid
+            for (const o of targetOrders) {
+                if (updateOrderStatus && o.id) {
+                    await updateOrderStatus(String(o.id), 'paid');
+                }
+            }
+
+            // 3. Release table
+            if (tableNum && marcarMesaDisponible) {
+                await marcarMesaDisponible(tableNum);
+            }
 
             setIsPaymentOpen(false);
             setSelectedOrder(null);
         } catch (e) {
-            console.error(e);
+            console.error('[MozoCheckout] Error processing payment:', e);
             alert("Error al procesar el cobro");
         }
     };

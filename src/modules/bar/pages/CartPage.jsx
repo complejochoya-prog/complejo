@@ -239,7 +239,7 @@ export default function CartPage() {
                         <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em] max-w-xs mx-auto">Tu selección está esperando. Vuelve al menú para elegir algo delicioso.</p>
                     </div>
                     <button 
-                        onClick={() => navigate(`/${negocioId}/app/menu`)}
+                        onClick={() => navigate(window.location.pathname.includes('/app/') ? `/${negocioId}/app/menu` : `/${negocioId}/menu`)}
                         className="bg-white text-slate-950 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[12px] shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:scale-95 transition-all"
                     >
                         Explorar Menú

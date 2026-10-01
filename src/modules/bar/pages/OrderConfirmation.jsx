@@ -55,7 +55,21 @@ export default function OrderConfirmation() {
     ).filter(o => o.status !== 'paid' && o.estado !== 'paid');
 
     if (!order) {
-        return null;
+        return (
+            <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+                    <CheckCircle2 size={32} className="text-emerald-400" />
+                </div>
+                <h2 className="text-xl font-black uppercase tracking-tight text-white mb-2">Pedido Procesado</h2>
+                <p className="text-xs text-slate-400 uppercase tracking-widest mb-6">Tu orden ha sido registrada en el sistema</p>
+                <button
+                    onClick={() => navigate(`/${negocioId}/menu`)}
+                    className="px-6 py-3 bg-white text-slate-950 rounded-xl font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-xl"
+                >
+                    Volver al Menú
+                </button>
+            </div>
+        );
     }
 
     return (

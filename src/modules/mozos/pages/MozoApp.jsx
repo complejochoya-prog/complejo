@@ -10,7 +10,10 @@ export default function MozoApp() {
     const { negocioId } = useParams();
     const location = useLocation();
     const { orders, config } = useConfig();
-    const [mozo, setMozo] = useState(null);
+    const [mozo, setMozo] = useState(() => {
+        const s = getMozoSession();
+        return s?.id ? s : null;
+    });
 
     // Validate Session
     useEffect(() => {

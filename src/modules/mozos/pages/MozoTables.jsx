@@ -537,10 +537,11 @@ export default function MozoTables() {
                                 }
                                 
                                 // Liberar mesa!
-                                marcarMesaDisponible(String(orderToPay.table || orderToPay.mesa));
+                                await marcarMesaDisponible(String(orderToPay.table || orderToPay.mesa));
                                 
                                 setIsPaymentOpen(false);
                                 setOrderToPay(null);
+                                setSelectedTable(null); // Regresar de inmediato al mapa de salón
                             } catch (e) {
                                 console.error(e);
                                 alert("Error al procesar pago");

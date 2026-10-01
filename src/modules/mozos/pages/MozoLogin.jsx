@@ -23,11 +23,10 @@ export default function MozoLogin() {
             // Buscamos en la base de datos de empleados unificada
             const empleados = await fetchEmpleados(negocioId);
             await loginMozo(usuario, password, empleados);
-            // Si el login fue exitoso, guardamos el negocioId de paso
-            navigate(`/${negocioId}/app/mozos`);
+            // Si el login fue exitoso, ingresamos limpiamente al mapa de mesas
+            window.location.href = `/${negocioId}/app/mozos/mesas`;
         } catch (err) {
             setError(err);
-        } finally {
             setLoading(false);
         }
     };

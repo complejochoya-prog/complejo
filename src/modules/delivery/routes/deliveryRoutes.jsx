@@ -7,9 +7,8 @@ export default function DeliveryRoutes() {
     return (
         <Routes>
             <Route path="login" element={<DeliveryLogin />} />
-            <Route path="" element={<DeliveryApp />} />
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="login" replace />} />
+            <Route index element={<DeliveryApp />} />
+            <Route path="*" element={<DeliveryApp />} />
         </Routes>
     );
 }

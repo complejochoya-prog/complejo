@@ -21,6 +21,7 @@ import RoleGuard from './core/guards/RoleGuard';
 
 // Core guards
 import ModuleGuard from './core/guards/ModuleGuard';
+import AppErrorBoundary from './components/AppErrorBoundary';
 
 // SuperAdmin Module
 import { 
@@ -230,9 +231,9 @@ function BusinessApp() {
                             <Route path="perfil" element={<AboutProfilePage />} />
                             
                             {/* Bar Module Routes (Requested URLs) */}
-                            <Route path="carrito" element={<ModuleGuard moduleId="bar"><CartPage /></ModuleGuard>} />
-                            <Route path="pedido-confirmado" element={<ModuleGuard moduleId="bar"><OrderConfirmation /></ModuleGuard>} />
-                            <Route path="app/pedido-confirmado" element={<ModuleGuard moduleId="bar"><OrderConfirmation /></ModuleGuard>} />
+                            <Route path="carrito" element={<AppErrorBoundary><ModuleGuard moduleId="bar"><CartPage /></ModuleGuard></AppErrorBoundary>} />
+                            <Route path="pedido-confirmado" element={<AppErrorBoundary><ModuleGuard moduleId="bar"><OrderConfirmation /></ModuleGuard></AppErrorBoundary>} />
+                            <Route path="app/pedido-confirmado" element={<AppErrorBoundary><ModuleGuard moduleId="bar"><OrderConfirmation /></ModuleGuard></AppErrorBoundary>} />
                             <Route path="promos" element={<PromosPage />} />
                         </Route>
 
@@ -333,20 +334,20 @@ function BusinessApp() {
                         </Route>
 
                         {/* ── MOBILE PWA (FASE 10 / 13) ── */}
-                        <Route path="app/mozos/*" element={<ModuleGuard moduleId="bar"><MozoRoutes /></ModuleGuard>} />
+                        <Route path="app/mozos/*" element={<AppErrorBoundary><ModuleGuard moduleId="bar"><MozoRoutes /></ModuleGuard></AppErrorBoundary>} />
                         <Route path="app" element={<PWALayout />}>
                             <Route index element={<ClientHome />} />
                             <Route path="reserva-confirmada" element={<ModuleGuard moduleId="reservas"><ReservationSuccess /></ModuleGuard>} />
                             <Route path="menu" element={<ModuleGuard moduleId="bar"><BarMenu /></ModuleGuard>} />
                             <Route path="bar" element={<Navigate to="menu" replace />} />
-                            <Route path="carrito" element={<ModuleGuard moduleId="bar"><CartPage /></ModuleGuard>} />
+                            <Route path="carrito" element={<AppErrorBoundary><ModuleGuard moduleId="bar"><CartPage /></ModuleGuard></AppErrorBoundary>} />
                             <Route path="torneos" element={<ModuleGuard moduleId="torneos"><ClientTournaments /></ModuleGuard>} />
                             <Route path="perfil" element={<ClientProfile />} />
                         </Route>
                         
                         {/* Delivery App Routes (Standalone, without Client PWA Layout) */}
-                        <Route path="app/delivery/*" element={<ModuleGuard moduleId="bar"><DeliveryRoutes /></ModuleGuard>} />
-                        <Route path="admin/app/delivery/*" element={<ModuleGuard moduleId="bar"><DeliveryRoutes /></ModuleGuard>} />
+                        <Route path="app/delivery/*" element={<AppErrorBoundary><ModuleGuard moduleId="bar"><DeliveryRoutes /></ModuleGuard></AppErrorBoundary>} />
+                        <Route path="admin/app/delivery/*" element={<AppErrorBoundary><ModuleGuard moduleId="bar"><DeliveryRoutes /></ModuleGuard></AppErrorBoundary>} />
 
                         {/* ── EMPLOYEE INTERNAL (FASE 14) ── */}
                         <Route path="staff" element={

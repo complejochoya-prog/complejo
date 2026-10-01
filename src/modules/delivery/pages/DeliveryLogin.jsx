@@ -36,12 +36,11 @@ export default function DeliveryLogin() {
                 localStorage.setItem('delivery_userId', riderMatch.id);
                 localStorage.setItem('delivery_userName', `${riderMatch.nombre} ${riderMatch.apellido}`);
                 localStorage.setItem('delivery_userRole', riderMatch.rol);
-                navigate(`/${negocioId}/app/delivery`);
+                window.location.href = `/${negocioId}/app/delivery`;
             }
         } catch (err) {
             console.error(err);
             setError('Error de sincronización. Intentá de nuevo.');
-        } finally {
             setLoading(false);
         }
     };

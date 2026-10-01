@@ -35,8 +35,39 @@ export function CartProvider({ children }) {
     });
 
     useEffect(() => {
-        localStorage.setItem('giovanni_cart', JSON.stringify(cart));
+        try {
+            localStorage.setItem('giovanni_cart', JSON.stringify(cart));
+        } catch {}
     }, [cart]);
+
+    // Escuchar cambios de localStorage en otras pestañas o componentes
+    useEffect(() => {
+        const handleStorageChange = () => {
+            try {
+                const stored = localStorage.getItem('giovanni_cart');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    setCart(parsed.map(item => ({
+                        ...item,
+                        precio: getNumericPrice(item),
+                        price: getNumericPrice(item),
+                        quantity: getNumericQuantity(item)
+                    })));
+                } else {
+                    setCart([]);
+                }
+            } catch (e) {
+                console.warn('[useCart] Error syncing cart:', e);
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('giovanni_cart_sync', handleStorageChange);
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('giovanni_cart_sync', handleStorageChange);
+        };
+    }, []);
 
     const addToCart = React.useCallback((product) => {
         if (!product) return;
