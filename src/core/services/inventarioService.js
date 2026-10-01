@@ -21,7 +21,11 @@ export const inventarioService = {
         if (filters.sector) q = query(ref, where('sector', '==', filters.sector));
         
         const snap = await getDocs(q);
-        let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        let list = snap.docs.map(d => {
+            const data = d.data();
+            const validId = (d.id || data.id) && String(d.id || data.id) !== 'undefined' ? String(d.id || data.id) : `doc-${d.id}`;
+            return { ...data, id: validId };
+        });
 
         if (filters.categoria) list = list.filter(p => p.categoria === filters.categoria);
         if (filters.alerta_stock) list = list.filter(p => p.stock <= p.stock_minimo);

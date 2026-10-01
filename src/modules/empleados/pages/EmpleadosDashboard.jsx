@@ -4,9 +4,9 @@ import useEmpleados from '../hooks/useEmpleados';
 import EmpleadoStats from '../components/EmpleadoStats';
 import EmpleadoCard from '../components/EmpleadoCard';
 import EmpleadoForm from '../components/EmpleadoForm';
-import { ROLES } from '../services/empleadosService';
+import { ROLES, resetAndSeedEmpleados } from '../services/empleadosService';
 import {
-    Users, UserPlus, List, RefreshCcw, Loader2, Search, Briefcase,
+    Users, UserPlus, List, RefreshCcw, Loader2, Search, Briefcase, RotateCcw,
 } from 'lucide-react';
 
 export default function EmpleadosDashboard() {
@@ -14,6 +14,21 @@ export default function EmpleadosDashboard() {
     const { negocioId } = useParams();
     const { empleados, stats, loading, create, refresh } = useEmpleados({ estado: 'activo' });
     const [showForm, setShowForm] = useState(false);
+    const [resetting, setResetting] = useState(false);
+
+    const handleReset = async () => {
+        if (window.confirm('¿Reiniciar lista de empleados y dejar 1 de cada función con usuario "admin" y contraseña "admin"?')) {
+            setResetting(true);
+            try {
+                await resetAndSeedEmpleados(negocioId);
+                refresh();
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setResetting(false);
+            }
+        }
+    };
 
     if (loading) return (
         <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
@@ -52,8 +67,13 @@ export default function EmpleadosDashboard() {
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                     <button onClick={refresh}
+                        title="Actualizar"
                         className="w-11 h-11 bg-slate-900 rounded-xl flex items-center justify-center text-slate-400 hover:text-white border border-white/5 shadow-xl transition-all active:rotate-180 duration-500">
                         <RefreshCcw size={18} />
+                    </button>
+                    <button onClick={handleReset} disabled={resetting}
+                        className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all border border-rose-500/20 shadow-xl disabled:opacity-50">
+                        {resetting ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />} 1 Por Rol (admin/admin)
                     </button>
                     <button onClick={() => navigate(`/${negocioId}/empleados/lista`)}
                         className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all border border-white/5 shadow-xl">

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import useCaja from '../hooks/useCaja';
 import CajaResumen from '../components/CajaResumen';
 import MovimientoCard from '../components/MovimientoCard';
 import MovimientoForm from '../components/MovimientoForm';
 import TransferGallery from '../components/TransferGallery';
+import CierreCajaModal from '../components/CierreCajaModal';
+import CajaTicketModal from '../components/CajaTicketModal';
 import {
     Plus,
     Lock,
@@ -14,18 +16,17 @@ import {
     History,
     Loader2,
     CalendarCheck,
-    Coffee,
     Truck,
     Banknote,
     CreditCard,
     Smartphone,
-    TrendingUp,
     X,
     Utensils,
-    ChevronRight,
     Zap,
-    LayoutGrid,
     Eye,
+    Printer,
+    Sparkles,
+    User
 } from 'lucide-react';
 
 export default function CajaDashboard() {
@@ -35,6 +36,7 @@ export default function CajaDashboard() {
         session,
         stats,
         movements,
+        lastClosedSession,
         loading,
         recordMovement,
         removeMovement,
@@ -48,7 +50,10 @@ export default function CajaDashboard() {
     const [filterType, setFilterType] = useState('all'); 
     const [isAperturando, setIsAperturando] = useState(false);
     const [montoInicial, setMontoInicial] = useState('');
+    const [cajeroApertura, setCajeroApertura] = useState('');
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const [isCierreOpen, setIsCierreOpen] = useState(false);
+    const [selectedTicketSession, setSelectedTicketSession] = useState(null);
 
     if (loading)
         return (
@@ -87,15 +92,15 @@ export default function CajaDashboard() {
 
     const handleConfirmOpen = () => {
         const amount = parseFloat(montoInicial) || 0;
-        startSession(amount);
+        const cashier = cajeroApertura.trim() || 'Administrador';
+        startSession(amount, cashier);
         setIsAperturando(false);
         setMontoInicial('');
+        setCajeroApertura('');
     };
 
     const handleCloseBox = () => {
-        if (window.confirm('¿Deseas cerrar la caja actual? Se generará un registro histórico.')) {
-            endSession();
-        }
+        setIsCierreOpen(true);
     };
 
     const handleDelete = (id) => {
@@ -360,7 +365,7 @@ export default function CajaDashboard() {
             {isAperturando && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in duration-300">
                     <div className="relative bg-slate-900 w-full max-w-lg rounded-[48px] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden scale-in-center">
-                        <div className="p-10 border-b border-white/5 flex items-center justify-between">
+                        <div className="p-8 sm:p-10 border-b border-white/5 flex items-center justify-between">
                             <div>
                                 <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white flex items-center gap-4">
                                     <Unlock className="text-emerald-500" size={32} /> Apertura
@@ -371,30 +376,92 @@ export default function CajaDashboard() {
                                 <X size={24} />
                             </button>
                         </div>
-                        <div className="p-10 space-y-8">
-                            <div className="space-y-4">
-                                <label className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-500 px-2 flex items-center gap-2">
-                                    <Banknote size={14} /> Efectivo Inicial
+                        <div className="p-8 sm:p-10 space-y-6">
+                            {/* Previous session cash available suggestion */}
+                            {lastClosedSession && (
+                                <div className="p-4 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-indigo-300 flex items-center gap-1.5">
+                                            <Sparkles size={12} className="text-indigo-400" /> Saldo del Cierre Anterior
+                                        </span>
+                                        <span className="text-sm font-black text-white font-mono">
+                                            ${Number(lastClosedSession.finalBalance || 0).toLocaleString('es-AR')}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMontoInicial((lastClosedSession.finalBalance || 0).toString())}
+                                            className="py-2.5 px-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 text-[10px] font-black uppercase tracking-wider transition-all shadow-md active:scale-95"
+                                        >
+                                            Usar Saldo Anterior
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMontoInicial('0')}
+                                            className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] font-black uppercase tracking-wider transition-all"
+                                        >
+                                            Empezar en $0
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-1 flex items-center gap-2">
+                                    <User size={13} className="text-indigo-400" /> Responsable / Cajero del Turno
+                                </label>
+                                <input
+                                    type="text"
+                                    value={cajeroApertura}
+                                    onChange={(e) => setCajeroApertura(e.target.value)}
+                                    placeholder="Ej: Juan Pérez / Turno Mañana"
+                                    className="w-full bg-slate-950 border border-white/10 rounded-2xl px-5 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-indigo-500/60 placeholder:text-slate-700 transition-all"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-1 flex items-center gap-2">
+                                    <Banknote size={13} className="text-emerald-400" /> Efectivo Inicial en Caja
                                 </label>
                                 <div className="relative group">
-                                    <span className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-600 font-black text-4xl group-focus-within:text-emerald-400 transition-colors">$</span>
+                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600 font-black text-3xl group-focus-within:text-emerald-400 transition-colors">$</span>
                                     <input
                                         type="number"
                                         value={montoInicial}
                                         onChange={(e) => setMontoInicial(e.target.value)}
-                                        className="w-full bg-slate-950 border border-white/5 rounded-[32px] pl-20 pr-8 py-8 text-5xl font-black text-white focus:outline-none focus:border-emerald-500/50 shadow-inner placeholder:text-slate-900 transition-all"
+                                        className="w-full bg-slate-950 border border-white/5 rounded-2xl pl-16 pr-6 py-5 text-3xl font-black text-white focus:outline-none focus:border-emerald-500/50 shadow-inner placeholder:text-slate-900 transition-all font-mono"
                                         placeholder="0"
-                                        autoFocus
                                     />
                                 </div>
                             </div>
-                            <button onClick={handleConfirmOpen} className="w-full h-20 rounded-[32px] bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-[14px] font-black uppercase tracking-widest shadow-2xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all">
+                            <button onClick={handleConfirmOpen} className="w-full h-16 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-[12px] font-black uppercase tracking-widest shadow-2xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all">
                                 Confirmar y Abrir Turno
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* ── Close Shift Modal ── */}
+            <CierreCajaModal
+                isOpen={isCierreOpen}
+                onClose={() => setIsCierreOpen(false)}
+                session={session}
+                stats={stats}
+                movements={movements}
+                onConfirmClose={endSession}
+                onOpenTicket={(closedData) => setSelectedTicketSession(closedData)}
+            />
+
+            {/* ── Printable Shift Ticket Modal ── */}
+            <CajaTicketModal
+                isOpen={!!selectedTicketSession}
+                onClose={() => setSelectedTicketSession(null)}
+                sessionData={selectedTicketSession}
+                negocioName="COMPLEJO CHOYA"
+            />
+
             <TransferGallery 
                 isOpen={isGalleryOpen} 
                 onClose={() => setIsGalleryOpen(false)} 

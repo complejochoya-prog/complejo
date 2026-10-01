@@ -47,12 +47,55 @@ export default function KitchenOrderHistory() {
         load();
     }, [negocioId]);
 
+    const getOrderStartMs = (order) => {
+        if (!order) return Date.now();
+        if (order.timestamp) {
+            if (order.timestamp instanceof Date) return order.timestamp.getTime();
+            if (typeof order.timestamp.toDate === 'function') return order.timestamp.toDate().getTime();
+            const d = new Date(order.timestamp).getTime();
+            if (!isNaN(d)) return d;
+        }
+        if (order.createdAt) {
+            if (order.createdAt instanceof Date) return order.createdAt.getTime();
+            if (typeof order.createdAt.toDate === 'function') return order.createdAt.toDate().getTime();
+            const d = new Date(order.createdAt).getTime();
+            if (!isNaN(d)) return d;
+        }
+        if (typeof order.id === 'string' && order.id.startsWith('ORD-')) {
+            const num = parseInt(order.id.replace('ORD-', ''), 10);
+            if (!isNaN(num)) return num;
+        }
+        const numId = Number(order.id);
+        if (!isNaN(numId) && numId > 1000000000000) return numId;
+        return Date.now() - 300000; // 5 min fallback
+    };
+
+    const getOrderEndMs = (order) => {
+        if (!order) return Date.now();
+        const readyVal = order.readyAt || order.deliveredAt || order.horaEntregado || order.updatedAt;
+        if (readyVal) {
+            if (readyVal instanceof Date) return readyVal.getTime();
+            if (typeof readyVal.toDate === 'function') return readyVal.toDate().getTime();
+            const d = new Date(readyVal).getTime();
+            if (!isNaN(d)) return d;
+        }
+        return Date.now();
+    };
+
+    const getPrepMins = (order) => {
+        const start = getOrderStartMs(order);
+        const end = getOrderEndMs(order);
+        const diff = Math.max(0, end - start);
+        return Math.max(1, Math.floor(diff / 60000));
+    };
+
     const calculateStats = () => {
         if (history.length === 0) return { avg: '0:00', totalOrders: 0 };
         const totalSecs = history.reduce((acc, order) => {
-            const start = order.id; // It's Date.now()
-            const end = new Date(order.readyAt || order.deliveredAt || Date.now()).getTime();
-            return acc + Math.floor((end - start) / 1000);
+            const start = getOrderStartMs(order);
+            const end = getOrderEndMs(order);
+            const diff = Math.max(0, Math.floor((end - start) / 1000));
+            return acc + diff;
         }, 0);
         const avgSecs = Math.floor(totalSecs / history.length);
         const mins = Math.floor(avgSecs / 60);
@@ -127,7 +170,7 @@ export default function KitchenOrderHistory() {
                                         <div>
                                             <p className="text-sm font-black text-white">{order.tipo === 'Para llevar' ? 'Delivery/Takeaway' : `Mesa ${order.mesa}`}</p>
                                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                                                {(order.items || order.productos || []).length} {(order.items || order.productos || []).length === 1 ? 'Producto' : 'Productos'} • ${(order.items || order.productos || []).reduce((sum, i) => sum + (i.precio * (i.cantidad || i.quantity || 1)), 0).toLocaleString()}
+                                                {(order.items || order.productos || []).length} {(order.items || order.productos || []).length === 1 ? 'Producto' : 'Productos'} • ${(order.items || order.productos || []).reduce((sum, i) => sum + ((i.precio || i.price || 0) * (i.cantidad || i.quantity || 1)), 0).toLocaleString()}
                                             </p>
                                         </div>
                                     </div>
@@ -136,7 +179,7 @@ export default function KitchenOrderHistory() {
                                         <div className="text-right hidden sm:block">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Tiempo Preparación</p>
                                             <p className="text-sm font-black text-emerald-400 italic">
-                                                {Math.floor((new Date(order.readyAt || order.deliveredAt || Date.now()).getTime() - order.id) / 60000)} min
+                                                {getPrepMins(order)} min
                                             </p>
                                         </div>
                                         <ChevronRight size={20} className="text-slate-700 group-hover:text-blue-400 transition-colors" />

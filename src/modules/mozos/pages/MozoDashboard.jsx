@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { usePedidos } from '../../bar/services/PedidosContext';
+import { useMesas } from '../../bar/services/MesasContext';
 import { getMozoSession } from '../services/mozoService';
 import { 
     Clock, 
@@ -12,7 +13,8 @@ import {
     ChevronRight,
     Star,
     Utensils,
-    Coffee
+    Coffee,
+    Sparkles
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -20,7 +22,12 @@ export default function MozoDashboard() {
     const { negocioId } = useParams();
     const navigate = useNavigate();
     const { orders } = usePedidos();
+    const { mesas, marcarMesaDisponible } = useMesas();
     const mozo = getMozoSession();
+
+    const mesasParaLimpieza = useMemo(() => {
+        return (mesas || []).filter(m => m.estado === 'limpieza' || m.estado === 'limpiando');
+    }, [mesas]);
 
     const stats = useMemo(() => {
         const myOrders = orders?.filter(o => o.mozoId === mozo.id) || [];
@@ -80,6 +87,53 @@ export default function MozoDashboard() {
                 </div>
             </div>
 
+            {/* Mesas para Limpieza Alert Section */}
+            {mesasParaLimpieza.length > 0 && (
+                <div className="bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-[#141210] border-2 border-amber-500/40 p-5 rounded-[28px] shadow-[0_0_30px_rgba(245,158,11,0.15)] relative overflow-hidden animate-in zoom-in-95 duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 bg-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 border border-amber-400/40 text-xl shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                                🧹
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black uppercase tracking-wider text-amber-300 flex items-center gap-2">
+                                    {mesasParaLimpieza.length} {mesasParaLimpieza.length === 1 ? 'Mesa para Limpieza' : 'Mesas para Limpieza'}
+                                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                                </h3>
+                                <p className="text-[10px] font-bold text-amber-400/80 uppercase tracking-widest mt-0.5">
+                                    Aviso del Bar: Limpiar antes de sentar clientes
+                                </p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => handleNavigate('mesas')}
+                            className="px-3.5 py-2 bg-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-400 active:scale-95 transition-all shadow-md"
+                        >
+                            Ver en Salón
+                        </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2.5 mt-4 pt-3 border-t border-amber-500/20">
+                        {mesasParaLimpieza.map(m => (
+                            <div key={m.id || m.numero} className="flex items-center gap-2 bg-black/60 border border-amber-500/40 px-3.5 py-2 rounded-2xl backdrop-blur-md">
+                                <span className="text-xs font-black text-amber-300">Mesa #{m.numero}</span>
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if ('vibrate' in navigator) navigator.vibrate(30);
+                                        await marcarMesaDisponible(m.numero);
+                                    }}
+                                    className="text-[9px] font-black uppercase bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-xl transition-all active:scale-95 flex items-center gap-1"
+                                    title="Marcar como limpia y disponible"
+                                >
+                                    <Sparkles size={11} /> Limpia
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Quick Metrics */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/[0.02] backdrop-blur-md p-5 rounded-[24px] border border-white/5 relative overflow-hidden group">
@@ -113,14 +167,26 @@ export default function MozoDashboard() {
                 <div className="space-y-3">
                     <button 
                         onClick={() => handleNavigate('mesas')}
-                        className="w-full flex items-center justify-between p-5 bg-gradient-to-r from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-[28px] shadow-lg shadow-amber-500/5 group active:scale-[0.98] transition-all"
+                        className="w-full flex items-center justify-between p-5 bg-gradient-to-r from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-[28px] shadow-lg shadow-amber-500/5 group active:scale-[0.98] transition-all relative overflow-hidden"
                     >
                         <div className="flex items-center gap-4 text-amber-50">
-                            <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400 border border-amber-500/30">
+                            <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400 border border-amber-500/30 relative">
                                 <LayoutGrid size={22} />
+                                {mesasParaLimpieza.length > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-400 text-black text-[9px] font-black rounded-full flex items-center justify-center animate-bounce">
+                                        !
+                                    </span>
+                                )}
                             </div>
                             <div className="text-left">
-                                <p className="text-[13px] font-black uppercase tracking-widest text-amber-400">Mapa de Salón</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-[13px] font-black uppercase tracking-widest text-amber-400">Mapa de Salón</p>
+                                    {mesasParaLimpieza.length > 0 && (
+                                        <span className="bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                                            🧹 {mesasParaLimpieza.length} para limpiar
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-[10px] items-center text-amber-500/60 font-bold uppercase tracking-wider mt-0.5">Control sobre {stats.tables} mesas</p>
                             </div>
                         </div>

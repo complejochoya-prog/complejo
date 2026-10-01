@@ -38,29 +38,32 @@ export const addMovement = async (negocioId, data) => {
         tipo: data.tipo || 'entrada',
         categoria: data.categoria || 'Varios',
         descripcion: data.descripcion || '',
-        metodoPago: data.metodoPago || 'efectivo',
+        metodoPago: data.metodoPago || data.metodo_pago || 'efectivo',
         origen: data.origen || 'general',
         usuario: data.usuario || 'Sistema',
         metadata: data.metadata || {},
         fecha: new Date().toISOString().split('T')[0],
         hora: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+        createdAt: new Date().toISOString(),
         timestamp: serverTimestamp()
     };
     
-    // Using addDoc instead of setDoc with undefined id
     const docRef = await addDoc(ref, payload);
     return { success: true, movement: { id: docRef.id, ...payload } };
 };
 
 export const openCaja = async (negocioId, initialBalance, user) => {
     const id = `ses-${Date.now()}`;
+    const now = Date.now();
     const session = {
         id,
         negocioId,
         status: 'open',
         openedAt: serverTimestamp(),
-        openedBy: user || 'Sistema',
-        initialBalance: Number(initialBalance)
+        openedAtMs: now,
+        openedBy: user || 'Cajero',
+        initialBalance: Number(initialBalance) || 0,
+        createdAt: new Date().toISOString()
     };
     await setDoc(doc(db, 'negocios', negocioId, 'caja_sesiones', id), session);
     return { success: true, session };

@@ -24,17 +24,18 @@ import TableDetail from './TableDetail';
 import { usePedidos } from '../services/PedidosContext';
 import { useMesas } from '../services/MesasContext';
 import { tablasService } from '../../../core/services/tablasService';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 
 export default function BarDashboard() {
     const { negocioId } = useParams();
     const { tables: configTables, barProducts, users, config } = useConfig();
     const { orders } = usePedidos();
-    const { mesas, marcarMesaOcupada } = useMesas();
+    const { mesas, marcarMesaOcupada, marcarMesaDisponible, marcarMesaLimpieza } = useMesas();
     const [selectedTable, setSelectedTable] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('todas'); // 'todas', 'ocupadas', 'limpieza'
     const [pendingQuickProduct, setPendingQuickProduct] = useState(null);
+    const [isCleaningModalOpen, setIsCleaningModalOpen] = useState(false);
 
     // Filter Mozos
     const activeMozos = users.filter(u => 
@@ -68,6 +69,7 @@ export default function BarDashboard() {
         const revenueToday = (orders || []).filter(o => o.status === 'paid').reduce((acc, o) => acc + (o.total || 0), 0);
         return {
             occupied: tables.filter(t => t.status === 'ocupada' || t.status === 'atendiendo').length,
+            cleaning: tables.filter(t => t.status === 'limpieza' || t.status === 'limpiando').length,
             revenue: revenueToday,
             activeMozos: new Set(activeOrders.map(o => o.mozoName).filter(Boolean)).size,
             avgWaitTime: '12m'
@@ -78,7 +80,7 @@ export default function BarDashboard() {
     const filteredTables = tables.filter(t => {
         const matchesSearch = t.tableNumber.toString().includes(searchTerm);
         if (activeFilter === 'ocupadas') return matchesSearch && (t.status === 'ocupada' || t.status === 'atendiendo');
-        if (activeFilter === 'limpieza') return matchesSearch && t.status === 'limpiando';
+        if (activeFilter === 'limpieza') return matchesSearch && (t.status === 'limpieza' || t.status === 'limpiando');
         return matchesSearch;
     });
 
@@ -187,7 +189,13 @@ export default function BarDashboard() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={() => setIsCleaningModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-3 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-amber-500 hover:text-black transition-all shadow-[0_0_20px_rgba(245,158,11,0.1)] active:scale-95"
+                        >
+                            <span>🧹</span> <span className="hidden sm:inline">Mandar a</span> Limpieza
+                        </button>
                         <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
                             <Bell size={20} />
                         </button>
@@ -201,9 +209,9 @@ export default function BarDashboard() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
                     {[
                         { label: 'Ocupación', value: `${stats.occupied}/${tables.length}`, sub: 'Mesas Activas', icon: LayoutGrid, color: 'emerald', bg: 'bg-emerald-500/10' },
-                        { label: 'Productividad', value: stats.pendingOrders, sub: 'Items en Marcha', icon: Clock, color: 'blue', bg: 'bg-blue-500/10' },
-                        { label: 'Caja Salon', value: `$${stats.revenue.toLocaleString()}`, sub: 'Recaudación Hoy', icon: TrendingUp, color: 'amber', bg: 'bg-amber-500/10' },
-                        { label: 'Servicio', value: stats.mozos, sub: 'Mozos en Turno', icon: Users, color: 'rose', bg: 'bg-rose-500/10' },
+                        { label: 'En Limpieza', value: `${stats.cleaning}`, sub: 'Avisos a Mozos', icon: Sparkles, color: 'amber', bg: 'bg-amber-500/10' },
+                        { label: 'Caja Salon', value: `$${stats.revenue.toLocaleString()}`, sub: 'Recaudación Hoy', icon: TrendingUp, color: 'blue', bg: 'bg-blue-500/10' },
+                        { label: 'Servicio', value: stats.activeMozos, sub: 'Mozos en Turno', icon: Users, color: 'rose', bg: 'bg-rose-500/10' },
                     ].map((s, i) => (
                         <div key={i} className="group relative bg-slate-900/40 p-6 rounded-[32px] border border-white/5 hover:border-white/10 transition-all shadow-xl">
                             <div className="flex justify-between items-start mb-4">
@@ -243,7 +251,7 @@ export default function BarDashboard() {
                                     onClick={() => setActiveFilter(f)}
                                     className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeFilter === f ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-slate-500 hover:text-white'}`}
                                 >
-                                    {f}
+                                    {f} {f === 'limpieza' && stats.cleaning > 0 && `(${stats.cleaning})`}
                                 </button>
                             ))}
                         </div>
@@ -273,6 +281,8 @@ export default function BarDashboard() {
                                 currentOrders={(orders || []).filter(o => (String(o.table) === String(t.tableNumber) || String(o.mesa) === String(t.tableNumber)) && o.status !== 'paid')}
                                 onClick={handleTableClick}
                                 onDelete={handleDeleteTable}
+                                onMarkCleaning={marcarMesaLimpieza}
+                                onMarkClean={marcarMesaDisponible}
                             />
                         ))}
                         {/* Botón Agregar Mesa */}
@@ -365,9 +375,89 @@ export default function BarDashboard() {
                         onClick={e => e.stopPropagation()}
                     >
                         <TableDetail 
-                            table={selectedTable} 
+                            table={tables.find(t => String(t.tableNumber) === String(selectedTable.tableNumber)) || selectedTable} 
                             onClose={() => setSelectedTable(null)} 
                         />
+                    </div>
+                </div>
+            )}
+
+            {/* Quick Cleaning Modal */}
+            {isCleaningModalOpen && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+                    onClick={() => setIsCleaningModalOpen(false)}
+                >
+                    <div 
+                        className="w-full max-w-2xl bg-slate-950 border-2 border-amber-500/30 rounded-[32px] p-6 lg:p-8 shadow-[0_0_80px_rgba(245,158,11,0.15)] animate-in zoom-in-95 duration-300 space-y-6"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl">
+                                    🧹
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Gestión de Limpieza de Mesas</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Selecciona una mesa para cambiar su estado de limpieza</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setIsCleaningModalOpen(false)}
+                                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto pr-1">
+                            {tables.map(t => {
+                                const isTableCleaning = t.status === 'limpieza' || t.status === 'limpiando';
+                                return (
+                                    <button
+                                        key={t.tableNumber}
+                                        onClick={async () => {
+                                            if (isTableCleaning) {
+                                                await marcarMesaDisponible(t.tableNumber);
+                                            } else {
+                                                await marcarMesaLimpieza(t.tableNumber);
+                                            }
+                                        }}
+                                        className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all active:scale-95 ${
+                                            isTableCleaning
+                                                ? 'bg-amber-500/20 border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                                                : t.status === 'ocupada'
+                                                ? 'bg-indigo-500/10 border-indigo-500/30 hover:border-amber-500/40'
+                                                : 'bg-white/[0.03] border-white/5 hover:border-amber-500/30'
+                                        }`}
+                                    >
+                                        <span className="text-2xl font-black italic text-white">#{t.tableNumber}</span>
+                                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                            isTableCleaning
+                                                ? 'bg-amber-400 text-black animate-pulse'
+                                                : t.status === 'ocupada'
+                                                ? 'bg-indigo-500/20 text-indigo-300'
+                                                : 'bg-white/5 text-slate-400'
+                                        }`}>
+                                            {isTableCleaning ? '🧹 Limpiando' : t.status === 'ocupada' ? 'Ocupada' : 'Libre'}
+                                        </span>
+                                        <span className="text-[8px] text-slate-400 uppercase font-bold mt-1">
+                                            {isTableCleaning ? 'Clic: Liberar' : 'Clic: Mandar'}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+                            <p>💡 Al mandar una mesa a limpieza, <strong className="text-amber-400">los mozos recibirán un aviso prioritario</strong> en su panel.</p>
+                            <button
+                                onClick={() => setIsCleaningModalOpen(false)}
+                                className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-[10px] rounded-xl transition-all"
+                            >
+                                Listo
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

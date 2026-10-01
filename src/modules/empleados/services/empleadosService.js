@@ -61,61 +61,178 @@ function genId() {
     return `emp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 }
 
-// ── Seed (solo si la colección está vacía) ───────────────
-export async function seedIfEmpty(negocioId) {
+export const DEFAULT_ROLE_EMPLOYEES = [
+    {
+        id: 'emp-admin',
+        nombre: 'Admin',
+        apellido: 'General',
+        dni: 'admin',
+        usuario: 'admin',
+        password: 'admin',
+        telefono: '1100000001',
+        email: 'admin@giovanni.com',
+        rol: 'admin',
+        estado: 'activo',
+        horario: 'completo',
+        fecha_ingreso: '2024-01-01',
+        salario: 500000,
+        permisos: PERMISOS.map(p => p.id),
+        notas: 'Administrador general (usuario: admin / pass: admin)',
+        actividad: []
+    },
+    {
+        id: 'emp-encargado',
+        nombre: 'Encargado',
+        apellido: 'Turno',
+        dni: 'admin',
+        usuario: 'admin',
+        password: 'admin',
+        telefono: '1100000002',
+        email: 'encargado@giovanni.com',
+        rol: 'encargado',
+        estado: 'activo',
+        horario: 'tarde',
+        fecha_ingreso: '2024-01-01',
+        salario: 400000,
+        permisos: ['ver_caja', 'operar_caja', 'ver_reservas', 'gestionar_reservas', 'ver_bar', 'gestionar_bar', 'ver_empleados', 'ver_reportes'],
+        notas: 'Encargado de turno (usuario: admin / pass: admin)',
+        actividad: []
+    },
+    {
+        id: 'emp-recepcion',
+        nombre: 'Recepción',
+        apellido: 'Principal',
+        dni: 'admin',
+        usuario: 'admin',
+        password: 'admin',
+        telefono: '1100000003',
+        email: 'recepcion@giovanni.com',
+        rol: 'recepcion',
+        estado: 'activo',
+        horario: 'manana',
+        fecha_ingreso: '2024-01-01',
+        salario: 320000,
+        permisos: ['ver_reservas', 'gestionar_reservas'],
+        notas: 'Atención a recepción (usuario: admin / pass: admin)',
+        actividad: []
+    },
+    {
+        id: 'emp-mozo',
+        nombre: 'Mozo',
+        apellido: 'Salón',
+        dni: 'admin',
+        usuario: 'admin',
+        password: 'admin',
+        telefono: '1100000004',
+        email: 'mozo@giovanni.com',
+        rol: 'mozo',
+        estado: 'activo',
+        horario: 'noche',
+        fecha_ingreso: '2024-01-01',
+        salario: 300000,
+        permisos: ['ver_bar', 'gestionar_bar'],
+        notas: 'Atención de mesas y barra (usuario: admin / pass: admin)',
+        actividad: []
+    },
+    {
+        id: 'emp-cocina',
+        nombre: 'Chef',
+        apellido: 'Cocina',
+        dni: 'admin',
+        usuario: 'admin',
+        password: 'admin',
+        telefono: '1100000005',
+        email: 'cocina@giovanni.com',
+        rol: 'cocina',
+        estado: 'activo',
+        horario: 'rotativo',
+        fecha_ingreso: '2024-01-01',
+        salario: 350000,
+        permisos: ['ver_bar'],
+        notas: 'Personal de cocina (usuario: admin / pass: admin)',
+        actividad: []
+    },
+    {
+        id: 'emp-mantenimiento',
+        nombre: 'Técnico',
+        apellido: 'Mantenimiento',
+        dni: 'admin',
+        usuario: 'admin',
+        password: 'admin',
+        telefono: '1100000006',
+        email: 'mantenimiento@giovanni.com',
+        rol: 'mantenimiento',
+        estado: 'activo',
+        horario: 'rotativo',
+        fecha_ingreso: '2024-01-01',
+        salario: 320000,
+        permisos: [],
+        notas: 'Mantenimiento general (usuario: admin / pass: admin)',
+        actividad: []
+    },
+    {
+        id: 'emp-limpieza',
+        nombre: 'Personal',
+        apellido: 'Limpieza',
+        dni: 'admin',
+        usuario: 'admin',
+        password: 'admin',
+        telefono: '1100000007',
+        email: 'limpieza@giovanni.com',
+        rol: 'limpieza',
+        estado: 'activo',
+        horario: 'manana',
+        fecha_ingreso: '2024-01-01',
+        salario: 280000,
+        permisos: [],
+        notas: 'Higiene y maestranza (usuario: admin / pass: admin)',
+        actividad: []
+    },
+    {
+        id: 'emp-delivery',
+        nombre: 'Repartidor',
+        apellido: 'Delivery',
+        dni: 'admin',
+        usuario: 'admin',
+        password: 'admin',
+        telefono: '1100000008',
+        email: 'delivery@giovanni.com',
+        rol: 'DELIVERY',
+        estado: 'activo',
+        horario: 'noche',
+        fecha_ingreso: '2024-01-01',
+        salario: 310000,
+        permisos: [],
+        notas: 'Rider de despacho (usuario: admin / pass: admin)',
+        actividad: []
+    }
+];
+
+export async function resetAndSeedEmpleados(negocioId) {
     if (!negocioId) return;
-    const snap = await getDocs(getRef(negocioId));
-    if (!snap.empty) return; // Ya tiene datos
+    const ref = getRef(negocioId);
+    const snap = await getDocs(ref);
+    for (const docSnap of snap.docs) {
+        await deleteDoc(doc(db, 'negocios', negocioId, 'empleados', docSnap.id));
+    }
 
-    const today = new Date().toISOString().split('T')[0];
-    const seed = [
-        {
-            id: genId(), nombre: 'Carlos', apellido: 'González',
-            dni: '34567890', telefono: '1155667788', email: 'carlos@complejo.com',
-            rol: 'admin', estado: 'activo', horario: 'completo',
-            fecha_ingreso: '2024-01-15', salario: 450000,
-            permisos: PERMISOS.map(p => p.id),
-            notas: 'Administrador general del complejo', actividad: []
-        },
-        {
-            id: genId(), nombre: 'María', apellido: 'López',
-            dni: '38901234', telefono: '1144332211', email: 'maria@complejo.com',
-            rol: 'encargado', estado: 'activo', horario: 'tarde',
-            fecha_ingreso: '2024-03-01', salario: 380000,
-            permisos: ['ver_caja', 'operar_caja', 'ver_reservas', 'gestionar_reservas', 'ver_bar', 'gestionar_bar', 'ver_empleados', 'ver_reportes'],
-            notas: 'Encargada turno tarde', actividad: []
-        },
-        {
-            id: 'admin-1', nombre: 'Admin', apellido: 'Prueba',
-            dni: '00000000', usuario: 'admin', password: 'admin',
-            rol: 'admin', estado: 'activo', horario: 'completo',
-            fecha_ingreso: '2024-01-01', salario: 500000,
-            permisos: PERMISOS.map(p => p.id), notas: 'Admin de prueba', actividad: []
-        },
-        {
-            id: 'mozo-1', nombre: 'Mozo', apellido: 'Prueba',
-            dni: '44332211', usuario: 'mozo1', password: '123',
-            rol: 'mozo', estado: 'activo', horario: 'completo',
-            fecha_ingreso: '2025-02-01', salario: 280000,
-            permisos: [], notas: 'Mozo de prueba', actividad: [], activo: true
-        },
-        {
-            id: 'rider-1', nombre: 'Repartidor', apellido: 'Prueba',
-            dni: '45678901', telefono: '1122334466', email: 'repartidor@complejo.com',
-            usuario: 'rider', password: '123', rol: 'DELIVERY', estado: 'activo',
-            horario: 'completo', fecha_ingreso: '2025-01-01', salario: 250000,
-            permisos: [], notas: 'Repartidor de prueba', actividad: []
-        },
-    ];
-
-    for (const emp of seed) {
+    for (const emp of DEFAULT_ROLE_EMPLOYEES) {
         await setDoc(doc(db, 'negocios', negocioId, 'empleados', emp.id), {
             ...emp,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });
     }
-    console.log(`[Empleados] Seed completado para ${negocioId}`);
+    console.log(`[Empleados] Reset & Seed completado para ${negocioId}: 8 empleados (uno por rol)`);
+}
+
+// ── Seed (solo si la colección está vacía) ───────────────
+export async function seedIfEmpty(negocioId) {
+    if (!negocioId) return;
+    const snap = await getDocs(getRef(negocioId));
+    if (!snap.empty) return; // Ya tiene datos
+
+    await resetAndSeedEmpleados(negocioId);
 }
 
 // ── CRUD Firestore ───────────────────────────────────────

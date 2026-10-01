@@ -2,10 +2,36 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const CartContext = createContext();
 
+function getNumericPrice(item) {
+    if (!item) return 0;
+    const raw = item.precio ?? item.price ?? item.precioOriginal ?? item.monto ?? 0;
+    const val = Number(raw);
+    return isNaN(val) ? 0 : val;
+}
+
+function getNumericQuantity(item) {
+    if (!item) return 0;
+    const raw = item.quantity ?? item.cantidad ?? 0;
+    const val = Number(raw);
+    return isNaN(val) ? 0 : val;
+}
+
 export function CartProvider({ children }) {
     const [cart, setCart] = useState(() => {
-        const stored = localStorage.getItem('giovanni_cart');
-        return stored ? JSON.parse(stored) : [];
+        try {
+            const stored = localStorage.getItem('giovanni_cart');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                return parsed.map(item => {
+                    const price = getNumericPrice(item);
+                    const quantity = getNumericQuantity(item);
+                    return { ...item, precio: price, price: price, quantity: quantity };
+                });
+            }
+        } catch (e) {
+            console.warn('[useCart] Error parsing stored cart:', e);
+        }
+        return [];
     });
 
     useEffect(() => {
@@ -13,25 +39,49 @@ export function CartProvider({ children }) {
     }, [cart]);
 
     const addToCart = React.useCallback((product) => {
+        if (!product) return;
+        const priceVal = getNumericPrice(product);
         setCart(prev => {
-            const exists = prev.find(item => item.id === product.id);
+            const rawId = product.id;
+            const targetId = (rawId && String(rawId) !== 'undefined' && String(rawId) !== 'null' && String(rawId).trim() !== '')
+                ? String(rawId)
+                : (product.nombre ? `prod-${product.nombre.toLowerCase().replace(/\s+/g, '_')}` : `prod-${Date.now()}`);
+            const exists = prev.find(item => String(item.id) === targetId);
             if (exists) {
-                return prev.map(item => 
-                    item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-                );
+                return prev.map(item => {
+                    if (String(item.id) === targetId) {
+                        const currentPrice = getNumericPrice(item) || priceVal;
+                        return {
+                            ...item,
+                            precio: currentPrice,
+                            price: currentPrice,
+                            quantity: getNumericQuantity(item) + 1
+                        };
+                    }
+                    return item;
+                });
             }
-            return [...prev, { ...product, quantity: 1, observaciones: '' }];
+            return [...prev, {
+                ...product,
+                id: product.id ?? targetId,
+                precio: priceVal,
+                price: priceVal,
+                quantity: 1,
+                observaciones: ''
+            }];
         });
     }, []);
 
     const removeFromCart = React.useCallback((productId) => {
-        setCart(prev => prev.filter(item => item.id !== productId));
+        const targetId = String(productId);
+        setCart(prev => prev.filter(item => String(item.id) !== targetId));
     }, []);
 
     const updateQuantity = React.useCallback((productId, delta) => {
+        const targetId = String(productId);
         setCart(prev => prev.map(item => {
-            if (item.id === productId) {
-                const newQty = Math.max(1, item.quantity + delta);
+            if (String(item.id) === targetId) {
+                const newQty = Math.max(1, getNumericQuantity(item) + delta);
                 return { ...item, quantity: newQty };
             }
             return item;
@@ -39,8 +89,9 @@ export function CartProvider({ children }) {
     }, []);
 
     const updateObservaciones = React.useCallback((productId, obs) => {
+        const targetId = String(productId);
         setCart(prev => prev.map(item => 
-            item.id === productId ? { ...item, observaciones: obs } : item
+            String(item.id) === targetId ? { ...item, observaciones: obs } : item
         ));
     }, []);
 
@@ -48,8 +99,8 @@ export function CartProvider({ children }) {
         setCart([]);
     }, []);
 
-    const cartTotal = cart.reduce((acc, item) => acc + (item.precio * item.quantity), 0);
-    const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+    const cartTotal = cart.reduce((acc, item) => acc + (getNumericPrice(item) * getNumericQuantity(item)), 0);
+    const cartCount = cart.reduce((acc, item) => acc + getNumericQuantity(item), 0);
 
     return (
         <CartContext.Provider value={{ 

@@ -33,21 +33,21 @@ export default function EmpleadoDetalle() {
 
     const load = async () => {
         setLoading(true);
-        const data = await fetchEmpleado(empleadoId);
+        const data = await fetchEmpleado(negocioId, empleadoId);
         setEmp(data);
         setLoading(false);
     };
 
-    useEffect(() => { load(); }, [empleadoId]);
+    useEffect(() => { load(); }, [negocioId, empleadoId]);
 
     const handleUpdate = async (data) => {
-        await updateEmpleado(empleadoId, data);
+        await updateEmpleado(negocioId, empleadoId, data);
         await load();
     };
 
     const handleDelete = async () => {
         if (window.confirm(`¿Eliminar a ${emp.nombre} ${emp.apellido}? Esta acción no se puede deshacer.`)) {
-            await deleteEmpleado(empleadoId);
+            await deleteEmpleado(negocioId, empleadoId);
             navigate(`/${negocioId}/empleados/lista`);
         }
     };

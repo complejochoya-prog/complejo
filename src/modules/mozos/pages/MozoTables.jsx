@@ -20,14 +20,15 @@ import {
     Timer,
     CreditCard,
     MessageSquare,
-    Users
+    Users,
+    Sparkles
 } from 'lucide-react';
 import { getMozoSession } from '../services/mozoService';
 
 export default function MozoTables() {
     const { negocioId, barProducts, updateOrder: updateConfigOrder, tables: configTables } = useConfig();
     const { orders, addOrder, updateOrderStatus } = usePedidos();
-    const { mesas, marcarMesaOcupada, marcarMesaDisponible } = useMesas();
+    const { mesas, marcarMesaOcupada, marcarMesaDisponible, marcarMesaLimpieza } = useMesas();
     
     // 🔥 ELIMINADO EL MERGE CON LOCALSTORAGE: 
     // Ahora dependemos 100% de lo que viene de Firebase para que todos los mozos vean lo mismo.
@@ -172,15 +173,47 @@ export default function MozoTables() {
         setIsPaymentOpen(true);
     };
 
+    const mesasLimpieza = useMemo(() => {
+        return (mesas || []).filter(m => m.estado === 'limpieza' || m.estado === 'limpiando');
+    }, [mesas]);
+
+    const currentMesaData = selectedTable ? mesas?.find(m => String(m.numero) === String(selectedTable)) : null;
+    const isCurrentMesaCleaning = currentMesaData?.estado === 'limpieza' || currentMesaData?.estado === 'limpiando';
+
     return (
         <div className="min-h-screen pb-32 pt-2">
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {!selectedTable ? (
                     <>
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-2 mb-4 flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                            Mapa de Mesas
-                        </h2>
+                        <div className="flex items-center justify-between ml-2 mr-2 mb-4">
+                            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                                Mapa de Mesas
+                            </h2>
+                            {mesasLimpieza.length > 0 && (
+                                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                                    🧹 {mesasLimpieza.length} para limpieza
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Banner if there are tables needing cleaning */}
+                        {mesasLimpieza.length > 0 && (
+                            <div className="mx-1 mb-4 p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between animate-in fade-in duration-300">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xl">🧹</span>
+                                    <div>
+                                        <p className="text-xs font-black text-amber-300 uppercase tracking-wide">
+                                            {mesasLimpieza.length === 1 ? 'Mesa para Limpieza:' : 'Mesas para Limpieza:'} {mesasLimpieza.map(m => `#${m.numero}`).join(', ')}
+                                        </p>
+                                        <p className="text-[10px] text-amber-400/80 font-bold uppercase tracking-wider">
+                                            Haz clic en la mesa para marcarla como limpia
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 px-1">
                             {((configTables && configTables.length > 0) ? [...configTables].sort((a,b) => a.tableNumber - b.tableNumber) : []).map(t => {
                                 const n = t.tableNumber;
@@ -213,30 +246,54 @@ export default function MozoTables() {
                         </button>
 
                         {/* Table Command Center */}
-                        <div className="bg-gradient-to-br from-amber-500/10 to-[#141210] border border-amber-500/20 p-6 rounded-[32px] flex items-center justify-between relative overflow-hidden shadow-2xl">
+                        <div className={`border p-6 rounded-[32px] flex items-center justify-between relative overflow-hidden shadow-2xl transition-all ${
+                            isCurrentMesaCleaning 
+                                ? 'bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-[#141210] border-amber-500/40 shadow-amber-500/10'
+                                : 'bg-gradient-to-br from-amber-500/10 to-[#141210] border-amber-500/20'
+                        }`}>
                             <div className="absolute -right-4 -top-4 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none"></div>
                             
                             <div className="relative z-10 flex flex-col gap-2">
                                 <h3 className="text-3xl font-black uppercase tracking-tighter text-white drop-shadow-md mb-0 flex items-center gap-3">
                                     Mesa {selectedTable}
-                                    {mesas?.find(m => String(m.numero) === String(selectedTable))?.estado === 'ocupada' && (
+                                    {isCurrentMesaCleaning ? (
+                                        <span className="bg-amber-400 text-slate-950 text-[9px] px-2.5 py-1 rounded-full font-black uppercase shadow-sm flex items-center gap-1 animate-pulse">
+                                            🧹 Para Limpieza
+                                        </span>
+                                    ) : currentMesaData?.estado === 'ocupada' ? (
                                         <span className="bg-indigo-500/20 text-indigo-400 text-[9px] px-2 py-1 rounded-full border border-indigo-500/30">
                                             Ocupada
                                         </span>
-                                    )}
+                                    ) : null}
                                 </h3>
-                                <div className="flex items-center gap-2 mt-1">
+                                
+                                <div className="flex flex-wrap items-center gap-2 mt-1">
                                     <button 
-                                        onClick={() => marcarMesaOcupada(selectedTable)}
-                                        className="text-[9px] font-black uppercase bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 transition-colors"
+                                        onClick={() => {
+                                            if ('vibrate' in navigator) navigator.vibrate(20);
+                                            marcarMesaOcupada(selectedTable);
+                                        }}
+                                        className="text-[9px] font-black uppercase bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 text-slate-300 transition-colors active:scale-95"
                                     >
                                         Sentar Gente
                                     </button>
                                     <button 
-                                        onClick={() => marcarMesaDisponible(selectedTable)}
-                                        className="text-[9px] font-black uppercase bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 transition-colors"
+                                        onClick={() => {
+                                            if ('vibrate' in navigator) navigator.vibrate(20);
+                                            marcarMesaLimpieza(selectedTable);
+                                        }}
+                                        className="text-[9px] font-black uppercase bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-lg transition-colors active:scale-95 flex items-center gap-1"
                                     >
-                                        Liberar Mesa
+                                        🧹 A Limpieza
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            if ('vibrate' in navigator) navigator.vibrate(20);
+                                            marcarMesaDisponible(selectedTable);
+                                        }}
+                                        className="text-[9px] font-black uppercase bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition-colors active:scale-95 flex items-center gap-1"
+                                    >
+                                        <Sparkles size={11} /> Liberar / Limpia
                                     </button>
                                 </div>
                                 <p className="text-[11px] text-amber-500/80 font-bold uppercase tracking-widest flex items-center gap-2 mt-2">
@@ -254,6 +311,28 @@ export default function MozoTables() {
                                 <span>Comandar</span>
                             </button>
                         </div>
+
+                        {/* Special Cleaning Callout if in cleaning */}
+                        {isCurrentMesaCleaning && (
+                            <div className="p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/40 flex items-center justify-between shadow-[0_0_20px_rgba(245,158,11,0.15)] animate-in fade-in duration-300">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-2xl">🧹</span>
+                                    <div>
+                                        <p className="text-xs font-black text-amber-300 uppercase tracking-wide">Mesa enviada para Limpieza</p>
+                                        <p className="text-[10px] text-amber-400/80 font-bold uppercase tracking-widest">¿Ya terminaste de limpiarla y prepararla?</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        if ('vibrate' in navigator) navigator.vibrate(30);
+                                        await marcarMesaDisponible(selectedTable);
+                                    }}
+                                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                                >
+                                    <Sparkles size={13} /> Marcar como Limpia
+                                </button>
+                            </div>
+                        )}
 
                         <div className="space-y-3 mt-4">
                             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-2 mb-2 flex items-center gap-2">

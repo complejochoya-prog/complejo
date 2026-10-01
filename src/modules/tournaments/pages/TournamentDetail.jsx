@@ -13,9 +13,11 @@ import { Save, AlertCircle, Plus, Trash2 as TrashIcon, CheckCircle2 } from 'luci
 
 
 export default function TournamentDetail() {
-    const { tournamentId, negocioId } = useParams();
+    const { tournamentId, negocioId: paramsNegocioId } = useParams();
     const navigate = useNavigate();
-    const { tournaments, getStandings, getMatches, getScorers } = useTournament(negocioId);
+    const location = useLocation();
+    const negocioId = paramsNegocioId || 'giovanni';
+    const { tournaments, getStandings, getMatches, getScorers, saveDetails } = useTournament(negocioId);
     
     const [tournament, setTournament] = useState(null);
     const [activeTab, setActiveTab] = useState('standings'); // standings, matches, scorers
@@ -23,9 +25,7 @@ export default function TournamentDetail() {
     const [matches, setMatches] = useState([]);
     const [scorers, setScorers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const location = useLocation();
     const isAdminMode = location.pathname.includes('/admin/');
-    const { saveDetails } = useTournament(negocioId);
     
     const [isManaging, setIsManaging] = useState(false);
     const [manageData, setManageData] = useState({
@@ -36,11 +36,19 @@ export default function TournamentDetail() {
         scorers: []
     });
 
+    // Read ?tab= from URL
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const tabParam = searchParams.get('tab');
+        if (tabParam && ['standings', 'matches', 'scorers'].includes(tabParam)) {
+            setActiveTab(tabParam);
+        }
+    }, [location.search]);
 
     useEffect(() => {
         const loadTournamentData = async () => {
-            if (tournaments.length > 0) {
-                const found = tournaments.find(t => t.id === tournamentId);
+            if (tournaments && tournaments.length > 0) {
+                const found = tournaments.find(t => String(t.id) === String(tournamentId)) || tournaments[0];
                 setTournament(found);
                 
                 try {
@@ -49,14 +57,19 @@ export default function TournamentDetail() {
                         getMatches(tournamentId),
                         getScorers(tournamentId)
                     ]);
-                    setStandings(s);
-                    setMatches(m);
-                    setScorers(sc);
+                    setStandings(s?.length ? s : (found?.standings || []));
+                    setMatches(m?.length ? m : (found?.matches || []));
+                    setScorers(sc?.length ? sc : (found?.scorers || []));
                 } catch (err) {
                     console.error("Error loading tournament details:", err);
+                    setStandings(found?.standings || []);
+                    setMatches(found?.matches || []);
+                    setScorers(found?.scorers || []);
                 } finally {
                     setLoading(false);
                 }
+            } else {
+                setLoading(false);
             }
         };
         loadTournamentData();

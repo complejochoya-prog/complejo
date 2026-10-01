@@ -73,12 +73,47 @@ export default function MesasProvider({ children }) {
         }
     }, [negocioId]);
 
+    const marcarMesaLimpieza = useCallback(async (numeroMesa) => {
+        if (!negocioId || !numeroMesa) return;
+        try {
+            const mesaId = `mesa_${numeroMesa}`;
+            const docRef = doc(db, 'negocios', negocioId, 'mesas', mesaId);
+            await setDoc(docRef, {
+                id: mesaId,
+                numero: parseInt(numeroMesa),
+                estado: 'limpieza',
+                solicitadoLimpiezaAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) {
+            console.error("Error al marcar mesa para limpieza:", e);
+        }
+    }, [negocioId]);
+
+    const marcarMesaEstado = useCallback(async (numeroMesa, nuevoEstado) => {
+        if (!negocioId || !numeroMesa) return;
+        try {
+            const mesaId = `mesa_${numeroMesa}`;
+            const docRef = doc(db, 'negocios', negocioId, 'mesas', mesaId);
+            await setDoc(docRef, {
+                id: mesaId,
+                numero: parseInt(numeroMesa),
+                estado: nuevoEstado,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) {
+            console.error("Error al actualizar estado de mesa:", e);
+        }
+    }, [negocioId]);
+
     const value = useMemo(() => ({
         mesas,
         loadingMesas,
         marcarMesaOcupada,
-        marcarMesaDisponible
-    }), [mesas, loadingMesas, marcarMesaOcupada, marcarMesaDisponible]);
+        marcarMesaDisponible,
+        marcarMesaLimpieza,
+        marcarMesaEstado
+    }), [mesas, loadingMesas, marcarMesaOcupada, marcarMesaDisponible, marcarMesaLimpieza, marcarMesaEstado]);
 
     return (
         <MesasContext.Provider value={value}>

@@ -8,21 +8,35 @@ import { emit } from '../../../core/events/eventBus';
 
 export async function fetchBarMenu(negocioId) {
     const list = await fetchProductos(negocioId, { sector: 'BAR' });
-    return list.map(item => ({
-        id: item.id,
-        nombre: item.nombre,
-        descripcion: item.descripcion || `${item.categoria} // Stock: ${item.stock}`,
-        precio: item.precio,
-        categoria: item.categoria,
-        stock: item.stock,
-        img: item.img || 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?auto=format&fit=crop&q=80&w=400'
-    }));
+    return list.map((item, index) => {
+        const priceNum = Number(item.precio ?? item.price ?? item.precioOriginal ?? 0) || 0;
+        const rawId = item.id;
+        const validId = (rawId && String(rawId) !== 'undefined' && String(rawId) !== 'null' && String(rawId).trim() !== '') 
+            ? String(rawId) 
+            : `prod-${index}-${(item.nombre || 'item').toLowerCase().replace(/\s+/g, '_')}`;
+
+        return {
+            id: validId,
+            nombre: item.nombre || item.name || 'Producto',
+            descripcion: item.descripcion || item.desc || `${item.categoria || 'Bar'} // Stock: ${item.stock ?? 0}`,
+            precio: priceNum,
+            price: priceNum,
+            categoria: item.categoria || 'Varios',
+            stock: item.stock,
+            stock_actual: item.stock_actual,
+            activar_control_stock: item.activar_control_stock,
+            disponible: item.disponible,
+            img: item.img || item.image || 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?auto=format&fit=crop&q=80&w=400'
+        };
+    });
 }
 
 export const getStatusConfig = (status) => {
     const configs = {
         'disponible': { color: 'emerald', label: 'Libre', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-500' },
-        'ocupada': { color: 'amber', label: 'Ocupada', bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-500' },
+        'ocupada': { color: 'indigo', label: 'Ocupada', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-400' },
+        'limpieza': { color: 'amber', label: 'Para Limpieza', bg: 'bg-amber-500/15', border: 'border-amber-500/30', text: 'text-amber-400' },
+        'limpiando': { color: 'amber', label: 'En Limpieza', bg: 'bg-amber-500/15', border: 'border-amber-500/30', text: 'text-amber-400' },
         'cuenta solicitada': { color: 'rose', label: 'Cuenta', bg: 'bg-rose-500/10', border: 'border-rose-500/20', text: 'text-rose-500' },
         'pagada': { color: 'slate', label: 'Pagada', bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400' }
     };

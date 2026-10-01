@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Layout, Plus, Edit2, Trash2, Camera, Save, X, Eye, EyeOff, MoveUp, MoveDown } from 'lucide-react';
+import { Layout, Plus, Edit2, Trash2, Camera, Save, X, Eye, EyeOff, MoveUp, MoveDown, DollarSign, Users } from 'lucide-react';
 import { fetchEspacios, saveEspacio, deleteEspacio, toggleEspacioStatus, reorderEspacios } from '../services/espaciosService';
 
 export default function EspaciosPage() {
@@ -8,7 +8,16 @@ export default function EspaciosPage() {
     const [espacios, setEspacios] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedEspacio, setSelectedEspacio] = useState(null);
-    const [formData, setFormData] = useState({ name: '', desc: '', img: '', capacidad: '', category: 'Recreativos' });
+    const [formData, setFormData] = useState({ 
+        name: '', 
+        desc: '', 
+        img: '', 
+        capacidad: '', 
+        category: 'Recreativos', 
+        precio: '', 
+        precio_noche: '',
+        requiereCantidad: false 
+    });
     const [imgMode, setImgMode] = useState('link'); // 'link' or 'upload'
     const [activeCategory, setActiveCategory] = useState('Todos');
 
@@ -31,11 +40,14 @@ export default function EspaciosPage() {
     const handleEdit = (esp) => {
         setSelectedEspacio(esp);
         setFormData({ 
-            name: esp.name, 
-            desc: esp.desc, 
-            img: esp.img, 
+            name: esp.name || esp.title || esp.nombre || '', 
+            desc: esp.desc || '', 
+            img: esp.img || '', 
             capacidad: esp.capacidad || '',
-            category: esp.category || 'Recreativos'
+            category: esp.category || 'Recreativos',
+            precio: esp.precio ?? esp.precio_diurno ?? '',
+            precio_noche: esp.precio_noche ?? '',
+            requiereCantidad: esp.requiereCantidad === true
         });
         setImgMode(esp.img?.startsWith('data:image') ? 'upload' : 'link');
         setShowModal(true);
@@ -43,7 +55,16 @@ export default function EspaciosPage() {
 
     const handleAddNew = () => {
         setSelectedEspacio(null);
-        setFormData({ name: '', desc: '', img: '', capacidad: '', category: activeCategory !== 'Todos' ? activeCategory : 'Recreativos' });
+        setFormData({ 
+            name: '', 
+            desc: '', 
+            img: '', 
+            capacidad: '', 
+            category: activeCategory !== 'Todos' ? activeCategory : 'Recreativos', 
+            precio: '', 
+            precio_noche: '',
+            requiereCantidad: false 
+        });
         setImgMode('link');
         setShowModal(true);
     };
@@ -63,7 +84,14 @@ export default function EspaciosPage() {
         e.preventDefault();
         try {
             console.log("Saving espacio:", formData);
-            const success = await saveEspacio(negocioId, { ...formData, id: selectedEspacio?.id }, espacios);
+            const payload = {
+                ...formData,
+                id: selectedEspacio?.id,
+                precio: formData.precio !== '' ? Number(formData.precio) : 0,
+                precio_noche: formData.precio_noche !== '' ? Number(formData.precio_noche) : 0,
+                requiereCantidad: Boolean(formData.requiereCantidad)
+            };
+            const success = await saveEspacio(negocioId, payload, espacios);
             if (success) {
                 setShowModal(false);
                 await load();
@@ -137,71 +165,105 @@ export default function EspaciosPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {espacios
                     .filter(esp => activeCategory === 'Todos' || esp.category === activeCategory)
-                    .map((esp) => (
-                    <div 
-                        key={esp.id} 
-                        className={`group bg-slate-900 border ${esp.active !== false ? 'border-white/5' : 'border-red-500/20 grayscale'} rounded-[40px] overflow-hidden flex flex-col transition-all hover:border-amber-500/30 shadow-2xl`}
-                    >
-                        <div className="relative h-48 overflow-hidden">
-                            <img src={esp.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={esp.name} />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
-                            
-                            <div className="absolute top-4 right-4 flex gap-2">
-                                <button 
-                                    onClick={() => handleToggleStatus(esp.id, esp.active !== false)}
-                                    className={`p-2 rounded-xl backdrop-blur-md border ${esp.active !== false ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border-red-500/30 text-red-500'}`}
-                                >
-                                    {esp.active !== false ? <Eye size={16} /> : <EyeOff size={16} />}
-                                </button>
-                            </div>
-                        </div>
+                    .map((esp) => {
+                        const price = esp.precio ?? esp.precio_diurno ?? 0;
+                        const nightPrice = esp.precio_noche ?? 0;
 
-                        <div className="p-8 flex-1 flex-col flex">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="px-3 py-1 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-amber-500/20">
-                                    {esp.category || 'Recreativos'}
-                                </span>
-                            </div>
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-1 leading-none">{esp.name}</h3>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 opacity-70 group-hover:opacity-100 transition-opacity">{esp.desc}</p>
-                            {esp.capacidad && (
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Capacidad: {esp.capacidad} personas</p>
-                            )}
-                            
-                            
-                            <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
-                                <div className="flex items-center gap-1">
-                                    <button 
-                                        onClick={() => handleReorder(esp.id, 'up')}
-                                        className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-amber-500 transition-all"
-                                    >
-                                        <MoveUp size={14} />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleReorder(esp.id, 'down')}
-                                        className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-amber-500 transition-all"
-                                    >
-                                        <MoveDown size={14} />
-                                    </button>
+                        return (
+                            <div 
+                                key={esp.id} 
+                                className={`group bg-slate-900 border ${esp.active !== false ? 'border-white/5' : 'border-red-500/20 grayscale'} rounded-[40px] overflow-hidden flex flex-col transition-all hover:border-amber-500/30 shadow-2xl`}
+                            >
+                                <div className="relative h-48 overflow-hidden">
+                                    <img src={esp.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={esp.name || esp.title} />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
+                                    
+                                    {/* Price Tag Badge */}
+                                    {price > 0 && (
+                                        <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-amber-500/30 shadow-xl flex items-center gap-1.5">
+                                            <DollarSign size={14} className="text-amber-500" />
+                                            <span className="text-sm font-black italic tracking-tighter text-amber-400">
+                                                ${Number(price).toLocaleString('es-AR')}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="absolute top-4 right-4 flex gap-2">
+                                        <button 
+                                            onClick={() => handleToggleStatus(esp.id, esp.active !== false)}
+                                            className={`p-2 rounded-xl backdrop-blur-md border ${esp.active !== false ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border-red-500/30 text-red-500'}`}
+                                        >
+                                            {esp.active !== false ? <Eye size={16} /> : <EyeOff size={16} />}
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button 
-                                        onClick={() => handleEdit(esp)}
-                                        className="p-3 bg-white/5 hover:bg-amber-500/10 text-slate-400 hover:text-amber-500 rounded-2xl border border-white/5 transition-all"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDelete(esp.id)}
-                                        className="p-3 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-2xl border border-white/5 transition-all"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+
+                                <div className="p-8 flex-1 flex-col flex">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="px-3 py-1 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-amber-500/20">
+                                            {esp.category || 'Recreativos'}
+                                        </span>
+                                        {price > 0 && (
+                                            <span className="text-xs font-black italic text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/20">
+                                                ${Number(price).toLocaleString('es-AR')} / turno
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-1 leading-none">{esp.name || esp.title || esp.nombre}</h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 opacity-70 group-hover:opacity-100 transition-opacity">{esp.desc}</p>
+                                    
+                                    <div className="space-y-2 mb-6">
+                                        {esp.capacidad && (
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Capacidad: {esp.capacidad} personas</p>
+                                        )}
+                                        {nightPrice > 0 && (
+                                            <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Precio Noche: ${Number(nightPrice).toLocaleString('es-AR')}</p>
+                                        )}
+                                        {esp.requiereCantidad ? (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-wider rounded-lg border border-emerald-500/20">
+                                                <Users size={12} /> Pide cantidad de personas
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 text-slate-400 text-[9px] font-bold uppercase tracking-wider rounded-lg border border-white/5">
+                                                Sin selector de cantidad
+                                            </span>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
+                                        <div className="flex items-center gap-1">
+                                            <button 
+                                                onClick={() => handleReorder(esp.id, 'up')}
+                                                className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-amber-500 transition-all"
+                                            >
+                                                <MoveUp size={14} />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleReorder(esp.id, 'down')}
+                                                className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-amber-500 transition-all"
+                                            >
+                                                <MoveDown size={14} />
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => handleEdit(esp)}
+                                                className="p-3 bg-white/5 hover:bg-amber-500/10 text-slate-400 hover:text-amber-500 rounded-2xl border border-white/5 transition-all"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDelete(esp.id)}
+                                                className="p-3 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-2xl border border-white/5 transition-all"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                ))}
+                        );
+                    })}
             </div>
 
             {/* Modal de Edición/Creación */}
@@ -247,7 +309,7 @@ export default function EspaciosPage() {
                                         type="text" 
                                         value={formData.name}
                                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all text-white"
                                         placeholder="Ej: Fútbol 5 sintético"
                                         required
                                     />
@@ -258,23 +320,78 @@ export default function EspaciosPage() {
                                         type="text" 
                                         value={formData.desc}
                                         onChange={(e) => setFormData({...formData, desc: e.target.value})}
-                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all text-white"
                                         placeholder="Ej: Cesped PRO-FIFA"
                                         required
                                     />
                                 </div>
                             </div>
 
+                            {/* Campos de Precio */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-amber-400 uppercase tracking-widest ml-1 flex items-center gap-1">
+                                        <DollarSign size={12} /> Precio por Turno / Hora ($)
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        value={formData.precio}
+                                        onChange={(e) => setFormData({...formData, precio: e.target.value})}
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all text-white"
+                                        placeholder="Ej: 15000"
+                                        min="0"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-purple-400 uppercase tracking-widest ml-1 flex items-center gap-1">
+                                        <DollarSign size={12} /> Precio Noche / Hora Pico ($)
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        value={formData.precio_noche}
+                                        onChange={(e) => setFormData({...formData, precio_noche: e.target.value})}
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-purple-500 transition-all text-white"
+                                        placeholder="Ej: 18000"
+                                        min="0"
+                                    />
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Capacidad (Cupos para Turnos - Opcional)</label>
+                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Capacidad Máxima (Cupo total - Opcional)</label>
                                 <input 
                                     type="number" 
                                     value={formData.capacidad}
                                     onChange={(e) => setFormData({...formData, capacidad: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-amber-500 transition-all text-white"
                                     placeholder="Ej: 50 (Déjalo vacío si es una cancha normal)"
                                     min="1"
                                 />
+                            </div>
+
+                            {/* Toggle Requiere Cantidad de Personas */}
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4 transition-all hover:border-amber-500/30">
+                                <div className="space-y-1 pr-2">
+                                    <div className="flex items-center gap-2">
+                                        <Users size={16} className="text-amber-500 shrink-0" />
+                                        <label 
+                                            className="text-xs font-black text-white uppercase tracking-wider cursor-pointer" 
+                                            onClick={() => setFormData({...formData, requiereCantidad: !formData.requiereCantidad})}
+                                        >
+                                            ¿Requiere especificar cantidad de personas?
+                                        </label>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                                        Si está activado, en la reserva online se le preguntará al cliente cuántas personas asistirán (ideal para quinchos, salones, piletas o eventos). Si está desactivado, no se preguntará la cantidad (ideal para canchas de fútbol, pádel, etc.).
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({...formData, requiereCantidad: !formData.requiereCantidad})}
+                                    className={`w-14 h-8 rounded-full transition-colors relative flex items-center px-1 shrink-0 ${formData.requiereCantidad ? 'bg-amber-500' : 'bg-slate-800 border border-white/10'}`}
+                                >
+                                    <div className={`w-6 h-6 rounded-full bg-black shadow-md transform transition-transform ${formData.requiereCantidad ? 'translate-x-6' : 'translate-x-0'}`} />
+                                </button>
                             </div>
 
                             <div className="space-y-4">

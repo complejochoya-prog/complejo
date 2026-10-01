@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Home, CalendarRange, Coffee, Trophy, User, Download } from 'lucide-react';
 import { useConfig } from '../../../core/services/ConfigContext';
+import NotificationPopupOverlay from '../../../components/NotificationPopupOverlay';
 
 export default function PWALayout() {
     const { negocioId, config } = useConfig();
@@ -100,6 +101,7 @@ export default function PWALayout() {
             {/* Content Area */}
             <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 relative select-none">
                 <Outlet />
+                <NotificationPopupOverlay />
             </main>
 
             {/* Bottom App Bar Shell */}

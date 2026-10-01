@@ -12,15 +12,10 @@ export default function OrderConfirmation() {
     const [status, setStatus] = useState(0); // 0: Recibido, 1: Preparando, 2: En Camino, 3: Entregado
 
     useEffect(() => {
-        if (!order) return;
-        
-        // Progress status every few seconds for demo
-        const timer = setInterval(() => {
-            setStatus(prev => (prev < 3 ? prev + 1 : prev));
-        }, 8000);
-        
-        return () => clearInterval(timer);
-    }, [order]);
+        if (!order) {
+            navigate(`/${negocioId || 'giovanni'}`, { replace: true });
+        }
+    }, [order, negocioId, navigate]);
 
     if (!order) {
         return (

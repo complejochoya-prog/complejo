@@ -93,8 +93,11 @@ export function ConfigProvider({ children }) {
                         currentPlan = mocks[negocioId].plan;
                         setConfig(mocks[negocioId]);
                     } else {
-                        // Fallback generic
-                        setConfig({ nombre: negocioId.toUpperCase(), plan: 'Free' });
+                        // Bloquear acceso a complejos que no existen en Firebase ni en mocks
+                        setError(`Complejo no encontrado o no autorizado: ${negocioId}`);
+                        setConfig(null);
+                        setLoading(false);
+                        return; // Detenemos la ejecución aquí
                     }
                 }
 

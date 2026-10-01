@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Coffee, Search, ShoppingBag, ArrowLeft, Loader2, Zap, Star, X, Filter, ChevronRight, LayoutGrid } from 'lucide-react';
+import { Coffee, Search, ShoppingBag, ArrowLeft, Loader2, Zap, Star, X, Filter, ChevronRight, LayoutGrid, Flame, MapPin, MessageCircle } from 'lucide-react';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { fetchBarMenu } from '../services/barService';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.jsx';
 import MenuProductCard from '../components/MenuProductCard';
+import { notificacionesService, DEFAULT_NOTIFICACIONES, getActivePromoItems } from '../../../core/services/notificacionesService';
 
 export default function BarMenu() {
     const { negocioId } = useParams();
@@ -16,36 +17,126 @@ export default function BarMenu() {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('Todos');
+    const [promoItems, setPromoItems] = useState([]);
 
     useEffect(() => {
-        const load = async () => {
-            const data = await fetchBarMenu(negocioId);
-            setMenu(data);
-            setLoading(false);
+        const loadMenu = async () => {
+            const { collection, onSnapshot, query, where } = await import('firebase/firestore');
+            const { db } = await import('../../../firebase/config');
+            const q = query(collection(db, 'negocios', negocioId, 'inventario'), where('sector', '==', 'BAR'));
+            
+            const unsub = onSnapshot(q, (snap) => {
+                const list = snap.docs.map((d, index) => {
+                    const item = d.data();
+                    const priceNum = Number(item.precio ?? item.price ?? item.precioOriginal ?? 0) || 0;
+                    const rawId = d.id;
+                    const validId = (rawId && String(rawId) !== 'undefined' && String(rawId) !== 'null' && String(rawId).trim() !== '') 
+                        ? String(rawId) 
+                        : `prod-${index}-${(item.nombre || 'item').toLowerCase().replace(/\s+/g, '_')}`;
+
+                    return {
+                        id: validId,
+                        nombre: item.nombre || item.name || 'Producto',
+                        descripcion: item.descripcion || item.desc || `${item.categoria || 'Bar'} // Stock: ${item.stock ?? 0}`,
+                        precio: priceNum,
+                        price: priceNum,
+                        categoria: item.categoria || 'Varios',
+                        stock: item.stock,
+                        stock_actual: item.stock_actual,
+                        activar_control_stock: item.activar_control_stock,
+                        disponible: item.disponible,
+                        img: item.img || item.image || 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?auto=format&fit=crop&q=80&w=400'
+                    };
+                });
+                setMenu(list);
+                setLoading(false);
+            }, (error) => {
+                console.error("Error listening to Bar Menu:", error);
+                setLoading(false);
+            });
+
+            return unsub;
         };
-        load();
+
+        const unsubPromise = loadMenu();
+        return () => {
+            unsubPromise.then(unsub => {
+                if (typeof unsub === 'function') unsub();
+            });
+        };
     }, [negocioId]);
 
-    const categories = ['Todos', ...new Set(menu.map(p => p.categoria))];
+    // Suscribirse a promos activas y extraer ítems de menú
+    useEffect(() => {
+        const unsub = notificacionesService.subscribeNotificaciones(
+            negocioId,
+            (data) => {
+                const items = getActivePromoItems(data || DEFAULT_NOTIFICACIONES, 'bar');
+                setPromoItems(items);
+            },
+            () => setPromoItems([])
+        );
+        // Re-chequear vigencia cada minuto (auto-expiración)
+        const vigenciaInterval = setInterval(() => {
+            setPromoItems(prev => {
+                // Force re-evaluation will happen on next subscription update,
+                // but we trigger a state update to re-render
+                return [...prev];
+            });
+        }, 60000);
+        return () => { unsub(); clearInterval(vigenciaInterval); };
+    }, [negocioId]);
 
-    const filteredMenu = menu.filter(p => {
-        const matchesSearch = p.nombre.toLowerCase().includes(search.toLowerCase()) || 
+    // Combinar promos + menú regular
+    const allItems = [...promoItems, ...menu];
+    const categories = ['Todos', '🔥 Promo', ...new Set(menu.map(p => p.categoria))].filter((v, i, a) => a.indexOf(v) === i);
+
+    const filteredMenu = allItems.filter(p => {
+        const isDisponible = p.disponible !== false && p.disponible !== 'false' && String(p.disponible).toLowerCase() !== 'false';
+        const hasStock = !p.activar_control_stock || p.activar_control_stock === 'false' || Number(p.stock_actual ?? p.stock ?? 0) > 0;
+        if (!isDisponible || !hasStock) return false;
+
+        const matchesSearch = (p.nombre || '').toLowerCase().includes(search.toLowerCase()) || 
                               (p.descripcion || '').toLowerCase().includes(search.toLowerCase());
         const matchesCategory = category === 'Todos' || p.categoria === category;
         return matchesSearch && matchesCategory;
     });
 
-    const getProductQuantity = (productId) => {
-        const item = cart.find(i => i.id === productId);
-        return item ? item.quantity : 0;
+    const resolveProductId = (p) => {
+        if (!p) return '';
+        if (typeof p === 'object') {
+            const rawId = p.id;
+            if (rawId && String(rawId) !== 'undefined' && String(rawId) !== 'null' && String(rawId).trim() !== '') return String(rawId);
+            return p.nombre ? `prod-${p.nombre.toLowerCase().replace(/\s+/g, '_')}` : '';
+        }
+        return String(p);
     };
 
-    const handleRemoveOne = (productId) => {
-        const item = cart.find(i => i.id === productId);
-        if (item && item.quantity > 1) {
-            updateQuantity(productId, -1);
-        } else {
-            removeFromCart(productId);
+    const getProductQuantity = (product) => {
+        if (!product) return 0;
+        const targetId = resolveProductId(product);
+        const prodName = typeof product === 'object' ? product.nombre : null;
+        const item = cart.find(i => 
+            (targetId && String(i.id) === targetId) || 
+            (prodName && i.nombre && i.nombre.toLowerCase() === prodName.toLowerCase())
+        );
+        return item ? Number(item.quantity || 0) : 0;
+    };
+
+    const handleRemoveOne = (product) => {
+        if (!product) return;
+        const targetId = resolveProductId(product);
+        const prodName = typeof product === 'object' ? product.nombre : null;
+        const item = cart.find(i => 
+            (targetId && String(i.id) === targetId) || 
+            (prodName && i.nombre && i.nombre.toLowerCase() === prodName.toLowerCase())
+        );
+        if (item) {
+            if (item.quantity > 1) {
+                updateQuantity(item.id, -1);
+            } else {
+                removeFromCart(item.id);
+            }
         }
     };
 
@@ -66,34 +157,25 @@ export default function BarMenu() {
     );
 
     return (
-        <div className="relative min-h-screen bg-slate-950 pb-44 overflow-x-hidden">
+        <div className="relative min-h-screen bg-[#111] pb-44 font-sans">
             
-            {/* ── Background Magic ── */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-amber-600/5 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute -bottom-20 -left-20 w-[600px] h-[600px] bg-slate-600/5 rounded-full blur-[120px]" />
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] brightness-150 contrast-150" />
-            </div>
-
             <div className="relative z-10">
-                {/* ── Sticky Header ── */}
-                <header className="px-6 pt-10 pb-4 bg-slate-950/80 backdrop-blur-3xl sticky top-0 z-50 border-b border-white/5 shadow-2xl">
-                    <div className="flex items-center justify-between mb-6">
+                {/* ── Header ── */}
+                <header className="px-6 pt-10 pb-4 bg-[#111] sticky top-0 z-50 border-b border-white/5">
+                    <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => navigate(`/${negocioId}`)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/10 active:scale-90 text-white transition-all">
-                                <ArrowLeft size={18} />
+                            <button onClick={() => navigate(`/${negocioId}`)} className="text-white hover:text-amber-500 transition-colors">
+                                <ArrowLeft size={24} />
                             </button>
-                            <div className="space-y-0.5">
-                                <h1 className="text-2xl font-black uppercase tracking-tighter italic text-white leading-none">
-                                    MENÚ <span className="text-amber-500">PRO</span>
+                            <div className="flex flex-col">
+                                <h1 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">
+                                    COMPLEJO GIO <span className="text-slate-500 text-lg font-bold tracking-widest ml-1">BURGER & BEER</span>
                                 </h1>
-                                <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.3em]">Cancha & Gastronomía</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 bg-amber-500 text-black rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 transform -rotate-3">
-                                <Coffee size={18} />
-                            </div>
+                        <div className="flex items-center gap-1 text-amber-500">
+                             <MapPin size={14} />
+                             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">NUEVA CÓRDOBA</span>
                         </div>
                     </div>
 
@@ -115,39 +197,45 @@ export default function BarMenu() {
                             )}
                         </div>
 
-                        {/* Category Pills - More Compact & Glassy */}
-                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
-                            {categories.map(cat => (
-                                <button
-                                    key={cat}
-                                    onClick={() => setCategory(cat)}
-                                    className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all flex items-center gap-2 ${
-                                        category === cat 
-                                        ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 scale-105' 
-                                        : 'bg-white/5 text-slate-500 border border-white/5 hover:border-white/10'
-                                    }`}
-                                >
-                                    {cat === 'Todos' && <LayoutGrid size={12} />}
-                                    {cat}
-                                </button>
-                            ))}
-                        </div>
+                    {/* Category Pills */}
+                    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2 items-center">
+                        {categories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setCategory(cat)}
+                                className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all flex items-center gap-2 border ${
+                                    category === cat 
+                                    ? 'bg-[#eab308] text-black border-[#eab308]' 
+                                    : 'bg-transparent text-slate-400 border-white/20 hover:border-white/50'
+                                }`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
                     </div>
                 </header>
-
                 {/* ── Product List ── */}
-                <div className="p-4 sm:p-6 space-y-3 max-w-[800px] mx-auto">
+                <div className="px-6 py-8 max-w-[1200px] mx-auto">
+                    {/* Section Title */}
+                    <div className="mb-8">
+                        <h2 className="text-3xl font-black text-white uppercase tracking-tight">{category.replace('🔥 ', '')}</h2>
+                        <p className="text-slate-400 text-sm mt-1">Para arrancar y compartir - {filteredMenu.length} opciones</p>
+                    </div>
+
                     {filteredMenu.length > 0 ? (
-                        filteredMenu.map((p, idx) => (
-                            <div key={p.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both" style={{ animationDelay: `${idx * 50}ms` }}>
-                                <MenuProductCard 
-                                    product={p} 
-                                    onAdd={addToCart} 
-                                    onRemove={handleRemoveOne}
-                                    quantity={getProductQuantity(p.id)}
-                                />
-                            </div>
-                        ))
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredMenu.map((p, idx) => (
+                                <div key={p.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both" style={{ animationDelay: `${idx * 50}ms` }}>
+                                    <MenuProductCard 
+                                        product={p} 
+                                        onAdd={addToCart} 
+                                        onRemove={() => handleRemoveOne(p)}
+                                        quantity={getProductQuantity(p)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
                     ) : (
                         <div className="py-32 flex flex-col items-center gap-6 bg-white/[0.02] rounded-[48px] border border-dashed border-white/10 mx-2">
                             <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center text-slate-700 border border-white/5">
@@ -200,6 +288,16 @@ export default function BarMenu() {
                     </button>
                 </div>
             )}
+            
+            {/* ── Floating WhatsApp Button ── */}
+            <a 
+                href={`https://wa.me/5493510000000`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="fixed bottom-10 right-6 z-[90] w-14 h-14 bg-[#eab308] text-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+            >
+                <MessageCircle size={28} className="fill-current" />
+            </a>
             
         </div>
     );

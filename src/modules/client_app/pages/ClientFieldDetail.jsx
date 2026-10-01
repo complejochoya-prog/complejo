@@ -146,10 +146,19 @@ export default function ClientFieldDetail() {
 
     const calculateTotalPrice = () => {
         const range = getSelectedRange();
+        const isPerPerson = cancha?.isPerPerson || 
+                            cancha?.precioPorPersona ||
+                            cancha?.tipo_precio === 'persona' ||
+                            cancha?.nombre?.toLowerCase().includes('piscina') || 
+                            cancha?.nombre?.toLowerCase().includes('pileta') ||
+                            cancha?.nombre?.toLowerCase().includes('quincho') ||
+                            (formData.cantidadPersonas && Number(formData.cantidadPersonas) > 1);
+        const qty = isPerPerson ? (parseInt(formData.cantidadPersonas) || 1) : 1;
+
         return range.reduce((total, horaStr) => {
             const h = horarios.find(slot => slot.hora === horaStr);
-            const basePrice = h?.esNocturno ? cancha?.precio_nocturno : cancha?.precio_diurno;
-            return total + (basePrice || 0);
+            const basePrice = h?.esNocturno ? (cancha?.precio_nocturno || cancha?.precio) : (cancha?.precio_diurno || cancha?.precio);
+            return total + ((basePrice || 0) * qty);
         }, 0);
     };
 

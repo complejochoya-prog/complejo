@@ -20,25 +20,27 @@ export default function DeliveryLogin() {
 
         try {
             const empleados = await fetchEmpleados(negocioId);
-            const riderMatch = empleados.find(emp => 
-                (emp.rol === 'DELIVERY' || emp.rol === 'admin' || emp.rol === 'encargado' || emp.rol === 'MOZO' || emp.rol === 'mozo') && 
+            const ROLES_ALLOW = ['DELIVERY', 'admin', 'encargado', 'MOZO', 'mozo'];
+
+            const riderMatch = empleados.find(emp =>
+                ROLES_ALLOW.includes(emp.rol) &&
                 emp.dni === username &&
                 emp.password === password
             );
 
             if (!riderMatch) {
-                setError('Credenciales inválidas');
+                setError('Credenciales inválidas. Verificá tu DNI y clave.');
             } else if (riderMatch.estado !== 'activo') {
-                setError('Usuario inactivo');
+                setError('Usuario inactivo. Contactá al administrador.');
             } else {
                 localStorage.setItem('delivery_userId', riderMatch.id);
-                localStorage.setItem('delivery_userName', riderMatch.nombre + ' ' + riderMatch.apellido);
+                localStorage.setItem('delivery_userName', `${riderMatch.nombre} ${riderMatch.apellido}`);
                 localStorage.setItem('delivery_userRole', riderMatch.rol);
                 navigate(`/${negocioId}/app/delivery`);
             }
         } catch (err) {
             console.error(err);
-            setError('Fallo en la sincronización');
+            setError('Error de sincronización. Intentá de nuevo.');
         } finally {
             setLoading(false);
         }
@@ -46,16 +48,16 @@ export default function DeliveryLogin() {
 
     return (
         <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-8 relative overflow-hidden font-inter">
-            
-            {/* Ambient Background Light System */}
+
+            {/* Ambient */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg aspect-square">
                 <div className="absolute inset-0 bg-cyan-500/10 blur-[120px] rounded-full animate-pulse" />
-                <div className="absolute inset-0 bg-blue-500/5 blur-[160px] rounded-full animate-bounce duration-[10s]" />
+                <div className="absolute inset-0 bg-blue-500/5 blur-[160px] rounded-full" />
             </div>
 
             <main className="w-full max-w-md relative z-10 space-y-12 animate-in fade-in zoom-in-95 duration-700">
-                
-                {/* Brand / Title */}
+
+                {/* Brand */}
                 <div className="text-center space-y-6">
                     <div className="relative inline-block group">
                         <div className="absolute inset-0 bg-cyan-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
@@ -71,74 +73,76 @@ export default function DeliveryLogin() {
                     </div>
                 </div>
 
-                {/* Login Form Card */}
-                <form onSubmit={handleLogin} className="space-y-6 bg-white/[0.02] border border-white/5 backdrop-blur-3xl p-8 rounded-[40px] shadow-2xl relative">
-                    
+                {/* Form */}
+                <form onSubmit={handleLogin} className="space-y-6 bg-white/[0.02] border border-white/5 backdrop-blur-3xl p-8 rounded-[40px] shadow-2xl">
+
                     <div className="space-y-5">
+                        {/* DNI */}
                         <div className="space-y-2">
-                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Identificación (DNI)</label>
-                             <div className="relative group/input">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Identificación (DNI)</label>
+                            <div className="relative group/input">
                                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within/input:text-cyan-500 transition-colors">
                                     <User size={18} />
                                 </div>
-                                <input 
+                                <input
                                     type="text"
                                     value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
+                                    onChange={e => setUsername(e.target.value)}
                                     className="w-full bg-black/40 border border-white/5 rounded-[22px] py-5 pl-14 pr-6 text-white text-sm font-bold focus:outline-none focus:border-cyan-500 transition-all hover:bg-black/60"
                                     placeholder="DNI del personal"
                                     required
+                                    autoComplete="username"
                                 />
-                             </div>
+                            </div>
                         </div>
 
+                        {/* Password */}
                         <div className="space-y-2">
-                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Clave Segura</label>
-                             <div className="relative group/input">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Clave Segura</label>
+                            <div className="relative group/input">
                                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within/input:text-cyan-500 transition-colors">
                                     <Lock size={18} />
                                 </div>
-                                <input 
+                                <input
                                     type="password"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={e => setPassword(e.target.value)}
                                     className="w-full bg-black/40 border border-white/5 rounded-[22px] py-5 pl-14 pr-6 text-white text-sm font-bold focus:outline-none focus:border-cyan-500 transition-all hover:bg-black/60"
                                     placeholder="••••••••"
                                     required
+                                    autoComplete="current-password"
                                 />
-                             </div>
+                            </div>
                         </div>
                     </div>
 
+                    {/* Error — ✅ reemplazado "shake" (no estándar) por animate-pulse */}
                     {error && (
-                        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-black uppercase tracking-widest text-center animate-in shake duration-500">
-                             {error}
+                        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-black uppercase tracking-widest text-center animate-pulse">
+                            {error}
                         </div>
                     )}
 
-                    <button 
-                        type="submit"
-                        disabled={loading}
-                        className="w-full relative group/btn"
-                    >
+                    <button type="submit" disabled={loading} className="w-full relative group/btn">
                         <div className="absolute inset-0 bg-cyan-500 blur-lg opacity-40 invisible group-hover/btn:visible transition-all" />
                         <div className="relative z-10 flex items-center justify-center gap-3 w-full bg-cyan-500 text-slate-950 py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[12px] shadow-2xl active:scale-95 transition-all disabled:opacity-50">
                             {loading ? (
                                 <Loader2 className="animate-spin" size={20} />
                             ) : (
-                                <>Entrar al Panel <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" /></>
+                                <>
+                                    Entrar al Panel
+                                    <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+                                </>
                             )}
                         </div>
                     </button>
-                    
                 </form>
 
-                {/* Footer Security */}
+                {/* Footer */}
                 <div className="flex items-center justify-center gap-2.5 opacity-30">
                     <ShieldCheck size={14} className="text-cyan-500" />
                     <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400">Secure Dispatch Protocol v3.0</span>
                 </div>
-
             </main>
         </div>
     );

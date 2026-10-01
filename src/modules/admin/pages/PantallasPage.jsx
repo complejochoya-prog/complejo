@@ -7,7 +7,7 @@ import { configService } from '../../../core/services/configService';
 
 export default function PantallasPage() {
     const { negocioId } = useParams();
-    
+
     const [screens, setScreens] = useState([
         { id: 'turnos', name: 'Tablero de Turnos', desc: 'Muestra las canchas y turnos', path: 'turnos', icon: Clock, enabled: true },
         { id: 'bar', name: 'Monitor del Bar', desc: 'Muestra los pedidos en curso', path: 'bar', icon: Beer, enabled: true },
@@ -34,12 +34,12 @@ export default function PantallasPage() {
     const toggleScreen = async (id) => {
         const screen = screens.find(s => s.id === id);
         const newStatus = !screen.enabled;
-        
+
         // Optimistic update
         setScreens(prev => prev.map(s => s.id === id ? { ...s, enabled: newStatus } : s));
-        
-        await configService.savePantalla(negocioId, { 
-            id, 
+
+        await configService.savePantalla(negocioId, {
+            id,
             enabled: newStatus,
             name: screen.name,
             path: screen.path
@@ -71,13 +71,12 @@ export default function PantallasPage() {
                 {screens.map(s => {
                     const Icon = s.icon;
                     return (
-                        <div key={s.id} className={`p-8 rounded-[32px] border transition-all duration-300 relative group overflow-hidden ${
-                            s.enabled 
-                            ? 'bg-blue-500/10 border-blue-500/20' 
-                            : 'bg-slate-900 border-white/5 opacity-70'
-                        }`}>
+                        <div key={s.id} className={`p-8 rounded-[32px] border transition-all duration-300 relative group overflow-hidden ${s.enabled
+                                ? 'bg-blue-500/10 border-blue-500/20'
+                                : 'bg-slate-900 border-white/5 opacity-70'
+                            }`}>
                             {s.enabled && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-400" />}
-                            
+
                             <div className="flex justify-between items-start mb-6">
                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${s.enabled ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/30' : 'bg-slate-800 text-slate-500'}`}>
                                     <Icon size={28} />
@@ -97,7 +96,7 @@ export default function PantallasPage() {
 
                             <div className="mt-auto">
                                 {s.enabled ? (
-                                    <Link 
+                                    <Link
                                         to={`/${negocioId}/pantalla/${s.path}`}
                                         target="_blank"
                                         className="w-full relative overflow-hidden flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-all font-black shadow-xl shadow-blue-600/20 group"
@@ -107,7 +106,7 @@ export default function PantallasPage() {
                                     </Link>
                                 ) : (
                                     <button disabled className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-slate-950 text-slate-500 border border-white/5 font-black opacity-50 cursor-not-allowed">
-                                        <span className="text-[10px] uppercase tracking-widest">Pantalla Desactivada</span>
+                                        <span className="text-[10px] uppercase tracking-widest">Desactivada</span>
                                     </button>
                                 )}
                             </div>

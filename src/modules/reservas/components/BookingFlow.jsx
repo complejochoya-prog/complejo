@@ -21,6 +21,8 @@ import {
     Sun,
     Moon,
     Users,
+    User,
+    Phone,
     MapPin,
     ArrowLeft,
     Share2,
@@ -30,7 +32,20 @@ import {
     CreditCard,
     Check,
     CalendarCheck,
-    Loader2
+    Loader2,
+    MessageCircle,
+    Send,
+    Home,
+    ExternalLink,
+    Sparkles,
+    Upload,
+    Image as ImageIcon,
+    Pencil,
+    DollarSign,
+    FileCheck,
+    Receipt,
+    Eye,
+    X
 } from 'lucide-react';
 
 const ICON_MAP = {
@@ -55,6 +70,7 @@ export default function BookingFlow() {
         bookings, 
         liveUsage, 
         checkAvailability, 
+        getCapacityInfo,
         timeSchedule,
         addBooking
     } = useReservas();
@@ -86,12 +102,19 @@ export default function BookingFlow() {
                 const serviceMatch = serviceEspacios.find(s => 
                     s.id === res.id || s.title?.toLowerCase() === res.name?.toLowerCase()
                 );
+                const dayPrice = res.precio ?? res.precio_diurno ?? res.priceDiurno ?? serviceMatch?.precio ?? serviceMatch?.priceDiurno ?? 5000;
+                const nightPrice = res.precio_noche ?? res.precioNocturno ?? serviceMatch?.precio_noche ?? serviceMatch?.precioNocturno ?? 7000;
+
                 return {
                     ...res,
                     active: res.active !== false,
+                    requiereCantidad: res.requiereCantidad !== undefined ? res.requiereCantidad : (serviceMatch?.requiereCantidad === true),
                     img: res.img || serviceMatch?.img || 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=800',
                     desc: res.desc || serviceMatch?.desc || 'Instalación profesional de alta calidad.',
-                    capacidad: res.capacidad || serviceMatch?.capacidad || null
+                    capacidad: res.capacidad || serviceMatch?.capacidad || null,
+                    precio: dayPrice,
+                    priceDiurno: dayPrice,
+                    precioNocturno: nightPrice
                 };
             });
         }
@@ -99,13 +122,15 @@ export default function BookingFlow() {
         // 2. FALLBACK: If Firestore is empty, use the mock/local spaces from the service
         return serviceEspacios.map(s => ({
             id: s.id,
-            name: s.name || s.title, // Support both during migration
+            name: s.name || s.title,
             category: s.category || 'Deportes',
             active: s.active !== false,
+            requiereCantidad: s.requiereCantidad === true,
             img: s.img,
             desc: s.desc,
-            priceDiurno: s.priceDiurno || 8000,
-            precioNocturno: s.precioNocturno || 12000,
+            precio: s.precio || s.priceDiurno || 8000,
+            priceDiurno: s.precio || s.priceDiurno || 8000,
+            precioNocturno: s.precio_noche || s.precioNocturno || 12000,
             capacidad: s.capacidad || null
         }));
     }, [contextResources, serviceEspacios]);
@@ -125,8 +150,44 @@ export default function BookingFlow() {
         telefono: '',
         cantidadPersonas: 1
     });
-    const [paymentMethod, setPaymentMethod] = useState('Pagar en el complejo');
+    const [paymentMethod, setPaymentMethod] = useState('Transferencia');
     const [bookingLoading, setBookingLoading] = useState(false);
+    const [confirmedBooking, setConfirmedBooking] = useState(null);
+    const [countdown, setCountdown] = useState(7);
+
+    // Seña & Comprobante
+    const [montoSena, setMontoSena] = useState('');
+    const [comprobanteFile, setComprobanteFile] = useState(null);
+    const [comprobantePreview, setComprobantePreview] = useState(null);
+
+    // Modal de confirmacion con todos los datos
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+    const handleComprobanteChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setComprobanteFile(file);
+            const reader = new FileReader();
+            reader.onload = (ev) => setComprobantePreview(ev.target.result);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Auto-reload to home after confirmation countdown
+    useEffect(() => {
+        if (!confirmedBooking) return;
+        const timer = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    window.location.href = `/${negocioId}`;
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [confirmedBooking, negocioId]);
 
     // Filter categories
     const categories = useMemo(() => {
@@ -188,11 +249,11 @@ export default function BookingFlow() {
         if (dateStr === todayStr) {
             const currentHour = today.getHours();
             const slotHourNum = parseInt(slotHour.split(':')[0], 10);
-            if (slotHourNum <= currentHour) return 'Pasado';
+            if (slotHourNum < currentHour) return 'Pasado';
         }
 
         if (typeof checkAvailability === 'function') {
-            const requestedAmount = parseInt(formData.cantidadPersonas) || 1;
+            const requestedAmount = selectedResource.requiereCantidad ? (parseInt(formData.cantidadPersonas) || 1) : 1;
             if (!checkAvailability(selectedResource.id, dateStr, slotHour, requestedAmount)) return 'Ocupado';
         }
         return 'Disponible';
@@ -203,12 +264,23 @@ export default function BookingFlow() {
         const hourNum = parseInt(slot.hour.split(':')[0], 10);
         const isDiurno = hourNum >= 8 && hourNum < 19;
         
-        if (selectedResource.priceDiurno !== undefined && selectedResource.precioNocturno !== undefined) {
-            const base = isDiurno ? selectedResource.priceDiurno : selectedResource.precioNocturno;
-            if (selectedResource.name === 'Piscina') return base * formData.cantidadPersonas;
-            return base;
+        const baseDay = selectedResource.precio ?? selectedResource.priceDiurno ?? selectedResource.precio_diurno ?? (slot.priceDiurno || 5000);
+        const baseNight = selectedResource.precio_noche ?? selectedResource.precioNocturno ?? (slot.precioNocturno || 7000);
+        const basePrice = isDiurno ? Number(baseDay) : Number(baseNight);
+
+        const shouldMultiply = selectedResource.requiereCantidad && (
+            selectedResource.isPerPerson || 
+            selectedResource.precioPorPersona ||
+            selectedResource.tipo_precio === 'persona' ||
+            selectedResource.name?.toLowerCase().includes('piscina') || 
+            selectedResource.name?.toLowerCase().includes('pileta')
+        );
+
+        if (shouldMultiply) {
+            const qty = parseInt(formData.cantidadPersonas) || 1;
+            return basePrice * qty;
         }
-        return isDiurno ? (slot.priceDiurno || 5000) : (slot.precioNocturno || 7000);
+        return basePrice;
     };
 
     const rangeSlots = useMemo(() => {
@@ -224,63 +296,111 @@ export default function BookingFlow() {
     
     const hasValidSelection = rentalMode === 'hora' ? !!selectedSlot : (hoursCount > 0);
 
-    const handleBooking = async () => {
-        if (!hasValidSelection || !selectedResource) return;
-        if (!formData.nombre || !formData.apellido || !formData.telefono) {
-            alert("Por favor completa tus datos de contacto.");
+    const selectedSlotCapacity = useMemo(() => {
+        if (!selectedResource || !selectedSlot) return null;
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        if (typeof getCapacityInfo === 'function') {
+            return getCapacityInfo(selectedResource.id, dateStr, selectedSlot.hour);
+        }
+        return null;
+    }, [selectedResource, selectedSlot, selectedDate, getCapacityInfo, bookings]);
+
+    const handleOpenConfirmModal = () => {
+        if (!hasValidSelection || !selectedResource) {
+            alert("Por favor selecciona un horario para tu reserva.");
             return;
         }
+        if (!formData.nombre || !formData.apellido || !formData.telefono) {
+            alert("Por favor completa tus datos de contacto (nombre, apellido y teléfono).");
+            return;
+        }
+        if (!montoSena || Number(montoSena) <= 0) {
+            alert("Por favor ingresa el monto de la seña.");
+            return;
+        }
+        if (paymentMethod === 'Transferencia' && !comprobanteFile) {
+            alert("Por favor adjunta el comprobante de la transferencia.");
+            return;
+        }
+        setShowConfirmModal(true);
+    };
+
+    const handleBooking = async () => {
+        if (!hasValidSelection || !selectedResource) return;
 
         const dateStr = selectedDate.toISOString().split('T')[0];
         const timeStr = rentalMode === 'hora' ? selectedSlot.hour : `${startSlot.hour} - ${endSlot.hour}`;
-        const requestedAmount = parseInt(formData.cantidadPersonas) || 1;
+        const requestedAmount = selectedResource.requiereCantidad ? (parseInt(formData.cantidadPersonas) || 1) : 1;
 
         if (rentalMode === 'hora' && typeof checkAvailability === 'function') {
             if (!checkAvailability(selectedResource.id, dateStr, selectedSlot.hour, requestedAmount)) {
-                alert("La cantidad de personas solicitada supera el cupo disponible para este horario.");
+                alert("La cantidad de personas solicitada supera los lugares disponibles para este horario.");
                 return;
             }
         }
 
         setBookingLoading(true);
         try {
-            // Integration with createReserva from context (which uses Firestore)
             const endTimeStr = rentalMode === 'hora' ? null : endSlot.hour;
 
+            const newBooking = {
+                resource: selectedResource,
+                canchaId: selectedResource.id,
+                canchaNombre: selectedResource.name,
+                fullDate: dateStr,
+                fecha: dateStr,
+                time: timeStr,
+                hora: timeStr,
+                endTime: endTimeStr,
+                price: currentPrice,
+                precio: currentPrice,
+                cliente: formData,
+                cantidadPersonas: requestedAmount,
+                pago: paymentMethod,
+                montoSena: Number(montoSena),
+                comprobanteAdjunto: !!comprobanteFile,
+                rentalMode,
+                status: 'Pendiente - Seña enviada'
+            };
+
             if (addBooking) {
-                await addBooking({
-                    resource: selectedResource,
-                    canchaId: selectedResource.id, // For Admin ReservasPage
-                    fullDate: dateStr,
-                    fecha: dateStr, // For Admin ReservasPage
-                    time: timeStr,
-                    hora: timeStr, // For Admin ReservasPage
-                    endTime: endTimeStr,
-                    price: currentPrice,
-                    precio: currentPrice, // For Admin ReservasPage
-                    cliente: formData,
-                    pago: paymentMethod,
-                    rentalMode,
-                    status: 'Pendiente'
-                });
+                await addBooking(newBooking);
             }
 
-            setTimeout(() => {
-                navigate(`/${negocioId}/pedido-confirmado`, { 
-                    state: { 
-                        reserva: {
-                            fieldName: selectedResource.name,
-                            date: dateStr,
-                            time: timeStr,
-                            firstName: formData.nombre,
-                            lastName: formData.apellido,
-                            phone: formData.telefono,
-                            price: currentPrice
-                        } 
-                    } 
-                });
-                setBookingLoading(false);
-            }, 800);
+            // Target phone number: 3855374835 -> +54 9 3855374835
+            const targetWsp = "5493855374835";
+            const dayFormatted = `${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} de ${MONTH_NAMES[selectedDate.getMonth()]}`;
+            let wspMsg = `👋 *¡NUEVA RESERVA CON SEÑA!* 🏆\n\n` +
+                `📍 *Espacio:* ${selectedResource.name}\n` +
+                `📅 *Fecha:* ${dayFormatted} (${dateStr})\n` +
+                `⏰ *Horario:* ${timeStr} hs\n` +
+                (selectedResource.requiereCantidad ? `👥 *Personas:* ${requestedAmount}\n` : '') +
+                `👤 *Cliente:* ${formData.nombre} ${formData.apellido}\n` +
+                `📱 *Teléfono:* ${formData.telefono}\n` +
+                `💳 *Forma de Pago:* ${paymentMethod}\n` +
+                `💵 *Seña abonada:* $${Number(montoSena).toLocaleString('es-AR')}\n` +
+                `💰 *Total:* $${currentPrice.toLocaleString('es-AR')}\n` +
+                `💸 *Resta abonar:* $${(currentPrice - Number(montoSena)).toLocaleString('es-AR')}\n` +
+                (comprobanteFile ? `📎 *Comprobante:* Adjunto en la galería del chat\n` : '') +
+                `\n✅ _Reserva enviada desde la web de ${businessInfo?.name || 'Giovanni'}_`;
+
+            const wspUrl = `https://wa.me/${targetWsp}?text=${encodeURIComponent(wspMsg)}`;
+
+            // Open WhatsApp with all reservation info
+            try {
+                window.open(wspUrl, '_blank');
+            } catch (err) {
+                console.error("Could not open WhatsApp window:", err);
+            }
+
+            // Show Confirmation modal cartel
+            setConfirmedBooking({
+                ...newBooking,
+                wspUrl,
+                dayFormatted
+            });
+            setCountdown(7);
+            setBookingLoading(false);
         } catch (error) {
             console.error("Error booking:", error);
             alert("Error al procesar la reserva.");
@@ -333,10 +453,13 @@ export default function BookingFlow() {
                                         <div><h3 className="text-2xl font-black italic uppercase tracking-tighter text-white group-hover:text-amber-500 transition-colors leading-none">{res.name}</h3><span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 block">{res.category || 'Deportes'}</span></div>
                                         <div className="bg-amber-500/10 p-2 rounded-xl border border-amber-500/20 text-amber-500">{(() => { const I = ICON_MAP[res.name] || Trophy; return <I size={20} />; })()}</div>
                                     </div>
-                                    <p className="text-sm text-slate-400 line-clamp-2 mb-8 font-medium italic">{res.desc}</p>
+                                    <p className="text-sm text-slate-400 line-clamp-2 mb-4 font-medium italic">{res.desc}</p>
+                                    {res.capacidad && (
+                                        <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-4">Capacidad Max: {res.capacidad} personas</p>
+                                    )}
                                     <div className="grid grid-cols-2 gap-4 mb-8">
-                                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5"><div className="flex items-center gap-2 mb-1"><Sun size={14} className="text-amber-400" /><span className="text-[8px] font-black uppercase text-slate-500">Diurno</span></div><p className="text-lg font-black italic text-white">${res.priceDiurno?.toLocaleString() || '5.000'}</p></div>
-                                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5"><div className="flex items-center gap-2 mb-1"><Moon size={14} className="text-indigo-400" /><span className="text-[8px] font-black uppercase text-slate-500">Nocturno</span></div><p className="text-lg font-black italic text-white">${res.precioNocturno?.toLocaleString() || '7.000'}</p></div>
+                                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5"><div className="flex items-center gap-2 mb-1"><Sun size={14} className="text-amber-400" /><span className="text-[8px] font-black uppercase text-slate-500">Diurno</span></div><p className="text-lg font-black italic text-white">${Number(res.priceDiurno || res.precio || 5000).toLocaleString()}</p></div>
+                                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5"><div className="flex items-center gap-2 mb-1"><Moon size={14} className="text-indigo-400" /><span className="text-[8px] font-black uppercase text-slate-500">Nocturno</span></div><p className="text-lg font-black italic text-white">${Number(res.precioNocturno || res.precio_noche || 7000).toLocaleString()}</p></div>
                                     </div>
                                     <button onClick={() => setSelectedResource(res)} className="w-full bg-white text-black py-5 rounded-[24px] font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-amber-500 hover:scale-[1.02] shadow-xl flex items-center justify-center gap-2 group">Reservar Ahora <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" /></button>
                                 </div>
@@ -349,6 +472,8 @@ export default function BookingFlow() {
     }
 
     // --- STEP 2: BOOKING VIEW ---
+    const dateStr = selectedDate.toISOString().split('T')[0];
+
     return (
         <div className="min-h-screen bg-[#050508] text-white font-inter pb-60">
             {/* Header */}
@@ -362,6 +487,9 @@ export default function BookingFlow() {
                 <div className="absolute bottom-8 left-8 flex flex-col items-start">
                     <div className="bg-amber-500 text-black px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest mb-3">{selectedResource.category || 'Espacio Seleccionado'}</div>
                     <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-none">{selectedResource.name}</h2>
+                    {selectedResource.capacidad && (
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Capacidad Máxima: {selectedResource.capacidad} personas</span>
+                    )}
                 </div>
             </div>
 
@@ -378,7 +506,7 @@ export default function BookingFlow() {
                 {/* Calendar */}
                 <section className="space-y-6">
                     <div className="flex items-center justify-between px-2">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3"><Calendar size={18} className="text-amber-500" /> Selecciona el Día</h3>
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3"><Calendar size={18} className="text-amber-500" /> <span>Selecciona el Día</span></h3>
                         <div className="flex items-center gap-4">
                             <button onClick={() => setCurrentMonthDate(new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() - 1, 1))} className="p-2 text-slate-500 hover:text-white"><ChevronLeft size={20} /></button>
                             <span className="text-xs font-black uppercase tracking-widest text-white italic">{MONTH_NAMES[currentMonthDate.getMonth()]} {currentMonthDate.getFullYear()}</span>
@@ -398,32 +526,54 @@ export default function BookingFlow() {
                 {/* Time Slots */}
                 <section className="space-y-10">
                     <div className="space-y-4">
-                        <h3 className="text-[10px] items-center text-slate-600 font-black uppercase tracking-[0.3em] flex gap-3"><Sun size={18} className="text-amber-500" /> Diurnos</h3>
+                        <h3 className="text-[10px] items-center text-slate-600 font-black uppercase tracking-[0.3em] flex gap-3"><Sun size={18} className="text-amber-500" /> <span>Diurnos</span></h3>
                         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                             {availableScheduleSlots.filter(s => s.type === 'diurno').map(slot => {
                                 const status = getSlotStatus(slot.hour);
                                 const isSelected = rentalMode === 'hora' ? selectedSlot?.hour === slot.hour : (startSlot?.hour === slot.hour || endSlot?.hour === slot.hour || (startSlot && endSlot && slot.hour > startSlot.hour && slot.hour < endSlot.hour));
                                 const isDisabled = status !== 'Disponible';
+
+                                const capInfo = typeof getCapacityInfo === 'function' ? getCapacityInfo(selectedResource.id, dateStr, slot.hour) : null;
+                                const isSharedSpace = capInfo && capInfo.capacity > 1;
+
                                 return (
                                     <button key={slot.hour} disabled={isDisabled && !isSelected} onClick={() => { if (rentalMode === 'hora') setSelectedSlot(slot); else { if (!startSlot || (startSlot && endSlot)) { setStartSlot(slot); setEndSlot(null); } else if (slot.hour > startSlot.hour) setEndSlot(slot); else setStartSlot(slot); } }} className={`relative py-5 rounded-[22px] border transition-all duration-300 flex flex-col items-center justify-center ${isSelected ? 'bg-amber-500 border-amber-400 text-black shadow-xl' : isDisabled ? 'bg-black/20 border-white/5 text-slate-700' : 'bg-white/5 border-white/5 text-slate-300 hover:bg-white/10'}`}>
                                         <span className="text-lg font-black italic tracking-tighter">{slot.hour}</span>
                                         {!isDisabled && <span className={`text-[8px] font-bold mt-1 ${isSelected ? 'text-black opacity-70' : 'text-slate-500'}`}>${getPrice(slot).toLocaleString()}</span>}
+                                        
+                                        {/* Capacity Badge */}
+                                        {isSharedSpace && (
+                                            <span className={`text-[7px] font-black uppercase tracking-tight mt-1 px-2 py-0.5 rounded-full ${isDisabled ? 'bg-red-500/20 text-red-400' : isSelected ? 'bg-black/20 text-black' : 'bg-amber-500/10 text-amber-400'}`}>
+                                                {capInfo.remaining > 0 ? `${capInfo.remaining} de ${capInfo.capacity} libres` : 'Agotado'}
+                                            </span>
+                                        )}
                                     </button>
                                 );
                             })}
                         </div>
                     </div>
                     <div className="space-y-4">
-                        <h3 className="text-[10px] items-center text-slate-600 font-black uppercase tracking-[0.3em] flex gap-3"><Moon size={18} className="text-indigo-400" /> Nocturnos</h3>
+                        <h3 className="text-[10px] items-center text-slate-600 font-black uppercase tracking-[0.3em] flex gap-3"><Moon size={18} className="text-indigo-400" /> <span>Nocturnos</span></h3>
                         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                             {availableScheduleSlots.filter(s => s.type === 'nocturno').map(slot => {
                                 const status = getSlotStatus(slot.hour);
                                 const isSelected = rentalMode === 'hora' ? selectedSlot?.hour === slot.hour : (startSlot?.hour === slot.hour || endSlot?.hour === slot.hour || (startSlot && endSlot && slot.hour > startSlot.hour && slot.hour < endSlot.hour));
                                 const isDisabled = status !== 'Disponible';
+
+                                const capInfo = typeof getCapacityInfo === 'function' ? getCapacityInfo(selectedResource.id, dateStr, slot.hour) : null;
+                                const isSharedSpace = capInfo && capInfo.capacity > 1;
+
                                 return (
                                     <button key={slot.hour} disabled={isDisabled && !isSelected} onClick={() => { if (rentalMode === 'hora') setSelectedSlot(slot); else { if (!startSlot || (startSlot && endSlot)) { setStartSlot(slot); setEndSlot(null); } else if (slot.hour > startSlot.hour) setEndSlot(slot); else setStartSlot(slot); } }} className={`relative py-5 rounded-[22px] border transition-all duration-300 flex flex-col items-center justify-center ${isSelected ? 'bg-indigo-600 border-indigo-400 text-white shadow-xl' : isDisabled ? 'bg-black/20 border-white/5 text-slate-700' : 'bg-white/5 border-white/5 text-slate-300 hover:bg-white/10'}`}>
                                         <span className="text-lg font-black italic tracking-tighter">{slot.hour}</span>
                                         {!isDisabled && <span className={`text-[8px] font-bold mt-1 ${isSelected ? 'text-white opacity-70' : 'text-slate-500'}`}>${getPrice(slot).toLocaleString()}</span>}
+                                        
+                                        {/* Capacity Badge */}
+                                        {isSharedSpace && (
+                                            <span className={`text-[7px] font-black uppercase tracking-tight mt-1 px-2 py-0.5 rounded-full ${isDisabled ? 'bg-red-500/20 text-red-400' : isSelected ? 'bg-white/20 text-white' : 'bg-indigo-500/20 text-indigo-300'}`}>
+                                                {capInfo.remaining > 0 ? `${capInfo.remaining} de ${capInfo.capacity} libres` : 'Agotado'}
+                                            </span>
+                                        )}
                                     </button>
                                 );
                             })}
@@ -433,12 +583,17 @@ export default function BookingFlow() {
 
                 {/* Form & Payment */}
                 <div className="pt-8 space-y-12">
-                    <ReservationForm formData={formData} setFormData={setFormData} cancha={selectedResource} />
+                    <ReservationForm 
+                        formData={formData} 
+                        setFormData={setFormData} 
+                        cancha={selectedResource} 
+                        maxCapacity={selectedSlotCapacity?.remaining}
+                    />
                     
                     <section className="space-y-4">
-                        <h3 className="text-[10px] items-center text-slate-500 font-black uppercase tracking-widest flex gap-2"><CreditCard size={16} className="text-amber-500" /> Forma de Pago</h3>
+                        <h3 className="text-[10px] items-center text-slate-500 font-black uppercase tracking-widest flex gap-2"><CreditCard size={16} className="text-amber-500" /> <span>Forma de Pago</span></h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {['Pagar en el complejo', 'Transferencia', 'MercadoPago'].map(method => (
+                            {['Transferencia', 'MercadoPago'].map(method => (
                                 <button key={method} onClick={() => setPaymentMethod(method)} className={`p-6 rounded-[24px] border flex items-center justify-between transition-all ${paymentMethod === method ? 'bg-amber-500/10 border-amber-500 text-white shadow-lg shadow-amber-500/10' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}>
                                     <span className="text-xs font-black uppercase tracking-widest">{method}</span>
                                     {paymentMethod === method && <div className="size-5 bg-amber-500 rounded-full flex items-center justify-center"><Check size={12} className="text-black" /></div>}
@@ -446,26 +601,282 @@ export default function BookingFlow() {
                             ))}
                         </div>
                     </section>
+
+                    {/* Seña Section */}
+                    <section className="space-y-6">
+                        <h3 className="text-[10px] items-center text-slate-500 font-black uppercase tracking-widest flex gap-2">
+                            <DollarSign size={16} className="text-emerald-500" /> <span>Seña Obligatoria para Reservar</span>
+                        </h3>
+                        <div className="bg-amber-500/5 border border-amber-500/20 rounded-[24px] p-6 space-y-2">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                                <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                                    <span>Para confirmar tu reserva online es necesario abonar una </span>
+                                    <strong className="text-amber-400">seña por transferencia</strong>
+                                    <span> y adjuntar el comprobante. El resto se abona en el complejo.</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Monto de la seña */}
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-1 flex items-center gap-2">
+                                    <Receipt size={12} className="text-emerald-400" /> <span>Monto de la Seña ($)</span>
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-black text-sm">$</span>
+                                    <input 
+                                        type="number"
+                                        placeholder="Ej: 5000"
+                                        value={montoSena}
+                                        onChange={(e) => setMontoSena(e.target.value)}
+                                        className="w-full bg-slate-900 border border-white/10 rounded-2xl p-4 pl-10 text-white text-sm font-bold focus:outline-none focus:border-emerald-500 transition-colors"
+                                        required
+                                        min="1"
+                                    />
+                                </div>
+                                {montoSena && currentPrice > 0 && (
+                                    <p className="text-[9px] text-emerald-400 font-bold px-1">
+                                        <span>Resta abonar en el complejo: </span>
+                                        <span className="text-white">${Math.max(0, currentPrice - Number(montoSena)).toLocaleString('es-AR')}</span>
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Comprobante de transferencia */}
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-1 flex items-center gap-2">
+                                    <Upload size={12} className="text-indigo-400" /> <span>Comprobante de Transferencia</span>
+                                </label>
+                                <label className="cursor-pointer block">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*,.pdf" 
+                                        onChange={handleComprobanteChange}
+                                        className="hidden"
+                                    />
+                                    {comprobantePreview ? (
+                                        <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500/40 group">
+                                            <img src={comprobantePreview} alt="Comprobante" className="w-full h-40 object-cover" />
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-2"><Pencil size={14} /> <span>Cambiar</span></span>
+                                            </div>
+                                            <div className="absolute top-3 right-3 bg-emerald-500 text-white p-1.5 rounded-full shadow-lg">
+                                                <CheckCircle size={14} />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-indigo-500/50 transition-colors h-40">
+                                            <div className="size-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                                <ImageIcon size={24} />
+                                            </div>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Toca para subir imagen</span>
+                                        </div>
+                                    )}
+                                </label>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </main>
 
             {/* Floating Bar */}
-            {hasValidSelection && (
-                <div className="fixed bottom-0 left-0 right-0 p-6 z-50 animate-in slide-in-from-bottom duration-500 bg-gradient-to-t from-[#050508] via-[#050508] to-transparent">
+            {hasValidSelection && !confirmedBooking && (
+                <div className="fixed bottom-0 left-0 right-0 p-6 z-40 animate-in slide-in-from-bottom duration-500 bg-gradient-to-t from-[#050508] via-[#050508] to-transparent">
                     <div className="max-w-4xl mx-auto bg-white text-black p-6 md:p-8 rounded-[40px] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 border-4 border-amber-500/20">
                         <div className="flex items-center gap-6 text-center md:text-left">
                             <div className="hidden md:flex size-16 rounded-[24px] bg-black text-white items-center justify-center"><Clock size={32} /></div>
                             <div>
-                                <h4 className="text-2xl font-black italic uppercase tracking-tighter leading-none">{rentalMode === 'hora' ? selectedSlot.hour : `${startSlot.hour} - ${endSlot ? endSlot.hour : '...'}`} HS</h4>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{DAY_NAMES[selectedDate.getDay()]} {selectedDate.getDate()} • Total: ${currentPrice.toLocaleString()}</p>
+                                <h4 className="text-2xl font-black italic uppercase tracking-tighter leading-none"><span>{rentalMode === 'hora' ? selectedSlot.hour : `${startSlot.hour} - ${endSlot ? endSlot.hour : '...'}`} HS</span></h4>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1"><span>{DAY_NAMES[selectedDate.getDay()]} {selectedDate.getDate()} • Total: ${currentPrice.toLocaleString()}</span></p>
                             </div>
                         </div>
-                        <button onClick={handleBooking} disabled={bookingLoading} className="w-full md:w-auto px-12 py-5 bg-black text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-amber-600 hover:scale-105 active:scale-95 flex items-center justify-center gap-3">
-                            {bookingLoading ? <Loader2 className="animate-spin" size={20} /> : <><CalendarCheck size={20} /> Confirmar Reserva</>}
+                        <button onClick={handleOpenConfirmModal} className="w-full md:w-auto px-12 py-5 bg-black text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-amber-600 hover:scale-105 active:scale-95 flex items-center justify-center gap-3">
+                            <Eye size={20} /> <span>Revisar Reserva</span>
                         </button>
                     </div>
                 </div>
             )}
+
+            {/* MODAL / CARTEL CON TODOS LOS DATOS */}
+            {(showConfirmModal || confirmedBooking) && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto">
+                    <div className="bg-[#0b1329] border border-amber-500/30 w-full max-w-lg rounded-[32px] p-6 md:p-8 shadow-2xl relative overflow-hidden text-white my-8">
+                        {/* Glow effect */}
+                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+
+                        {/* Close button if not yet confirmed */}
+                        {!confirmedBooking && (
+                            <button
+                                onClick={() => setShowConfirmModal(false)}
+                                className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all z-20"
+                                title="Cerrar"
+                            >
+                                <X size={20} />
+                            </button>
+                        )}
+
+                        <div className="text-center relative z-10 space-y-4">
+                            {confirmedBooking ? (
+                                <>
+                                    <div className="size-16 bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+                                        <CheckCircle2 size={36} />
+                                    </div>
+
+                                    <div>
+                                        <span className="text-[10px] font-black tracking-widest uppercase text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                                            <span>¡Reserva Registrada!</span>
+                                        </span>
+                                        <h2 className="text-2xl md:text-3xl font-black uppercase italic tracking-tight text-white mt-2">
+                                            <span>Detalles de la Reserva</span>
+                                        </h2>
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            <span>Se abrió WhatsApp para enviar la confirmación al </span>
+                                            <strong className="text-emerald-400">3855374835</strong>
+                                        </p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="size-16 bg-amber-500/10 border-2 border-amber-500/40 text-amber-400 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-amber-500/10">
+                                        <CalendarCheck size={32} />
+                                    </div>
+
+                                    <div>
+                                        <span className="text-[10px] font-black tracking-widest uppercase text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                                            <span>Verificá tus Datos</span>
+                                        </span>
+                                        <h2 className="text-2xl md:text-3xl font-black uppercase italic tracking-tight text-white mt-2">
+                                            <span>Detalles de la Reserva</span>
+                                        </h2>
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            <span>Revisá los datos cargados. Si hay algún dato mal podés editarlo antes de confirmar.</span>
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Details Card */}
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-left space-y-2.5 text-xs">
+                                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                    <span className="text-slate-400 font-semibold"><span>Espacio:</span></span>
+                                    <span className="font-bold text-amber-400 text-sm"><span>{confirmedBooking?.canchaNombre || selectedResource?.name}</span></span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                    <span className="text-slate-400 font-semibold"><span>Fecha:</span></span>
+                                    <span className="font-medium text-slate-200"><span>{confirmedBooking?.dayFormatted || `${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} de ${MONTH_NAMES[selectedDate.getMonth()]}`}</span></span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                    <span className="text-slate-400 font-semibold"><span>Horario:</span></span>
+                                    <span className="font-bold text-slate-100"><span>{confirmedBooking?.hora || (rentalMode === 'hora' ? selectedSlot?.hour : `${startSlot?.hour} - ${endSlot?.hour}`)} hs</span></span>
+                                </div>
+                                {selectedResource?.requiereCantidad && (
+                                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                        <span className="text-slate-400 font-semibold"><span>Cantidad de personas:</span></span>
+                                        <span className="font-bold text-slate-200"><span>{confirmedBooking?.cantidadPersonas || formData.cantidadPersonas || 1}</span></span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                    <span className="text-slate-400 font-semibold"><span>Cliente:</span></span>
+                                    <span className="font-medium text-slate-200"><span>{formData.nombre} {formData.apellido}</span></span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                    <span className="text-slate-400 font-semibold"><span>Teléfono:</span></span>
+                                    <span className="font-medium text-slate-200"><span>{formData.telefono}</span></span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                    <span className="text-slate-400 font-semibold"><span>Forma de Pago:</span></span>
+                                    <span className="font-medium text-slate-200"><span>{paymentMethod}</span></span>
+                                </div>
+                                {montoSena && (
+                                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                        <span className="text-slate-400 font-semibold"><span>Seña Abonada:</span></span>
+                                        <span className="font-black text-emerald-400"><span>${Number(montoSena).toLocaleString('es-AR')}</span></span>
+                                    </div>
+                                )}
+                                {montoSena && (
+                                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                        <span className="text-slate-400 font-semibold"><span>Resta abonar:</span></span>
+                                        <span className="font-bold text-orange-400"><span>${Math.max(0, currentPrice - Number(montoSena)).toLocaleString('es-AR')}</span></span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center pt-1">
+                                    <span className="text-slate-300 font-black uppercase text-[11px]"><span>Total Reserva:</span></span>
+                                    <span className="font-black text-emerald-400 text-base"><span>${currentPrice.toLocaleString('es-AR')}</span></span>
+                                </div>
+
+                                {comprobantePreview && (
+                                    <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                                        <span className="text-slate-400 font-semibold flex items-center gap-1.5"><FileCheck size={13} className="text-emerald-400" /> <span>Comprobante:</span></span>
+                                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20"><span>Adjuntado</span></span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="space-y-3 pt-2">
+                                {confirmedBooking ? (
+                                    <>
+                                        {confirmedBooking.wspUrl && (
+                                            <a
+                                                href={confirmedBooking.wspUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/30"
+                                            >
+                                                <MessageCircle size={18} />
+                                                <span>Reabrir WhatsApp (3855374835)</span>
+                                            </a>
+                                        )}
+
+                                        <button
+                                            onClick={() => { window.location.href = `/${negocioId}`; }}
+                                            className="w-full py-3 px-4 bg-white/10 hover:bg-white/20 text-slate-200 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                                        >
+                                            <Home size={16} />
+                                            <span>Volver al Inicio ({countdown}s)</span>
+                                        </button>
+
+                                        <p className="text-[11px] text-slate-500 text-center animate-pulse">
+                                            <span>Redirigiendo automáticamente a la página principal en </span>
+                                            <span>{countdown}</span>
+                                            <span> segundos...</span>
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={handleBooking}
+                                            disabled={bookingLoading}
+                                            className="w-full py-4 px-6 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                                        >
+                                            {bookingLoading ? (
+                                                <Loader2 className="animate-spin" size={20} />
+                                            ) : (
+                                                <>
+                                                    <Send size={18} />
+                                                    <span>Confirmar y Enviar</span>
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <button
+                                            onClick={() => setShowConfirmModal(false)}
+                                            className="w-full py-3.5 px-6 bg-white/10 hover:bg-white/20 text-slate-200 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                                        >
+                                            <Pencil size={16} />
+                                            <span>Editar algún dato</span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style dangerouslySetInnerHTML={{ __html: `.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }` }} />
         </div>
     );

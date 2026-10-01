@@ -31,3 +31,23 @@ exports.createField = async (req, res) => {
         res.status(400).json({ message: "Error al crear cancha", error: error.message });
     }
 };
+
+/**
+ * Updates an existing field for the business.
+ */
+exports.updateField = async (req, res) => {
+    try {
+        const field = await Field.findOneAndUpdate(
+            { _id: req.params.id, negocioId: req.user.negocioId },
+            req.body,
+            { new: true }
+        );
+        if (!field) {
+            return res.status(404).json({ message: "Cancha no encontrada" });
+        }
+        res.json(field);
+    } catch (error) {
+        res.status(400).json({ message: "Error al actualizar cancha", error: error.message });
+    }
+};
+

@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { Users, Timer, ArrowRight, Utensils, Receipt, Bell } from 'lucide-react';
+import { Users, Timer, ArrowRight, Utensils, Receipt, Bell, Sparkles } from 'lucide-react';
 
 export default function TableCard({ number, activeOrders, mesaEstado, onClick }) {
     const isBusy = activeOrders && activeOrders.length > 0;
     const isExplicitlyOccupied = mesaEstado === 'ocupada';
+    const isCleaning = mesaEstado === 'limpieza' || mesaEstado === 'limpiando';
     
     // Check states
     const hasReadyFood = activeOrders?.some(o => o.estado === 'listo');
@@ -26,7 +27,14 @@ export default function TableCard({ number, activeOrders, mesaEstado, onClick })
     let statusColor = "text-slate-500";
     let IconState = Users;
 
-    if (isBusy) {
+    if (isCleaning) {
+        // High priority: Cleaning required
+        cardStyle = "border-amber-400/80 bg-gradient-to-br from-amber-500/25 via-amber-500/10 to-[#141210] shadow-[0_0_25px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/40";
+        iconStyle = "bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/30 animate-pulse";
+        statusText = "🧹 Requiere Limpieza";
+        statusColor = "text-amber-300";
+        IconState = Sparkles;
+    } else if (isBusy) {
         if (hasReadyFood) {
             // Priority: Has food ready to be served
             cardStyle = "border-rose-500/50 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.15)]";

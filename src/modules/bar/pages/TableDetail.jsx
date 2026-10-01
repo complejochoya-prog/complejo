@@ -12,9 +12,11 @@ import { useMesas } from '../services/MesasContext';
 export default function TableDetail({ table, onClose }) {
     const { barProducts, users, negocioId } = useConfig();
     const { orders, addOrder, updateOrder } = usePedidos();
-    const { marcarMesaOcupada, marcarMesaDisponible } = useMesas();
+    const { marcarMesaOcupada, marcarMesaDisponible, marcarMesaLimpieza } = useMesas();
     const [view, setView] = useState('detail'); // 'detail', 'add_product', 'payment'
     const [isProcessing, setIsProcessing] = useState(false);
+
+    const isCleaning = table.status === 'limpieza' || table.status === 'limpiando';
 
     const tableOrders = (orders || []).filter(o => (String(o.table) === String(table.tableNumber) || String(o.mesa) === String(table.tableNumber)) && o.status !== 'paid');
     
@@ -221,21 +223,27 @@ export default function TableDetail({ table, onClose }) {
         <div className="flex h-full animate-in slide-in-from-bottom duration-500">
             {/* Main Detail Section */}
             <div className={`flex-1 flex flex-col p-10 bg-slate-950 transition-all ${view === 'add_product' ? 'border-r border-white/5 opacity-40' : ''}`}>
-                <div className="flex justify-between items-start mb-10">
+                <div className="flex justify-between items-start mb-8">
                     <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 bg-indigo-500 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-indigo-500/20">
+                        <div className={`w-20 h-20 ${isCleaning ? 'bg-amber-500 shadow-amber-500/20' : 'bg-indigo-500 shadow-indigo-500/20'} rounded-3xl flex items-center justify-center text-white shadow-2xl transition-colors`}>
                             <span className="text-4xl font-black italic tracking-tighter">#{table.tableNumber}</span>
                         </div>
                         <div>
                             <div className="flex items-center gap-3 mb-1">
                                 <h1 className="text-3xl font-black italic tracking-tighter uppercase">Detalle de Mesa</h1>
-                                <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 border border-amber-500/20`}>
-                                    {table.status}
+                                <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                                    isCleaning 
+                                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                                        : table.status === 'ocupada'
+                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                        : 'bg-slate-800 text-slate-400 border border-white/10'
+                                }`}>
+                                    {isCleaning ? '🧹 Para Limpieza' : table.status}
                                 </span>
                             </div>
                             <div className="flex items-center gap-4 text-slate-500">
                                 <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest">
-                                    <Clock size={12} /> Aberta: {table.openedAt ? new Date(table.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                    <Clock size={12} /> Abierta: {table.openedAt ? new Date(table.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                 </div>
                                 <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                                 <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-indigo-400">
@@ -244,10 +252,57 @@ export default function TableDetail({ table, onClose }) {
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all">
-                        <X size={24} />
-                    </button>
+                    
+                    <div className="flex items-center gap-3">
+                        {/* Status Quick Actions */}
+                        {isCleaning ? (
+                            <button 
+                                onClick={async () => {
+                                    if (marcarMesaDisponible) await marcarMesaDisponible(table.tableNumber);
+                                    onClose();
+                                }}
+                                className="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/10"
+                            >
+                                ✨ Marcar Limpia y Disponible
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={async () => {
+                                    if (marcarMesaLimpieza) await marcarMesaLimpieza(table.tableNumber);
+                                    onClose();
+                                }}
+                                className="px-4 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all"
+                            >
+                                🧹 Mandar a Limpieza
+                            </button>
+                        )}
+                        <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+                            <X size={24} />
+                        </button>
+                    </div>
                 </div>
+
+                {/* Banner if Cleaning */}
+                {isCleaning && (
+                    <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">🧹</span>
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-wider text-amber-400">Mesa Marcada para Limpieza</p>
+                                <p className="text-[10px] text-amber-300/70 font-medium">Los mozos tienen la notificación activa en sus dispositivos.</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={async () => {
+                                if (marcarMesaDisponible) await marcarMesaDisponible(table.tableNumber);
+                                onClose();
+                            }}
+                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all"
+                        >
+                            Completar Limpieza
+                        </button>
+                    </div>
+                )}
 
                 <div className="flex-1 overflow-y-auto space-y-6">
                     <div className="flex items-center justify-between">

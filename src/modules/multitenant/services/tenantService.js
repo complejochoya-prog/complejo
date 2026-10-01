@@ -28,7 +28,7 @@ export async function fetchTenants() {
 }
 
 export async function createTenant(tenantData) {
-    const { id, nombre, plan, adminEmail } = tenantData;
+    const { id, nombre, plan, adminEmail, activeModules } = tenantData;
     
     // 1. Create the main business document
     const businessRef = doc(db, 'negocios', id);
@@ -38,7 +38,7 @@ export async function createTenant(tenantData) {
         plan,
         estado: 'activo',
         createdAt: serverTimestamp(),
-        activeModules: ['reservas', 'bar'] // Default modules
+        activeModules: activeModules || ['reservas', 'bar'] // Default fallback
     });
 
     // 2. Create the configuration document

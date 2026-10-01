@@ -8,7 +8,7 @@ export default function CartItem({ item, onUpdateQty, onUpdateObs, onRemove }) {
                 <div className="flex-1">
                     <h4 className="text-white font-black uppercase tracking-tight italic">{item.nombre}</h4>
                     <p className="text-emerald-400 font-bold text-sm leading-none mt-1">
-                        ${(item.precio * item.quantity).toLocaleString()}
+                        ${(Number(item.precio || 0) * Number(item.quantity || 0)).toLocaleString()}
                     </p>
                 </div>
                 <button onClick={() => onRemove(item.id)} className="text-slate-600 hover:text-red-400 p-1">
@@ -35,7 +35,7 @@ export default function CartItem({ item, onUpdateQty, onUpdateObs, onRemove }) {
 
                 <div className="text-right">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Subtotal</span>
-                    <p className="text-xs font-black text-white">${item.precio.toLocaleString()} c/u</p>
+                    <p className="text-xs font-black text-white">${Number(item.precio || 0).toLocaleString()} c/u</p>
                 </div>
             </div>
 

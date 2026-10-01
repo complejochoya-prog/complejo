@@ -72,59 +72,86 @@ export default function useCaja() {
         });
     }, [negocioId]);
 
+    const [processedMovements, setProcessedMovements] = useState([]);
+
     // 3. Recalculate stats whenever session or movements change
     useEffect(() => {
         const newStats = calculateStats(movements, session);
         setStats(newStats);
+        setProcessedMovements(newStats.processedMovements || []);
     }, [movements, session]);
 
-    // 4. History (static)
+    const [lastClosedSession, setLastClosedSession] = useState(null);
+
+    // 4. History (static & last closed session)
     useEffect(() => {
         if (negocioId) {
-            fetchSessionsHistory(negocioId).then(setHistory);
+            fetchSessionsHistory(negocioId).then(data => {
+                setHistory(data);
+                if (data && data.length > 0) {
+                    setLastClosedSession(data[0]);
+                }
+            });
         }
     }, [negocioId]);
 
     const recordMovement = async (data) => {
-        return await serviceAddMovement(negocioId, data);
+        return await serviceAddMovement(negocioId, {
+            ...data,
+            sessionId: session?.id || null
+        });
     };
 
     const removeMovement = async (movementId) => {
         return await serviceDeleteMovement(negocioId, movementId);
     };
 
-    const startSession = async (initialBalance) => {
-        return await serviceOpenCaja(negocioId, initialBalance);
+    const startSession = async (initialBalance, user) => {
+        return await serviceOpenCaja(negocioId, initialBalance, user);
     };
 
-    const endSession = async () => {
-        const res = await serviceCloseCaja(negocioId);
+    const endSession = async (closeDetails = {}) => {
+        const res = await serviceCloseCaja(negocioId, closeDetails.user || 'Administrador', closeDetails);
         if (res.success) {
-            fetchSessionsHistory(negocioId).then(setHistory);
+            fetchSessionsHistory(negocioId).then(data => {
+                setHistory(data);
+                if (data && data.length > 0) {
+                    setLastClosedSession(data[0]);
+                }
+            });
         }
         return res;
     };
 
     const getFilteredMovements = async (filters) => {
-        return fetchAllMovements(filters);
+        return fetchAllMovements(negocioId, filters);
     };
 
     const refreshHistory = () => {
-        if (negocioId) fetchSessionsHistory(negocioId).then(setHistory);
+        if (negocioId) {
+            fetchSessionsHistory(negocioId).then(data => {
+                setHistory(data);
+                if (data && data.length > 0) {
+                    setLastClosedSession(data[0]);
+                }
+            });
+        }
     };
 
     return {
         session,
         stats,
-        movements,
+        movements: processedMovements,
+        allMovements: movements,
         history,
+        lastClosedSession,
         loading,
         recordMovement,
         removeMovement,
         startSession,
         endSession,
         getFilteredMovements,
-        refresh: () => {}, // No longer needed as it is real-time
+        refresh: () => {},
         refreshHistory,
     };
 }

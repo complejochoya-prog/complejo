@@ -39,6 +39,7 @@ const menuGroups = [
             { path: 'espacios', label: 'Espacios', icon: LayoutDashboard },
             { path: 'horarios', label: 'Horarios & Bloqueos', icon: Clock },
             { path: 'admin/promos', label: 'Ofertas & Promos', icon: Tag },
+            { path: 'admin/notificaciones', label: 'Notificaciones & Popups', icon: Bell },
             { path: 'pantallas', label: 'Pantallas TVs', icon: Monitor },
         ]
     },

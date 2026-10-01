@@ -12,7 +12,9 @@ const DEFAULT_ESPACIOS = [
         category: 'Deportes Interés',
         img: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=800',
         active: true,
-        order: 1
+        order: 1,
+        precio: 15000,
+        precio_noche: 18000
     },
     { 
         id: 'esp-2', 
@@ -21,7 +23,9 @@ const DEFAULT_ESPACIOS = [
         category: 'Deportes Interés',
         img: 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=800',
         active: true,
-        order: 2
+        order: 2,
+        precio: 22000,
+        precio_noche: 26000
     },
     { 
         id: 'esp-3', 
@@ -30,7 +34,9 @@ const DEFAULT_ESPACIOS = [
         category: 'Deportes Interés',
         img: 'https://images.unsplash.com/photo-1626245917164-214273c248ca?q=80&w=800',
         active: true,
-        order: 3
+        order: 3,
+        precio: 12000,
+        precio_noche: 15000
     },
 ];
 

@@ -31,6 +31,15 @@ export default function InventarioCocina() {
 
     const handleEdit = (p) => { setTargetProduct(p); setShowForm(true); };
     const handleMovement = (p) => { setTargetProduct(p); setShowStockControl(true); };
+    const handleToggleDisponible = async (p) => {
+        await save({ ...p, disponible: p.disponible === false ? true : false });
+    };
+    const handleGenerateAI = async (p) => {
+        const { buildProductAIImageUrl, preloadAIImage } = await import('../utils/iaPromptHelper');
+        const aiUrl = buildProductAIImageUrl(p.nombre, p.categoria);
+        await preloadAIImage(aiUrl);
+        await save({ ...p, img: aiUrl });
+    };
     const closeModals = () => { setShowForm(false); setShowStockControl(false); setTargetProduct(null); };
 
     return (
@@ -96,7 +105,14 @@ export default function InventarioCocina() {
             {productos.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {productos.map(p => (
-                        <ProductoInventarioCard key={p.id} producto={p} onEdit={handleEdit} onMovement={handleMovement} />
+                        <ProductoInventarioCard 
+                            key={p.id} 
+                            producto={p} 
+                            onEdit={handleEdit} 
+                            onMovement={handleMovement}
+                            onToggleDisponible={handleToggleDisponible}
+                            onGenerateAI={handleGenerateAI}
+                        />
                     ))}
                 </div>
             ) : (
@@ -106,7 +122,7 @@ export default function InventarioCocina() {
                 </div>
             )}
 
-            <ProductoForm isOpen={showForm} onClose={closeModals} onSave={save} initial={targetProduct} predefinedSector={SECTOR} />
+            <ProductoForm isOpen={showForm} onClose={closeModals} onSave={save} initial={targetProduct} predefinedSector={SECTOR} existingCategories={currentCategories} />
             <StockControl isOpen={showStockControl} onClose={closeModals} onSave={addStockMovement} producto={targetProduct} />
         </div>
     );

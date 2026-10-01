@@ -140,26 +140,48 @@ export default function ReservasProvider({ children }) {
         }
     };
 
-    const checkAvailability = (resourceId, date, slotTime, requestedAmount = 1) => {
+    const getCapacityInfo = (resourceId, date, slotTime) => {
         const resource = resources.find(r => r.id === resourceId);
-        let capacity = 1; // Default: exclusive booking
+        let capacity = 1;
         if (resource?.capacidad && !isNaN(parseInt(resource.capacidad))) {
             capacity = parseInt(resource.capacidad);
         }
+        if (capacity <= 1) {
+            // Check if standard court is booked
+            const isBooked = bookings.some(b => 
+                (b.resource?.id === resourceId || b.canchaId === resourceId) && 
+                b.status !== 'Cancelada' && b.status !== 'Cancelado' &&
+                (b.fullDate === date || b.fecha === date) && 
+                (b.time === slotTime || b.hora === slotTime || (b.rentalMode === 'franja' && slotTime >= b.time && slotTime < b.endTime))
+            );
+            return { capacity: 1, booked: isBooked ? 1 : 0, remaining: isBooked ? 0 : 1 };
+        }
 
         const overlappingBookings = bookings.filter(b => 
-            b.resource?.id === resourceId && 
-            b.status !== 'Cancelada' &&
+            (b.resource?.id === resourceId || b.canchaId === resourceId) && 
+            b.status !== 'Cancelada' && b.status !== 'Cancelado' &&
             (b.fullDate === date || b.fecha === date) && 
             (b.time === slotTime || b.hora === slotTime || (b.rentalMode === 'franja' && slotTime >= b.time && slotTime < b.endTime))
         );
 
         let totalPeopleBooked = 0;
         overlappingBookings.forEach(b => {
-            totalPeopleBooked += parseInt(b.cliente?.cantidadPersonas) || 1;
+            totalPeopleBooked += parseInt(b.cliente?.cantidadPersonas || b.cantidadPersonas) || 1;
         });
 
-        if (totalPeopleBooked + requestedAmount > capacity) return false;
+        const remaining = Math.max(0, capacity - totalPeopleBooked);
+        return {
+            capacity,
+            booked: totalPeopleBooked,
+            remaining
+        };
+    };
+
+    const checkAvailability = (resourceId, date, slotTime, requestedAmount = 1) => {
+        const info = getCapacityInfo(resourceId, date, slotTime);
+        if (!info) return true;
+
+        if (info.remaining < requestedAmount) return false;
 
         const live = liveUsage.some(u => 
             u.resourceId === resourceId && 
@@ -167,14 +189,12 @@ export default function ReservasProvider({ children }) {
             u.status !== 'finished' && 
             u.slot === slotTime
         );
-        if (live && capacity === 1) return false; // Simple live usage check for exclusive spaces
+        if (live && info.capacity === 1) return false;
         
         return true;
     };
 
     const getAvailableSlots = (date) => {
-        // Simple implementation for now: return the base schedule
-        // and let checkAvailability handle the "Occupied" status in the UI
         return timeSchedule;
     };
 
@@ -191,6 +211,7 @@ export default function ReservasProvider({ children }) {
         removeResource,
         addBooking,
         checkAvailability,
+        getCapacityInfo,
         getAvailableSlots,
         updateTimeSchedule: async (schedule) => {
             await updateDoc(doc(db, 'negocios', negocioId, 'configuracion', 'general'), {

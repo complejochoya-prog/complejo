@@ -9,7 +9,9 @@ export default function ClientNavbar({ config, user }) {
             </h1>
             <div className="flex items-center gap-3">
                 {user && (
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{user.name.split(' ')[0]}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                        {(user.name || user.nombre || 'Cliente').split(' ')[0]}
+                    </span>
                 )}
                 <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-white/10 shadow-lg">
                     <User size={14} className="text-indigo-400" />

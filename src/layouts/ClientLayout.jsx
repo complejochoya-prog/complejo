@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useParams } from 'react-router-dom';
 import { Home, Calendar, Utensils, Award, User, Menu, X, Bell, Zap, Swords, Trophy } from 'lucide-react';
 import { useConfig } from '../core/services/ConfigContext';
+import NotificationPopupOverlay from '../components/NotificationPopupOverlay';
 
 export default function ClientLayout() {
     const { negocioId } = useParams();
@@ -118,6 +119,7 @@ export default function ClientLayout() {
             {/* Content Container */}
             <main className="flex-1 w-full max-w-7xl mx-auto relative">
                 <Outlet />
+                <NotificationPopupOverlay />
             </main>
 
             {/* Bottom Navigation (Mobile) - Ultra Premium Glass */}

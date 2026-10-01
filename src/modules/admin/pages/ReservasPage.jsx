@@ -20,6 +20,7 @@ import { useReservas } from '../../reservas/services/ReservasContext';
 import { db } from '../../../firebase/config';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { addMovement } from '../../../core/services/cajaService'; // Import integration
+import NuevaReservaModal from '../components/NuevaReservaModal';
 
 export default function ReservasPage() {
     const { negocioId } = useParams();
@@ -28,6 +29,12 @@ export default function ReservasPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDate, setFilterDate] = useState('');
     const [statusFilter, setStatusFilter] = useState('Próximas');
+
+    // Modal state for presencial bookings
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalCanchaId, setModalCanchaId] = useState('');
+    const [modalHora, setModalHora] = useState('');
+    const [modalDate, setModalDate] = useState('');
 
     const canchas = {};
     listEspacios.forEach(c => canchas[c.id] = c.name || c.title || c.nombre || c.id);
@@ -103,6 +110,33 @@ export default function ReservasPage() {
         );
     };
 
+    const handleExportCSV = () => {
+        if (filtered.length === 0) {
+            alert('No hay reservas para exportar.');
+            return;
+        }
+        const headers = ['ID', 'Cliente', 'Telefono', 'Espacio', 'Fecha', 'Hora', 'Precio', 'Metodo Pago', 'Estado'];
+        const rows = filtered.map(r => [
+            r.id,
+            `"${r.cliente?.nombre || ''} ${r.cliente?.apellido || ''}"`,
+            `"${r.cliente?.telefono || ''}"`,
+            `"${canchas[r.canchaId] || 'Espacio'}"`,
+            r.fecha || '',
+            `"${r.hora || ''}"`,
+            r.precio || 0,
+            `"${r.pago || r.metodoPago || ''}"`,
+            r.status || ''
+        ]);
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `reservas_${negocioId}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header */}
@@ -112,16 +146,27 @@ export default function ReservasPage() {
                         GESTIÓN DE <span className="text-indigo-500">RESERVAS</span>
                     </h1>
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">
-                        Control total de turnos y reservas de clientes
+                        Control total de turnos y reservas presenciales y online
                     </p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-5 py-3 rounded-2xl border border-white/5 text-[10px] font-black uppercase tracking-widest transition-all">
+                    <button 
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-5 py-3 rounded-2xl border border-white/5 text-[10px] font-black uppercase tracking-widest transition-all"
+                    >
                         <Download size={16} /> Exportar
                     </button>
-                    <button className="flex items-center gap-2 bg-indigo-500 text-white px-6 py-4 rounded-[24px] text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                        <Calendar size={18} /> Nuevo Turno
+                    <button 
+                        onClick={() => {
+                            setModalCanchaId('');
+                            setModalHora('');
+                            setModalDate(targetDate);
+                            setIsModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-slate-950 px-6 py-4 rounded-[24px] text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                        <Calendar size={18} /> Nueva Reserva
                     </button>
                 </div>
             </div>
@@ -209,15 +254,24 @@ export default function ReservasPage() {
                                 {allHours.map(h => {
                                     const occupied = isSlotOccupied(cId, h);
                                     return (
-                                        <div 
+                                        <button 
                                             key={h} 
-                                            title={`${canchas[cId]} - ${h} hs: ${occupied ? 'OCUPADO' : 'DISPONIBLE'}`}
-                                            className={`w-12 h-10 flex-none rounded-xl border transition-all ${
+                                            type="button"
+                                            onClick={() => {
+                                                setModalCanchaId(cId);
+                                                setModalHora(h);
+                                                setModalDate(targetDate);
+                                                setIsModalOpen(true);
+                                            }}
+                                            title={`${canchas[cId]} - ${h} hs: ${occupied ? 'OCUPADO (Click para ver/cargar)' : 'DISPONIBLE (Click para reservar)'}`}
+                                            className={`w-12 h-10 flex-none rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
                                                 occupied 
-                                                ? 'bg-indigo-600 border-indigo-400 shadow-[0_0_15px_rgba(79,70,229,0.3)] z-10' 
-                                                : 'bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/30'
+                                                ? 'bg-indigo-600 border-indigo-400 shadow-[0_0_15px_rgba(79,70,229,0.3)] z-10 text-white text-[9px] font-black' 
+                                                : 'bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/40 hover:bg-emerald-500/20 active:scale-95'
                                             }`}
-                                        />
+                                        >
+                                            {occupied ? '•' : '+'}
+                                        </button>
                                     );
                                 })}
                             </div>
@@ -249,12 +303,24 @@ export default function ReservasPage() {
                                                 <User size={18} />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-black italic uppercase tracking-tighter text-white">
-                                                    {res.cliente?.nombre} {res.cliente?.apellido}
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-black italic uppercase tracking-tighter text-white">
+                                                        {res.cliente?.nombre} {res.cliente?.apellido}
+                                                    </p>
+                                                    {res.tipo === 'presencial' && (
+                                                        <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[8px] font-black uppercase tracking-wider">
+                                                            Presencial
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] flex items-center gap-1 text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                                                    <Phone size={10} className="text-slate-600" /> {res.cliente?.telefono || 'Sin teléfono'}
                                                 </p>
-                                                <p className="text-[10px] flex items-center gap-1 text-slate-500 font-bold uppercase tracking-widest">
-                                                    <Phone size={10} className="text-slate-600" /> {res.cliente?.telefono}
-                                                </p>
+                                                {res.cliente?.notas && (
+                                                    <p className="text-[9px] text-slate-400 italic font-medium mt-0.5">
+                                                        "{res.cliente.notas}"
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     </td>
@@ -297,6 +363,7 @@ export default function ReservasPage() {
                                             <button 
                                                 onClick={() => updateReservaStatus(res.id, 'confirmada')}
                                                 className={`p-2 bg-white/5 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-500 rounded-xl border border-white/5 transition-all ${res.status === 'confirmada' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                title="Confirmar Reserva"
                                             >
                                                 <CheckCircle2 size={16} />
                                             </button>
@@ -307,14 +374,16 @@ export default function ReservasPage() {
                                             >
                                                 <XCircle size={16} />
                                             </button>
-                                            <a 
-                                                href={`https://wa.me/${res.cliente?.telefono?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${res.cliente?.nombre}, te contactamos de Complejo Giovanni por tu reserva en ${canchas[res.canchaId] || 'el complejo'} el día ${res.fecha} a las ${res.hora} hs. (Ref: ${res.id})`)}`}
-                                                target="_blank" rel="noopener noreferrer"
-                                                className="p-2 bg-white/5 hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-400 rounded-xl border border-white/5 transition-all"
-                                                title="Contactar por WhatsApp"
-                                            >
-                                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            </a>
+                                            {res.cliente?.telefono && (
+                                                <a 
+                                                    href={`https://wa.me/${res.cliente?.telefono?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${res.cliente?.nombre}, te contactamos de Complejo Giovanni por tu reserva en ${canchas[res.canchaId] || 'el complejo'} el día ${res.fecha} a las ${res.hora} hs. (Ref: ${res.id})`)}`}
+                                                    target="_blank" rel="noopener noreferrer"
+                                                    className="p-2 bg-white/5 hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-400 rounded-xl border border-white/5 transition-all"
+                                                    title="Contactar por WhatsApp"
+                                                >
+                                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                                </a>
+                                            )}
                                             <button className="p-2 bg-white/5 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-400 rounded-xl border border-white/5 transition-all">
                                                 <MoreHorizontal size={16} />
                                             </button>
@@ -335,6 +404,18 @@ export default function ReservasPage() {
                     </table>
                 </div>
             </div>
+
+            {/* Nueva Reserva Presencial Modal */}
+            <NuevaReservaModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                negocioId={negocioId}
+                listEspacios={listEspacios}
+                reservas={reservas}
+                initialCanchaId={modalCanchaId}
+                initialHora={modalHora}
+                initialDate={modalDate || targetDate}
+            />
         </div>
     );
 }

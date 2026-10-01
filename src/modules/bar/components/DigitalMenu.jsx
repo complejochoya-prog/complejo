@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useConfig } from '../../core/hooks/useConfig';
 import { usePedidos } from '../services/PedidosContext';
+import { useCart } from '../hooks/useCart.jsx';
 import {
     Search,
     Utensils,
@@ -35,9 +36,10 @@ export default function DigitalMenu() {
         promotions
     } = usePedidos();
 
+    const { cart, addToCart: contextAddToCart, removeFromCart: contextRemoveFromCart, cartTotal, cartCount, clearCart } = useCart();
+
     const [activeCategory, setActiveCategory] = useState('Promos');
     const [searchQuery, setSearchQuery] = useState('');
-    const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     // New Order Fields
@@ -125,9 +127,11 @@ export default function DigitalMenu() {
     const unifiedProducts = [...barProducts, ...activePromationsAsProducts];
 
     const filteredItems = unifiedProducts.filter(item =>
-        String(item.category).toLowerCase() === String(activeCategory).toLowerCase() &&
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        (item.category === 'Promos' || categoryAvailability[item.category] !== false)
+        String(item.category || item.categoria || '').toLowerCase() === String(activeCategory).toLowerCase() &&
+        String(item.name || item.nombre || '').toLowerCase().includes(searchQuery.toLowerCase()) &&
+        ((item.category || item.categoria) === 'Promos' || categoryAvailability[item.category || item.categoria] !== false) &&
+        item.disponible !== false && item.disponible !== 'false' && String(item.disponible).toLowerCase() !== 'false' &&
+        (!item.activar_control_stock || item.activar_control_stock === 'false' || Number(item.stock_actual ?? item.stock ?? 0) > 0)
     );
 
     const addToCart = (product, discount = 0) => {
@@ -140,7 +144,7 @@ export default function DigitalMenu() {
             alert("⚠️ Este producto no se encuentra disponible en este momento");
             return;
         }
-        const inCart = cart.find(item => item.id === product.id)?.quantity || 0;
+        const inCart = cart.find(item => String(item.id) === String(product.id))?.quantity || 0;
 
         if (product.activar_control_stock && (product.stock_actual - inCart) <= 0) {
             alert("Disculpa, no queda más stock de este producto.");
@@ -148,14 +152,7 @@ export default function DigitalMenu() {
         }
 
         const currentPrice = discount > 0 ? product.price * (1 - discount / 100) : product.price;
-
-        setCart(prev => {
-            const existing = prev.find(item => item.id === product.id);
-            if (existing) {
-                return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-            }
-            return [...prev, { ...product, quantity: 1, originalPrice: product.price, price: currentPrice, discount, note: '' }];
-        });
+        contextAddToCart({ ...product, price: currentPrice, precio: currentPrice });
     };
 
     const handleConfirmCombo = (selectedItems) => {
@@ -173,28 +170,13 @@ export default function DigitalMenu() {
             modo_evento: selectedComboForModal.modo_evento || ''
         };
 
-        setCart(prev => {
-            const existing = prev.find(item => item.id === comboRecord.id);
-            if (existing) {
-                return prev.map(item => item.id === comboRecord.id ? { ...item, quantity: item.quantity + 1 } : item);
-            }
-            return [...prev, comboRecord];
-        });
+        contextAddToCart(comboRecord);
         setSelectedComboForModal(null);
     };
 
     const removeFromCart = (productId) => {
-        setCart(prev => {
-            const existing = prev.find(item => item.id === productId);
-            if (existing.quantity > 1) {
-                return prev.map(item => item.id === productId ? { ...item, quantity: item.quantity - 1 } : item);
-            }
-            return prev.filter(item => item.id !== productId);
-        });
+        contextRemoveFromCart(productId);
     };
-
-    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
     const handleCheckout = async () => {
         if (!tableNumber && orderType === 'Local') {
@@ -250,7 +232,7 @@ export default function DigitalMenu() {
             window.open(whatsappUrl, '_blank');
 
             // 3. Clear State
-            setCart([]);
+            clearCart();
             setTableNumber('');
             setNotes('');
             setClientName('');

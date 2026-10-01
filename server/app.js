@@ -2,7 +2,8 @@
  * Main Backend Server
  * Node.js + Express with MongoDB Integration.
  */
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
@@ -60,7 +61,6 @@ app.use(helmet());
 const limiter = require("./middleware/rateLimiter");
 app.use(limiter); // Aplica a todas las rutas
 app.use(xss());
-app.use(mongoSanitize());
 app.use(compression()); // Comprime las respuestas HTTP
 
 // Application logging
@@ -83,7 +83,6 @@ app.use("/api/reservas", reservasRoutes);
 app.use("/api/fields", fieldsRoutes);
 app.use("/api/orders", ordersRoutes);
 app.use("/api/products", productsRoutes);
-app.use("/api/mercado-pago", require("./routes/mercadoPago")); // Added mercadoPago route
 app.use("/api/stats", statsRoutes);
 app.use("/api/negocios", negociosRoutes);
 app.use("/api/subscription", subscriptionRoutes);

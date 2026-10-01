@@ -149,7 +149,7 @@ export default function BarDisplay() {
             <div className="bar-header">
                 <div className="flex items-center gap-4">
                     <Wine size={32} className="text-blue-400" />
-                    <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white">Pantalla de Barra</h1>
+                    <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white">de Barra</h1>
                 </div>
                 <div className="flex gap-8">
                     <div className="text-center"><p className="text-[10px] font-bold text-slate-500 uppercase">Nuevos</p><p className="text-xl font-black text-white">{nuevosPedidos.length}</p></div>

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTenant } from '../hooks/useTenant';
 import PlanCard from '../components/PlanCard';
-import { ChevronLeft, Rocket, Shield, Mail, Database, Loader2 } from 'lucide-react';
+import { ChevronLeft, Rocket, Shield, Mail, Database, Loader2, Check } from 'lucide-react';
+import { ALL_MODULES } from '../../../core/config/modulePlans';
 
 const PLANS = [
     { id: 'Basic', nombre: 'Plan Inicial', precio: 15000, features: ['2 Canchas', 'Bar Básico', 'Reportes 7 días'] },
@@ -18,8 +19,18 @@ export default function CreateTenant() {
         id: '',
         nombre: '',
         adminEmail: '',
-        plan: 'Basic'
+        plan: 'Basic',
+        activeModules: []
     });
+
+    const handleToggleModule = (moduleId) => {
+        setFormData(prev => ({
+            ...prev,
+            activeModules: prev.activeModules.includes(moduleId)
+                ? prev.activeModules.filter(id => id !== moduleId)
+                : [...prev.activeModules, moduleId]
+        }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -120,6 +131,51 @@ export default function CreateTenant() {
                                 onSelect={id => setFormData({ ...formData, plan: id })}
                             />
                         ))}
+                    </div>
+                </div>
+
+                {/* Modules Selection */}
+                <div className="space-y-6">
+                    <h3 className="text-sm font-black uppercase italic tracking-wider text-white px-2 flex items-center gap-2">
+                        <Database size={16} className="text-indigo-400" /> 
+                        Funciones y Módulos Habilitados
+                    </h3>
+                    <div className="bg-slate-900 border border-white/5 p-8 rounded-[32px] shadow-2xl shadow-black/50">
+                        <p className="text-xs text-slate-400 font-medium mb-6 px-1">
+                            Selecciona los módulos que el complejo tendrá permitidos usar (independientemente del plan base).
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {ALL_MODULES.map(mod => (
+                                <button
+                                    key={mod.id}
+                                    type="button"
+                                    onClick={() => handleToggleModule(mod.id)}
+                                    className={`text-left p-4 rounded-2xl border transition-all flex items-start gap-3 ${
+                                        formData.activeModules.includes(mod.id)
+                                        ? 'bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+                                        : 'bg-slate-950 border-white/5 hover:border-white/20'
+                                    }`}
+                                >
+                                    <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5 border transition-colors ${
+                                        formData.activeModules.includes(mod.id)
+                                        ? 'bg-indigo-500 border-indigo-500 text-white'
+                                        : 'bg-slate-900 border-white/10 text-transparent'
+                                    }`}>
+                                        <Check size={12} className="stroke-[3px]" />
+                                    </div>
+                                    <div>
+                                        <h4 className={`text-xs font-black uppercase tracking-widest ${
+                                            formData.activeModules.includes(mod.id) ? 'text-indigo-300' : 'text-slate-300'
+                                        }`}>
+                                            {mod.icon} {mod.name}
+                                        </h4>
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase mt-1 leading-relaxed">
+                                            {mod.desc}
+                                        </p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 

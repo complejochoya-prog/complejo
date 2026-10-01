@@ -39,11 +39,13 @@ import PagosPage from './modules/admin/pages/PagosPage';
 import ClientesPage from './modules/admin/pages/ClientesPage';
 import EspaciosPage from './modules/admin/pages/EspaciosPage';
 import AdminPromosPage from './modules/admin/pages/PromosPage';
+import NotificacionesPage from './modules/admin/pages/NotificacionesPage';
 import PromosPage from './modules/core/pages/PromosPage';
 import ReservasPage from './modules/admin/pages/ReservasPage';
 import HorariosPage from './modules/admin/pages/HorariosPage';
 import EventsPage from './modules/core/pages/EventsPage';
 import MenuBoard from './modules/menu/pages/MenuBoard';
+import AboutProfilePage from './modules/core/pages/AboutProfilePage';
 import MissingPage from './components/MissingPage';
 
 // AI Analytics (FASE 12)
@@ -76,6 +78,7 @@ import CartPage from './modules/bar/pages/CartPage';
 import OrderConfirmation from './modules/bar/pages/OrderConfirmation';
 import KitchenBarScreen from './modules/bar/pages/KitchenBarScreen';
 import KitchenOrderHistory from './modules/bar/pages/KitchenOrderHistory';
+import KitchenErrorBoundary from './modules/bar/components/KitchenErrorBoundary';
 import PedidosProvider from './modules/bar/services/PedidosContext';
 import MesasProvider from './modules/bar/services/MesasContext';
 import ReservasProvider from './modules/reservas/services/ReservasContext';
@@ -214,22 +217,22 @@ function BusinessApp() {
                         <Route element={<ClientLayout />}>
                             <Route index element={<Home />} />
                             <Route path="/" element={<Home />} />
-                            <Route path="menu" element={<BarMenu />} />
-                            <Route path="reservas" element={<BookingFlow />} />
-                            <Route path="app/reservar/:fieldId" element={<BookingFlow />} />
-                            <Route path="torneos" element={<ClientTournaments />} />
-                            <Route path="escuela" element={<EscuelaHome />} />
-                            <Route path="torneos/:tournamentId" element={<TournamentDetail />} />
-                            <Route path="desafio" element={<DesafioPage />} />
+                            <Route path="menu" element={<ModuleGuard moduleId="bar"><BarMenu /></ModuleGuard>} />
+                            <Route path="reservas" element={<ModuleGuard moduleId="reservas"><BookingFlow /></ModuleGuard>} />
+                            <Route path="app/reservar/:fieldId" element={<ModuleGuard moduleId="reservas"><BookingFlow /></ModuleGuard>} />
+                            <Route path="torneos" element={<ModuleGuard moduleId="torneos"><ClientTournaments /></ModuleGuard>} />
+                            <Route path="escuela" element={<ModuleGuard moduleId="escuela"><EscuelaHome /></ModuleGuard>} />
+                            <Route path="torneos/:tournamentId" element={<ModuleGuard moduleId="torneos"><TournamentDetail /></ModuleGuard>} />
+                            <Route path="desafio" element={<ModuleGuard moduleId="torneos"><DesafioPage /></ModuleGuard>} />
                             <Route path="jugadores" element={<MissingPage name="Ranking de Jugadores" />} />
                             <Route path="membresia" element={<MissingPage name="Membresía" />} />
                             <Route path="galeria" element={<MissingPage name="Galería" />} />
-                            <Route path="perfil" element={<MissingPage name="Mi Perfil" />} />
+                            <Route path="perfil" element={<AboutProfilePage />} />
                             
                             {/* Bar Module Routes (Requested URLs) */}
-                            <Route path="carrito" element={<CartPage />} />
-                            <Route path="pedido-confirmado" element={<OrderConfirmation />} />
-                            <Route path="app/pedido-confirmado" element={<OrderConfirmation />} />
+                            <Route path="carrito" element={<ModuleGuard moduleId="bar"><CartPage /></ModuleGuard>} />
+                            <Route path="pedido-confirmado" element={<ModuleGuard moduleId="bar"><OrderConfirmation /></ModuleGuard>} />
+                            <Route path="app/pedido-confirmado" element={<ModuleGuard moduleId="bar"><OrderConfirmation /></ModuleGuard>} />
                             <Route path="promos" element={<PromosPage />} />
                         </Route>
 
@@ -276,6 +279,8 @@ function BusinessApp() {
                             <Route path="horarios" element={<ModuleGuard moduleId="reservas"><HorariosPage /></ModuleGuard>} />
                             <Route path="admin/promos" element={<ModuleGuard moduleId="marketing"><AdminPromosPage /></ModuleGuard>} />
                             <Route path="promos-admin" element={<Navigate to="admin/promos" replace />} />
+                            <Route path="notificaciones" element={<NotificacionesPage />} />
+                            <Route path="admin/notificaciones" element={<NotificacionesPage />} />
                             
                             <Route path="reportes" element={<ModuleGuard moduleId="analytics"><MissingPage name="Reportes" /></ModuleGuard>} />
                             <Route path="editor-home" element={<MissingPage name="Editor de Home" />} />
@@ -295,47 +300,53 @@ function BusinessApp() {
 
                         {/* ── INTERNAL APPS (FASE 7 — Role-specific) ── */}
                         <Route path="bar" element={
-                            <RoleGuard allowedRoles={['admin', 'encargado', 'mozo']}>
-                                <BarDashboard />
-                            </RoleGuard>
+                            <ModuleGuard moduleId="bar">
+                                <RoleGuard allowedRoles={['admin', 'encargado', 'mozo']}>
+                                    <BarDashboard />
+                                </RoleGuard>
+                            </ModuleGuard>
                         } />
 
                         <Route path="cocina" element={
-                            <RoleGuard allowedRoles={['admin', 'encargado', 'cocina']}>
-                                <CocinaApp />
-                            </RoleGuard>
+                            <ModuleGuard moduleId="bar">
+                                <RoleGuard allowedRoles={['admin', 'encargado', 'cocina']}>
+                                    <CocinaApp />
+                                </RoleGuard>
+                            </ModuleGuard>
                         } />
 
                         <Route path="empleado" element={
-                            <RoleGuard allowedRoles={['admin', 'encargado', 'empleado']}>
-                                <EmpleadoApp />
-                            </RoleGuard>
+                            <ModuleGuard moduleId="empleados">
+                                <RoleGuard allowedRoles={['admin', 'encargado', 'empleado']}>
+                                    <EmpleadoApp />
+                                </RoleGuard>
+                            </ModuleGuard>
                         } />
 
                         {/* ── TV / MONITORES (FASE 8) ── */}
                         <Route path="pantalla" element={<TVLayout />}>
                             <Route path="turnos" element={<TVTurnos />} />
-                            <Route path="bar" element={<KitchenBarScreen />} />
+                            <Route path="bar" element={<KitchenErrorBoundary><KitchenBarScreen /></KitchenErrorBoundary>} />
                             <Route path="bar/historial" element={<KitchenOrderHistory />} />
                             <Route path="promos" element={<TVPromos />} />
                             <Route path="ranking" element={<TVRanking />} />
                         </Route>
 
                         {/* ── MOBILE PWA (FASE 10 / 13) ── */}
-                        <Route path="app/mozos/*" element={<MozoRoutes />} />
+                        <Route path="app/mozos/*" element={<ModuleGuard moduleId="bar"><MozoRoutes /></ModuleGuard>} />
                         <Route path="app" element={<PWALayout />}>
                             <Route index element={<ClientHome />} />
-                            <Route path="reserva-confirmada" element={<ReservationSuccess />} />
-                            <Route path="menu" element={<BarMenu />} />
+                            <Route path="reserva-confirmada" element={<ModuleGuard moduleId="reservas"><ReservationSuccess /></ModuleGuard>} />
+                            <Route path="menu" element={<ModuleGuard moduleId="bar"><BarMenu /></ModuleGuard>} />
                             <Route path="bar" element={<Navigate to="menu" replace />} />
-                            <Route path="carrito" element={<CartPage />} />
-                            <Route path="torneos" element={<ClientTournaments />} />
+                            <Route path="carrito" element={<ModuleGuard moduleId="bar"><CartPage /></ModuleGuard>} />
+                            <Route path="torneos" element={<ModuleGuard moduleId="torneos"><ClientTournaments /></ModuleGuard>} />
                             <Route path="perfil" element={<ClientProfile />} />
                         </Route>
                         
                         {/* Delivery App Routes (Standalone, without Client PWA Layout) */}
-                        <Route path="app/delivery/*" element={<DeliveryRoutes />} />
-                        <Route path="admin/app/delivery/*" element={<DeliveryRoutes />} />
+                        <Route path="app/delivery/*" element={<ModuleGuard moduleId="bar"><DeliveryRoutes /></ModuleGuard>} />
+                        <Route path="admin/app/delivery/*" element={<ModuleGuard moduleId="bar"><DeliveryRoutes /></ModuleGuard>} />
 
                         {/* ── EMPLOYEE INTERNAL (FASE 14) ── */}
                         <Route path="staff" element={

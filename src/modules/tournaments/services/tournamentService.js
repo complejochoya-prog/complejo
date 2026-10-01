@@ -4,7 +4,7 @@ import {
     deleteDoc, query, orderBy, serverTimestamp 
 } from 'firebase/firestore';
 
-const DEFAULT_TOURNAMENTS = [
+export const DEFAULT_TOURNAMENTS = [
     { 
         id: 't1', 
         nombre: 'Liga de Verano Fútbol 5', 

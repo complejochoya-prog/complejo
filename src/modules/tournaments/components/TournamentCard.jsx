@@ -20,13 +20,13 @@ export default function TournamentCard({ tournament, onClick, onDelete }) {
             </div>
 
             <div className="flex justify-between items-start mb-4">
-                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${statusColors[tournament.estado]}`}>
-                    {tournament.estado.replace('_', ' ')}
+                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${statusColors[tournament.estado] || statusColors.en_curso}`}>
+                    {(tournament.estado || 'en_curso').replace('_', ' ')}
                 </span>
                 <div className="flex items-center gap-3 relative z-10">
                     <div className="text-indigo-400 flex items-center gap-1">
                         <Layout size={14} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">{tournament.formato}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest">{tournament.formato || 'Liga'}</span>
                     </div>
                     {onDelete && (
                         <button 

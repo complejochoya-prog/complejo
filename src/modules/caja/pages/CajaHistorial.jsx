@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchSessionsHistory } from '../services/cajaService';
+import CajaTicketModal from '../components/CajaTicketModal';
 import {
     ArrowLeft,
     Archive,
@@ -16,12 +17,14 @@ import {
     Smartphone,
     ChevronDown,
     ChevronUp,
+    Printer,
+    FileText
 } from 'lucide-react';
 
 function formatDate(isoStr) {
     if (!isoStr) return '-';
     const d = new Date(isoStr);
-    return d.toLocaleDateString('es-AR', {
+    return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-AR', {
         weekday: 'short',
         day: '2-digit',
         month: '2-digit',
@@ -31,7 +34,8 @@ function formatDate(isoStr) {
 
 function formatTime(isoStr) {
     if (!isoStr) return '-';
-    return new Date(isoStr).toLocaleTimeString('es-AR', {
+    const d = new Date(isoStr);
+    return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString('es-AR', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
@@ -44,20 +48,22 @@ export default function CajaHistorial() {
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState(null);
+    const [selectedTicketSession, setSelectedTicketSession] = useState(null);
 
     useEffect(() => {
+        if (!negocioId) return;
         (async () => {
             setLoading(true);
             try {
-                const data = await fetchSessionsHistory();
-                setSessions(data);
+                const data = await fetchSessionsHistory(negocioId);
+                setSessions(data || []);
             } catch (err) {
                 console.error('Error loading sessions history:', err);
             } finally {
                 setLoading(false);
             }
         })();
-    }, []);
+    }, [negocioId]);
 
     const toggleExpand = (id) => {
         setExpandedId((prev) => (prev === id ? null : id));
@@ -150,7 +156,20 @@ export default function CajaHistorial() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedTicketSession(s);
+                                            }}
+                                            className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg active:scale-95"
+                                            title="Ver e Imprimir Comprobante Oficial"
+                                        >
+                                            <Printer size={13} />
+                                            <span className="hidden sm:inline">Imprimir Reporte</span>
+                                        </button>
+
                                         <div className="text-right">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
                                                 Saldo Final
@@ -260,6 +279,16 @@ export default function CajaHistorial() {
                                                     </div>
                                                 </div>
                                             )}
+
+                                            {/* Notes / Observations */}
+                                            {s.observaciones && (
+                                                <div className="p-3 bg-slate-950/40 rounded-xl border border-white/5 text-xs">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-1">
+                                                        Observaciones
+                                                    </span>
+                                                    <p className="text-slate-300 italic font-medium">"{s.observaciones}"</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -268,6 +297,14 @@ export default function CajaHistorial() {
                     })}
                 </div>
             )}
+
+            {/* Printable Ticket Modal */}
+            <CajaTicketModal
+                isOpen={!!selectedTicketSession}
+                onClose={() => setSelectedTicketSession(null)}
+                sessionData={selectedTicketSession}
+                negocioName="COMPLEJO CHOYA"
+            />
         </div>
     );
 }
