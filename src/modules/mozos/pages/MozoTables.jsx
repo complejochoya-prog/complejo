@@ -146,26 +146,32 @@ export default function MozoTables() {
     );
 
     // CONSOLIDATED TOTAL for the entire table (all unpaid orders)
-    const totalDeudaMesa = activeOrdersForTable.reduce((acc, o) => acc + (o.total || 0), 0);
+    const totalDeudaMesa = activeOrdersForTable.reduce((acc, o) => {
+        const val = Number(o.total ?? o.monto ?? o.precio ?? 0);
+        return acc + (isNaN(val) ? 0 : val);
+    }, 0);
 
     // Handle paying ALL orders for the table at once
     const handlePayTable = () => {
         if (activeOrdersForTable.length === 0) return;
         if ('vibrate' in navigator) navigator.vibrate(30);
         
+        const mozoName = mozo?.name || localStorage.getItem('mozoName') || 'Mozo';
+        const mozoId = mozo?.id || localStorage.getItem('mozoId') || 'mozo_default';
+
         // Create a virtual consolidated order for the PaymentModal
         const consolidatedOrder = {
             id: `mesa_${selectedTable}_${Date.now()}`,
             table: selectedTable,
             mesa: selectedTable,
             total: totalDeudaMesa,
-            // Merge all products from all orders
+            // Merge all products from all orders safely
             products: activeOrdersForTable.flatMap(o => o.products || o.items || []),
             items: activeOrdersForTable.flatMap(o => o.products || o.items || []),
-            mozoName: mozo.name,
-            mozoId: mozo.id,
+            mozoName: mozoName,
+            mozoId: mozoId,
             // Store the individual order IDs so we can mark them all as paid
-            _orderIds: activeOrdersForTable.map(o => o.id),
+            _orderIds: activeOrdersForTable.map(o => o.id).filter(Boolean),
             isConsolidated: true
         };
         
@@ -246,7 +252,7 @@ export default function MozoTables() {
                         </button>
 
                         {/* Table Command Center */}
-                        <div className={`border p-6 rounded-[32px] flex items-center justify-between relative overflow-hidden shadow-2xl transition-all ${
+                        <div className={`border p-4 sm:p-6 rounded-2xl sm:rounded-[32px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden shadow-2xl transition-all ${
                             isCurrentMesaCleaning 
                                 ? 'bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-[#141210] border-amber-500/40 shadow-amber-500/10'
                                 : 'bg-gradient-to-br from-amber-500/10 to-[#141210] border-amber-500/20'
@@ -254,26 +260,26 @@ export default function MozoTables() {
                             <div className="absolute -right-4 -top-4 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none"></div>
                             
                             <div className="relative z-10 flex flex-col gap-2">
-                                <h3 className="text-3xl font-black uppercase tracking-tighter text-white drop-shadow-md mb-0 flex items-center gap-3">
+                                <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-white drop-shadow-md mb-0 flex items-center gap-2 sm:gap-3">
                                     Mesa {selectedTable}
                                     {isCurrentMesaCleaning ? (
-                                        <span className="bg-amber-400 text-slate-950 text-[9px] px-2.5 py-1 rounded-full font-black uppercase shadow-sm flex items-center gap-1 animate-pulse">
+                                        <span className="bg-amber-400 text-slate-950 text-[8.5px] sm:text-[9px] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-black uppercase shadow-sm flex items-center gap-1 animate-pulse">
                                             🧹 Para Limpieza
                                         </span>
                                     ) : currentMesaData?.estado === 'ocupada' ? (
-                                        <span className="bg-indigo-500/20 text-indigo-400 text-[9px] px-2 py-1 rounded-full border border-indigo-500/30">
+                                        <span className="bg-indigo-500/20 text-indigo-400 text-[8.5px] sm:text-[9px] px-2 py-0.5 rounded-full border border-indigo-500/30">
                                             Ocupada
                                         </span>
                                     ) : null}
                                 </h3>
                                 
-                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
                                     <button 
                                         onClick={() => {
                                             if ('vibrate' in navigator) navigator.vibrate(20);
                                             marcarMesaOcupada(selectedTable);
                                         }}
-                                        className="text-[9px] font-black uppercase bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 text-slate-300 transition-colors active:scale-95"
+                                        className="text-[8.5px] sm:text-[9px] font-black uppercase bg-white/5 hover:bg-white/10 px-2.5 sm:px-3 py-1.5 rounded-lg border border-white/10 text-slate-300 transition-colors active:scale-95"
                                     >
                                         Sentar Gente
                                     </button>
@@ -282,7 +288,7 @@ export default function MozoTables() {
                                             if ('vibrate' in navigator) navigator.vibrate(20);
                                             marcarMesaLimpieza(selectedTable);
                                         }}
-                                        className="text-[9px] font-black uppercase bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-lg transition-colors active:scale-95 flex items-center gap-1"
+                                        className="text-[8.5px] sm:text-[9px] font-black uppercase bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors active:scale-95 flex items-center gap-1"
                                     >
                                         🧹 A Limpieza
                                     </button>
@@ -291,13 +297,13 @@ export default function MozoTables() {
                                             if ('vibrate' in navigator) navigator.vibrate(20);
                                             marcarMesaDisponible(selectedTable);
                                         }}
-                                        className="text-[9px] font-black uppercase bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition-colors active:scale-95 flex items-center gap-1"
+                                        className="text-[8.5px] sm:text-[9px] font-black uppercase bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors active:scale-95 flex items-center gap-1"
                                     >
-                                        <Sparkles size={11} /> Liberar / Limpia
+                                        <Sparkles size={11} /> Liberar
                                     </button>
                                 </div>
-                                <p className="text-[11px] text-amber-500/80 font-bold uppercase tracking-widest flex items-center gap-2 mt-2">
-                                    <Receipt size={14} /> Cuenta Total: <span className="text-white font-black text-lg">${totalDeudaMesa.toLocaleString()}</span>
+                                <p className="text-[10px] sm:text-[11px] text-amber-500/80 font-bold uppercase tracking-widest flex items-center gap-2 mt-1 sm:mt-2">
+                                    <Receipt size={13} /> Cuenta Total: <span className="text-white font-black text-base sm:text-lg">${totalDeudaMesa.toLocaleString()}</span>
                                 </p>
                             </div>
                             <button 
@@ -305,21 +311,21 @@ export default function MozoTables() {
                                     if ('vibrate' in navigator) navigator.vibrate(30);
                                     setIsMenuOpen(true);
                                 }}
-                                className="bg-amber-500 text-amber-950 p-4 lg:px-6 lg:py-4 rounded-[20px] text-[11px] font-black uppercase tracking-widest shadow-[0_10px_30px_-10px_rgba(245,158,11,0.5)] active:scale-95 transition-all flex flex-col items-center justify-center gap-1 min-w-[100px] border border-amber-400"
+                                className="bg-amber-500 text-amber-950 p-3 sm:p-4 lg:px-6 lg:py-4 rounded-xl sm:rounded-[20px] text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-[0_10px_30px_-10px_rgba(245,158,11,0.5)] active:scale-95 transition-all flex sm:flex-col items-center justify-center gap-1.5 min-w-[100px] border border-amber-400"
                             >
-                                <Plus size={20} strokeWidth={3} />
+                                <Plus size={18} strokeWidth={3} />
                                 <span>Comandar</span>
                             </button>
                         </div>
 
                         {/* Special Cleaning Callout if in cleaning */}
                         {isCurrentMesaCleaning && (
-                            <div className="p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/40 flex items-center justify-between shadow-[0_0_20px_rgba(245,158,11,0.15)] animate-in fade-in duration-300">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-2xl">🧹</span>
+                            <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-amber-500/15 border-2 border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(245,158,11,0.15)] animate-in fade-in duration-300">
+                                <div className="flex items-center gap-2.5 sm:gap-3">
+                                    <span className="text-xl sm:text-2xl">🧹</span>
                                     <div>
-                                        <p className="text-xs font-black text-amber-300 uppercase tracking-wide">Mesa enviada para Limpieza</p>
-                                        <p className="text-[10px] text-amber-400/80 font-bold uppercase tracking-widest">¿Ya terminaste de limpiarla y prepararla?</p>
+                                        <p className="text-[11px] sm:text-xs font-black text-amber-300 uppercase tracking-wide">Mesa para Limpieza</p>
+                                        <p className="text-[9px] sm:text-[10px] text-amber-400/80 font-bold uppercase tracking-widest">¿Ya terminaste de limpiarla?</p>
                                     </div>
                                 </div>
                                 <button
@@ -327,9 +333,9 @@ export default function MozoTables() {
                                         if ('vibrate' in navigator) navigator.vibrate(30);
                                         await marcarMesaDisponible(selectedTable);
                                     }}
-                                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                                    className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[9px] sm:text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
                                 >
-                                    <Sparkles size={13} /> Marcar como Limpia
+                                    <Sparkles size={12} /> Marcar como Limpia
                                 </button>
                             </div>
                         )}
@@ -353,19 +359,19 @@ export default function MozoTables() {
                                     {/* COBRAR TODA LA MESA - Consolidated billing */}
                                     <button 
                                         onClick={handlePayTable}
-                                        className="w-full py-5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-[20px] text-[12px] font-black uppercase tracking-[0.15em] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.5)] mt-4 border border-emerald-400/30"
+                                        className="w-full py-4 sm:py-5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl sm:rounded-[20px] text-[11px] sm:text-[12px] font-black uppercase tracking-[0.15em] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 sm:gap-3 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.5)] mt-3 sm:mt-4 border border-emerald-400/30"
                                     >
-                                        <CreditCard size={20} strokeWidth={2.5} />
+                                        <CreditCard size={18} strokeWidth={2.5} />
                                         Cobrar Mesa — ${totalDeudaMesa.toLocaleString()}
                                     </button>
                                 </>
                             ) : (
-                                <div className="py-20 flex flex-col items-center justify-center bg-white/[0.02] border border-white/5 rounded-[32px]">
-                                    <div className="w-16 h-16 bg-slate-900 rounded-2xl border border-white/5 flex items-center justify-center mb-6 shadow-xl">
-                                        <Utensils size={28} className="text-slate-600" />
+                                <div className="py-14 sm:py-20 flex flex-col items-center justify-center bg-white/[0.02] border border-white/5 rounded-2xl sm:rounded-[32px]">
+                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-900 rounded-xl sm:rounded-2xl border border-white/5 flex items-center justify-center mb-4 sm:mb-6 shadow-xl">
+                                        <Utensils size={22} className="text-slate-600" />
                                     </div>
-                                    <p className="text-[12px] font-black text-white uppercase tracking-widest">Mesa Limpia</p>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Sin órdenes pendientes</p>
+                                    <p className="text-[11px] sm:text-[12px] font-black text-white uppercase tracking-widest">Mesa Limpia</p>
+                                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Sin órdenes pendientes</p>
                                 </div>
                             )}
                         </div>
@@ -497,58 +503,73 @@ export default function MozoTables() {
 
             {/* Payment Modal — Consolidated per-table billing */}
             {isPaymentOpen && (
-                <div className="fixed z-[300]">
-                    <PaymentModal 
-                        isOpen={isPaymentOpen}
-                        order={orderToPay}
-                        orderTotal={orderToPay?.total || 0}
-                        onClose={() => setIsPaymentOpen(false)}
-                        onConfirm={async (details) => {
+                <PaymentModal 
+                    isOpen={isPaymentOpen}
+                    order={orderToPay}
+                    orderTotal={orderToPay?.total || 0}
+                    onClose={() => setIsPaymentOpen(false)}
+                    onConfirm={async (details) => {
+                        try {
+                            const order = orderToPay;
+                            if (!order) return;
+
+                            const activeMozoName = mozo?.name || localStorage.getItem('mozoName') || 'Mozo';
+                            const tableId = String(order.table || order.mesa || selectedTable || '');
+                            const totalAmount = Number(order.total || totalDeudaMesa || 0);
+
+                            // Register in Caja (non-blocking)
                             try {
-                                // Register in Caja (non-blocking)
+                                const { registerExternalMovement } = await import('../../caja/services/cajaService');
+                                await registerExternalMovement(negocioId, {
+                                    tipo: 'entrada',
+                                    categoria: 'Venta mozo',
+                                    monto: totalAmount,
+                                    descripcion: `Mesa ${tableId} - Cuenta completa - Mozo ${activeMozoName}`,
+                                    metodo_pago: (details.method || 'efectivo').toLowerCase(),
+                                    origen: 'bar',
+                                    mozo: activeMozoName,
+                                    receiptImage: details.receipt || null
+                                });
+                            } catch (cajaErr) {
+                                console.warn('[Mozo] Caja registration failed (non-blocking):', cajaErr);
+                            }
+                            
+                            // Mark ALL orders for this table as paid
+                            const orderIds = order._orderIds || (order.id ? [order.id] : []);
+                            for (const oid of orderIds) {
                                 try {
-                                    const { registerExternalMovement } = await import('../../caja/services/cajaService');
-                                    await registerExternalMovement(negocioId, {
-                                        tipo: 'entrada',
-                                        categoria: 'Venta mozo',
-                                        monto: orderToPay.total,
-                                        descripcion: `Mesa ${String(orderToPay.table || orderToPay.mesa)} - Cuenta completa - Mozo ${mozo.name}`,
-                                        metodo_pago: (details.method || 'efectivo').toLowerCase(),
-                                        origen: 'bar',
-                                        mozo: mozo.name,
-                                        receiptImage: details.receipt
-                                    });
-                                } catch (cajaErr) {
-                                    console.warn('[Mozo] Caja registration failed (non-blocking):', cajaErr);
-                                }
-                                
-                                // Mark ALL orders for this table as paid
-                                const orderIds = orderToPay._orderIds || [orderToPay.id];
-                                for (const oid of orderIds) {
-                                    if (updateOrderStatus) updateOrderStatus(String(oid), 'paid');
-                                    if (updateConfigOrder) updateConfigOrder(String(oid), {
+                                    if (updateOrderStatus) await updateOrderStatus(String(oid), 'paid');
+                                    if (updateConfigOrder) await updateConfigOrder(String(oid), {
                                         status: "paid",
                                         estado: "paid",
                                         paid: true,
-                                        paymentMethod: details.method,
-                                        paidBy: mozo.name,
+                                        paymentMethod: details.method || 'Efectivo',
+                                        paidBy: activeMozoName,
                                         paidAt: new Date().toISOString()
                                     });
+                                } catch (orderErr) {
+                                    console.warn('[Mozo] Error updating order:', oid, orderErr);
                                 }
-                                
-                                // Liberar mesa!
-                                await marcarMesaDisponible(String(orderToPay.table || orderToPay.mesa));
-                                
-                                setIsPaymentOpen(false);
-                                setOrderToPay(null);
-                                setSelectedTable(null); // Regresar de inmediato al mapa de salón
-                            } catch (e) {
-                                console.error(e);
-                                alert("Error al procesar pago");
                             }
-                        }}
-                    />
-                </div>
+                            
+                            // Liberar mesa!
+                            if (tableId && marcarMesaDisponible) {
+                                try {
+                                    await marcarMesaDisponible(tableId);
+                                } catch (mesaErr) {
+                                    console.warn('[Mozo] Error freeing table:', mesaErr);
+                                }
+                            }
+                            
+                            setIsPaymentOpen(false);
+                            setOrderToPay(null);
+                            setSelectedTable(null); // Regresar de inmediato al mapa de salón
+                        } catch (e) {
+                            console.error('[Mozo] Error al procesar pago:', e);
+                            alert("Ocurrió un error al procesar el pago");
+                        }
+                    }}
+                />
             )}
             <style dangerouslySetInnerHTML={{ __html: `
                 .hide-scrollbar::-webkit-scrollbar { display: none; }

@@ -119,8 +119,9 @@ html {
     -webkit-tap-highlight-color: transparent;
   }
   
-  input, button, select, textarea {
-    font-size: 16px; /* Prevent iOS zoom */
+  /* Prevent iOS zoom ONLY on text inputs, never on buttons */
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    font-size: 16px;
   }
   
   .animate-float {

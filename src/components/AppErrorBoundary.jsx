@@ -35,9 +35,15 @@ export default class AppErrorBoundary extends React.Component {
                     <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white mb-2">
                         Ocurrió un inconveniente temporal
                     </h2>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest max-w-sm mb-8 leading-relaxed">
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest max-w-sm mb-4 leading-relaxed">
                         La pantalla se ha protegido automáticamente para evitar pérdidas de datos.
                     </p>
+                    {this.state.error && (
+                        <div className="mb-6 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[11px] font-mono text-left max-w-md w-full overflow-auto max-h-32">
+                            <span className="font-bold block mb-1 text-[9px] uppercase tracking-wider text-rose-500">Detalle técnico:</span>
+                            {this.state.error.message || String(this.state.error)}
+                        </div>
+                    )}
                     <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-xs">
                         <button
                             onClick={this.handleReload}

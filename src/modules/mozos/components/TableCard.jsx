@@ -69,42 +69,42 @@ export default function TableCard({ number, activeOrders, mesaEstado, onClick })
     return (
         <button 
             onClick={() => onClick(number)}
-            className={`relative p-5 rounded-[28px] border-2 transition-all active:scale-[0.97] text-left group overflow-hidden ${cardStyle}`}
+            className={`relative p-3.5 sm:p-5 rounded-2xl sm:rounded-[28px] border-2 transition-all active:scale-[0.97] text-left group overflow-hidden ${cardStyle}`}
         >
             {isBusy && (
-                <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
-                    <IconState size={100} />
+                <div className="absolute top-0 right-0 p-3 sm:p-4 opacity-[0.03]">
+                    <IconState size={50} className="sm:w-20 sm:h-20" />
                 </div>
             )}
 
             <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                    <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center transition-colors ${iconStyle}`}>
-                        <span className="text-xl font-black">{number}</span>
+                <div className="flex items-center justify-between mb-2 sm:mb-4">
+                    <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-[18px] flex items-center justify-center transition-colors ${iconStyle}`}>
+                        <span className="text-base sm:text-xl font-black">{number}</span>
                     </div>
                 </div>
 
-                <div className="space-y-1 mt-6">
-                    <h3 className="text-lg font-black uppercase tracking-tight text-white flex items-center gap-2">
+                <div className="space-y-0.5 sm:space-y-1 mt-2.5 sm:mt-5">
+                    <h3 className="text-sm sm:text-lg font-black uppercase tracking-tight text-white flex items-center gap-1.5">
                         Mesa {number}
                     </h3>
-                    <p className={`text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-1.5 ${statusColor}`}>
+                    <p className={`text-[8.5px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-1.5 ${statusColor}`}>
                         {isBusy && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>}
                         {statusText}
                     </p>
                 </div>
 
                 {isBusy && (
-                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div className="mt-2.5 sm:mt-4 pt-2.5 sm:pt-4 border-t border-white/5 flex items-center justify-between">
                         <div className="flex flex-col">
-                           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Espera</span>
-                           <span className={`text-[11px] font-bold ${statusColor} flex items-center gap-1`}>
-                               <Timer size={12} /> {waitTime}
+                           <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Espera</span>
+                           <span className={`text-[10px] sm:text-[11px] font-bold ${statusColor} flex items-center gap-1`}>
+                               <Timer size={11} /> {waitTime}
                            </span>
                         </div>
                         <div className="flex flex-col text-right">
-                           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Órdenes</span>
-                           <span className="text-[11px] font-bold text-white">
+                           <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Órdenes</span>
+                           <span className="text-[10px] sm:text-[11px] font-bold text-white">
                                {activeOrders.length} item(s)
                            </span>
                         </div>
@@ -112,8 +112,8 @@ export default function TableCard({ number, activeOrders, mesaEstado, onClick })
                 )}
             </div>
 
-            <div className={`absolute top-5 right-5 transition-opacity ${(isBusy || isExplicitlyOccupied) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                <ArrowRight size={18} className={(isBusy || isExplicitlyOccupied) ? statusColor : 'text-white/20'} />
+            <div className={`absolute top-3.5 right-3.5 sm:top-5 sm:right-5 transition-opacity ${(isBusy || isExplicitlyOccupied) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <ArrowRight size={14} className={`sm:w-[18px] sm:h-[18px] ${(isBusy || isExplicitlyOccupied) ? statusColor : 'text-white/20'}`} />
             </div>
         </button>
     );

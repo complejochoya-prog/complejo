@@ -260,29 +260,29 @@ export default function CartPage() {
 
             <div className="relative z-10">
                 {/* ── Header ── */}
-                <header className="px-6 pt-10 pb-4 bg-slate-950/80 backdrop-blur-3xl sticky top-0 z-50 border-b border-white/5 flex items-center gap-5">
-                    <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/10 active:scale-90 text-white transition-all">
-                        <ArrowLeft size={18} />
+                <header className="px-4 sm:px-6 pt-5 sm:pt-10 pb-3 sm:pb-4 bg-slate-950/80 backdrop-blur-3xl sticky top-0 z-50 border-b border-white/5 flex items-center gap-3 sm:gap-5">
+                    <button onClick={() => navigate(-1)} className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/10 active:scale-90 text-white transition-all">
+                        <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
                     </button>
                     <div className="flex-1">
-                        <h1 className="text-2xl font-black uppercase tracking-tighter italic text-white leading-none">MI <span className="text-indigo-400">PEDIDO</span></h1>
-                        <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.3em] mt-1">{config?.nombre || 'Complejo Giovanni'}</p>
+                        <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tighter italic text-white leading-none">MI <span className="text-indigo-400">PEDIDO</span></h1>
+                        <p className="text-[7.5px] sm:text-[8px] text-slate-500 font-bold uppercase tracking-[0.3em] mt-1">{config?.nombre || 'Complejo Giovanni'}</p>
                     </div>
                 </header>
 
-                <div className="p-5 space-y-10 max-w-[600px] mx-auto animate-in slide-in-from-bottom-6 duration-500">
+                <div className="p-3.5 sm:p-5 space-y-6 sm:space-y-10 max-w-[600px] mx-auto animate-in slide-in-from-bottom-6 duration-500">
                     {/* Summary Row */}
                     <OrderSummary total={cartTotal} count={cartCount} />
 
                     {/* Items Section */}
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between px-2">
-                             <h3 className="text-[10px] items-center text-slate-500 font-black uppercase tracking-[0.4em] flex gap-3">
-                                <Zap size={14} className="text-amber-500" /> Detalle de Selección
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center justify-between px-1 sm:px-2">
+                             <h3 className="text-[9px] sm:text-[10px] items-center text-slate-500 font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] flex gap-2 sm:gap-3">
+                                <Zap size={13} className="text-amber-500" /> Detalle de Selección
                              </h3>
-                             <button onClick={() => navigate(`/${negocioId}/app/menu`)} className="text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:underline">+ Agregar Más</button>
+                             <button onClick={() => navigate(`/${negocioId}/app/menu`)} className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider sm:tracking-widest text-indigo-400 hover:underline">+ Agregar Más</button>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-2.5 sm:space-y-3">
                             {cart.map(item => (
                                 <CartItem 
                                     key={item.id} 
@@ -296,15 +296,15 @@ export default function CartPage() {
                     </div>
 
                     {/* Logistics Section */}
-                    <section className="space-y-6 bg-white/[0.02] border border-white/5 p-8 rounded-[40px] backdrop-blur-xl">
-                        <div className="space-y-1">
-                            <h3 className="text-sm font-black italic uppercase tracking-tighter text-white flex items-center gap-3">
-                                <UtensilsCrossed size={18} className="text-emerald-500" /> ¿Cómo prefieres recibirlo?
+                    <section className="space-y-4 sm:space-y-6 bg-white/[0.02] border border-white/5 p-4 sm:p-8 rounded-2xl sm:rounded-[40px] backdrop-blur-xl">
+                        <div className="space-y-0.5 sm:space-y-1">
+                            <h3 className="text-xs sm:text-sm font-black italic uppercase tracking-tight text-white flex items-center gap-2 sm:gap-3">
+                                <UtensilsCrossed size={16} className="text-emerald-500" /> ¿Cómo prefieres recibirlo?
                             </h3>
-                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Selecciona una modalidad para continuar</p>
+                            <p className="text-[8.5px] sm:text-[9px] text-slate-500 font-bold uppercase tracking-wider">Selecciona una modalidad para continuar</p>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
                             {[
                                 { id: 'Comer en el complejo', icon: Landmark, label: 'En el Bar' },
                                 { id: 'Para llevar', icon: ShoppingBag, label: 'Carry' },
@@ -313,14 +313,14 @@ export default function CartPage() {
                                 <button
                                     key={type.id}
                                     onClick={() => { setOrderType(type.id); setFieldErrors({}); }}
-                                    className={`relative p-5 rounded-3xl border flex flex-col items-center justify-center gap-3 transition-all ${
+                                    className={`relative p-3 sm:p-5 rounded-xl sm:rounded-3xl border flex flex-col items-center justify-center gap-1.5 sm:gap-3 transition-all ${
                                         orderType === type.id 
                                         ? 'bg-emerald-500 border-emerald-400 shadow-[0_15px_30px_rgba(16,185,129,0.2)]' 
                                         : 'bg-slate-900/50 border-white/5 text-slate-500 opacity-60'
                                     }`}
                                 >
-                                    <type.icon size={20} className={orderType === type.id ? 'text-slate-950' : 'text-slate-700'} />
-                                    <span className={`text-[10px] font-black uppercase tracking-widest text-center ${orderType === type.id ? 'text-slate-950' : 'text-slate-600'}`}>{type.label}</span>
+                                    <type.icon size={18} className={`sm:w-5 sm:h-5 ${orderType === type.id ? 'text-slate-950' : 'text-slate-700'}`} />
+                                    <span className={`text-[8.5px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest text-center ${orderType === type.id ? 'text-slate-950' : 'text-slate-600'}`}>{type.label}</span>
                                 </button>
                             ))}
                         </div>

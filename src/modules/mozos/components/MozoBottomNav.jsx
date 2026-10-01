@@ -24,19 +24,19 @@ export default function MozoBottomNav({ negocioId }) {
                         onClick={triggerHaptic}
                         end={item.path === `/${negocioId}/app/mozos`}
                         className={({ isActive }) => `
-                            relative flex flex-col items-center justify-center p-3 rounded-2xl w-full transition-all duration-300
-                            ${isActive ? 'text-amber-400 -translate-y-2' : 'text-slate-500 hover:text-white'}
+                            relative flex flex-col items-center justify-center p-1.5 sm:p-2.5 rounded-xl w-full transition-all duration-300
+                            ${isActive ? 'text-amber-400 -translate-y-1' : 'text-slate-500 hover:text-white'}
                         `}
                     >
                         {({ isActive }) => (
                             <>
                                 <div className={`
-                                    relative p-2.5 rounded-[18px] transition-all duration-500
-                                    ${isActive ? 'bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)] border border-amber-500/20' : 'bg-transparent'}
+                                    relative p-1.5 sm:p-2 rounded-xl sm:rounded-2xl transition-all duration-500
+                                    ${isActive ? 'bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.2)] border border-amber-500/20' : 'bg-transparent'}
                                 `}>
-                                    <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'drop-shadow-md' : ''} />
+                                    <item.icon size={19} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'drop-shadow-md' : ''} />
                                 </div>
-                                <span className={`text-[9px] font-black uppercase tracking-widest mt-1.5 transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-0 h-0 hidden'}`}>
+                                <span className={`text-[8.5px] font-black uppercase tracking-wider mt-1 transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-0 h-0 hidden'}`}>
                                     {item.label}
                                 </span>
                             </>
