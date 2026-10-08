@@ -7,11 +7,23 @@ import { fetchPromos } from '../../admin/services/promosService';
 
 export default function Home() {
     const { negocioId } = useParams();
-    const { config } = useConfig();
+    const { config, activeModules = [] } = useConfig();
     const [animate, setAnimate] = useState(false);
     const [espacios, setEspacios] = useState([]);
     const [promos, setPromos] = useState([]);
     const [weather, setWeather] = useState({ temp: '--', condition: 'Cargando...', icon: CloudSun });
+
+    const cleanWhatsApp = (phone) => {
+        if (!phone) return '5493855374835';
+        let clean = phone.toString().replace(/[^0-9]/g, '');
+        if (clean.startsWith('0')) clean = clean.substring(1);
+        if (!clean.startsWith('549') && !clean.startsWith('54') && clean.length === 10) {
+            clean = '549' + clean;
+        }
+        return clean;
+    };
+
+    const businessWhatsApp = cleanWhatsApp(config?.whatsapp || config?.telefono || '5493855374835');
 
     useEffect(() => { 
         // Initial delay for smooth entrance
@@ -247,7 +259,7 @@ export default function Home() {
                                 Celebra cumpleaños, eventos corporativos o torneos privados con nosotros.
                             </p>
                             <a 
-                                href={`https://wa.me/${config?.telefono || '5493834555555'}?text=Hola! Quiero planificar un evento en ${businessName}`} 
+                                href={`https://wa.me/${businessWhatsApp}?text=${encodeURIComponent(`Hola! Quiero planificar un evento en ${businessName}`)}`} 
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="mt-auto inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-500 hover:text-white transition-colors"
@@ -257,57 +269,60 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {/* Desafío Box */}
-                    <div className="col-span-1 lg:col-span-12 relative rounded-[40px] overflow-hidden p-8 lg:p-14 group flex flex-col lg:flex-row items-center gap-8 lg:gap-10 bg-gradient-to-r from-red-950 to-black border border-red-900/50">
-                        {/* Removed noise.svg to prevent 404 */}
-                        <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-red-600/20 blur-[80px] rounded-full pointer-events-none" />
-                        
-                        <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-3xl bg-red-600/10 border border-red-500/20 flex items-center justify-center shrink-0 relative z-10 shadow-inner">
-                            <Swords size={48} className="text-red-500" />
-                        </div>
-                        
-                        <div className="relative z-10 flex-1 text-center lg:text-left">
-                            <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter italic text-white mb-2">
-                                ZONA DE DESAFÍO
-                            </h3>
-                            <p className="text-sm lg:text-base font-medium text-red-200/60 max-w-2xl mx-auto lg:mx-0">
-                                ¿Te falta uno para el partido? ¿Querés medirte contra otros equipos? Entrá a la bolsa de jugadores y encontrá tu próximo reto.
-                            </p>
-                        </div>
+                    {/* Desafío Box (Condicional) */}
+                    {(activeModules.includes('desafio') || activeModules.includes('torneos')) && (
+                        <div className="col-span-1 lg:col-span-12 relative rounded-[40px] overflow-hidden p-8 lg:p-14 group flex flex-col lg:flex-row items-center gap-8 lg:gap-10 bg-gradient-to-r from-red-950 to-black border border-red-900/50">
+                            <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-red-600/20 blur-[80px] rounded-full pointer-events-none" />
+                            
+                            <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-3xl bg-red-600/10 border border-red-500/20 flex items-center justify-center shrink-0 relative z-10 shadow-inner">
+                                <Swords size={48} className="text-red-500" />
+                            </div>
+                            
+                            <div className="relative z-10 flex-1 text-center lg:text-left">
+                                <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter italic text-white mb-2">
+                                    ZONA DE DESAFÍO
+                                </h3>
+                                <p className="text-sm lg:text-base font-medium text-red-200/60 max-w-2xl mx-auto lg:mx-0">
+                                    ¿Te falta uno para el partido? ¿Querés medirte contra otros equipos? Entrá a la bolsa de jugadores y encontrá tu próximo reto.
+                                </p>
+                            </div>
 
-                        <div className="relative z-10 shrink-0">
-                            <Link to={`${basePath}/desafio`} className="inline-flex items-center justify-center px-10 py-5 bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-500 transition-colors shadow-lg shadow-red-900/50">
-                                Ingresar al Desafío
-                            </Link>
+                            <div className="relative z-10 shrink-0">
+                                <Link to={`${basePath}/desafio`} className="inline-flex items-center justify-center px-10 py-5 bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-500 transition-colors shadow-lg shadow-red-900/50">
+                                    Ingresar al Desafío
+                                </Link>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </section>
 
-                {/* Escuela de Fútbol Bento Section */}
-                <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-                    <div className="col-span-1 lg:col-span-12 relative rounded-[40px] overflow-hidden p-8 lg:p-14 group flex flex-col lg:flex-row items-center gap-8 lg:gap-10 bg-gradient-to-r from-blue-950 to-black border border-blue-900/50">
-                        <div className="absolute -right-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/20 blur-[80px] rounded-full pointer-events-none" />
-                        
-                        <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-3xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shrink-0 relative z-10 shadow-inner">
-                            <Trophy size={48} className="text-blue-500" />
-                        </div>
-                        
-                        <div className="relative z-10 flex-1 text-center lg:text-left">
-                            <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter italic text-white mb-2">
-                                ESCUELA DE FÚTBOL
-                            </h3>
-                            <p className="text-sm lg:text-base font-medium text-blue-200/60 max-w-2xl mx-auto lg:mx-0">
-                                Formación integral para los futuros cracks. Entrenamientos dinámicos, valores deportivos y la mejor infraestructura para que aprendan jugando.
-                            </p>
-                        </div>
+                {/* Escuela de Fútbol Section (Condicional) */}
+                {activeModules.includes('escuela') && (
+                    <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                        <div className="col-span-1 lg:col-span-12 relative rounded-[40px] overflow-hidden p-8 lg:p-14 group flex flex-col lg:flex-row items-center gap-8 lg:gap-10 bg-gradient-to-r from-blue-950 to-black border border-blue-900/50">
+                            <div className="absolute -right-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/20 blur-[80px] rounded-full pointer-events-none" />
+                            
+                            <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-3xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shrink-0 relative z-10 shadow-inner">
+                                <Trophy size={48} className="text-blue-500" />
+                            </div>
+                            
+                            <div className="relative z-10 flex-1 text-center lg:text-left">
+                                <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter italic text-white mb-2">
+                                    ESCUELA DE FÚTBOL
+                                </h3>
+                                <p className="text-sm lg:text-base font-medium text-blue-200/60 max-w-2xl mx-auto lg:mx-0">
+                                    Formación integral para los futuros cracks. Entrenamientos dinámicos, valores deportivos y la mejor infraestructura para que aprendan jugando.
+                                </p>
+                            </div>
 
-                        <div className="relative z-10 shrink-0">
-                            <Link to={`${basePath}/escuela`} className="inline-flex items-center justify-center px-10 py-5 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50">
-                                Info e Inscripciones
-                            </Link>
+                            <div className="relative z-10 shrink-0">
+                                <Link to={`${basePath}/escuela`} className="inline-flex items-center justify-center px-10 py-5 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50">
+                                    Info e Inscripciones
+                                </Link>
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                )}
 
                 {/* The Bar Section - Full Width Image CTA */}
                 <section className="relative h-[500px] lg:h-[600px] rounded-[40px] lg:rounded-[48px] overflow-hidden group">

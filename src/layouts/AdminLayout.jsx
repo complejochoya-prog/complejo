@@ -36,6 +36,7 @@ const menuGroups = [
         label: 'Configuración',
         icon: Settings,
         items: [
+            { path: 'configuracion', label: 'Ajustes & WhatsApp', icon: Settings },
             { path: 'espacios', label: 'Espacios', icon: LayoutDashboard },
             { path: 'horarios', label: 'Horarios & Bloqueos', icon: Clock },
             { path: 'admin/promos', label: 'Ofertas & Promos', icon: Tag },

@@ -70,63 +70,101 @@ export function ConfigProvider({ children }) {
             try {
                 const { ALL_MODULES, getModulesByPlan } = await import('../config/modulePlans');
                 
-                const configRef = doc(db, 'negocios', negocioId, 'configuracion', 'general');
-                const configSnap = await getDoc(configRef);
+                let loadedConfig = null;
+                try {
+                    const configRef = doc(db, 'negocios', negocioId, 'configuracion', 'general');
+                    const configSnap = await getDoc(configRef);
+                    if (configSnap.exists()) {
+                        loadedConfig = configSnap.data();
+                    }
+                } catch (dbErr) {
+                    console.warn("Firestore config read error, using cache/defaults:", dbErr);
+                }
 
-                let currentPlan = 'Free';
+                let currentPlan = 'Premium';
                 let rawActiveModules = [];
 
-                if (configSnap.exists()) {
-                    const configData = configSnap.data();
-                    setConfig(configData);
-                    currentPlan = configData.plan || 'Free';
-                    rawActiveModules = configData.activeModules || [];
+                if (loadedConfig) {
+                    setConfig(loadedConfig);
+                    currentPlan = loadedConfig.plan || 'Premium';
+                    rawActiveModules = loadedConfig.activeModules || [];
+                    try {
+                        localStorage.setItem(`complejo_config_${negocioId}`, JSON.stringify(loadedConfig));
+                    } catch(e) {}
                 } else {
-                    const mocks = {
-                        'giovanni': { nombre: 'Complejo Giovanni', plan: 'Premium' },
-                        'padel-pro': { nombre: 'Padel Pro Center', plan: 'Basic' },
-                        'tennis-elite': { nombre: 'Tennis Elite Academy', plan: 'Pro' },
-                        'soccer-field': { nombre: 'Soccer Field 5', plan: 'Free' }
-                    };
+                    // Check localStorage
+                    let localConfig = null;
+                    try {
+                        const cached = localStorage.getItem(`complejo_config_${negocioId}`);
+                        if (cached) localConfig = JSON.parse(cached);
+                    } catch(e) {}
 
-                    if (mocks[negocioId]) {
-                        currentPlan = mocks[negocioId].plan;
-                        setConfig(mocks[negocioId]);
+                    if (localConfig) {
+                        loadedConfig = localConfig;
+                        setConfig(localConfig);
+                        currentPlan = localConfig.plan || 'Premium';
+                        rawActiveModules = localConfig.activeModules || [];
                     } else {
-                        // Bloquear acceso a complejos que no existen en Firebase ni en mocks
-                        setError(`Complejo no encontrado o no autorizado: ${negocioId}`);
-                        setConfig(null);
-                        setLoading(false);
-                        return; // Detenemos la ejecución aquí
+                        const mocks = {
+                            'giovanni': { nombre: 'Complejo Giovanni', plan: 'Premium', whatsapp: '5493855374835', telefono: '3855374835' },
+                            'oasispadel': { nombre: 'Oasis Pádel', plan: 'Premium', whatsapp: '5493855374835', telefono: '3855374835' },
+                            'padel-pro': { nombre: 'Padel Pro Center', plan: 'Basic', whatsapp: '5493855374835', telefono: '3855374835' },
+                            'tennis-elite': { nombre: 'Tennis Elite Academy', plan: 'Pro', whatsapp: '5493855374835', telefono: '3855374835' },
+                            'soccer-field': { nombre: 'Soccer Field 5', plan: 'Free', whatsapp: '5493855374835', telefono: '3855374835' }
+                        };
+
+                        const formattedName = negocioId.charAt(0).toUpperCase() + negocioId.slice(1).replace(/-/g, ' ');
+                        const fallbackConfig = mocks[negocioId] || {
+                            nombre: formattedName,
+                            plan: 'Premium',
+                            whatsapp: '5493855374835',
+                            telefono: '3855374835',
+                            activeModules: ['reservas', 'bar', 'caja', 'espacios', 'horarios', 'promos', 'notificaciones', 'pantallas', 'marketing', 'inventario', 'empleados', 'clientes', 'finanzas']
+                        };
+
+                        setConfig(fallbackConfig);
+                        currentPlan = fallbackConfig.plan;
+                        rawActiveModules = fallbackConfig.activeModules || [];
+                        try {
+                            localStorage.setItem(`complejo_config_${negocioId}`, JSON.stringify(fallbackConfig));
+                        } catch(e) {}
+
+                        // Persist to firestore in background
+                        try {
+                            setDoc(doc(db, 'negocios', negocioId, 'configuracion', 'general'), fallbackConfig, { merge: true });
+                        } catch(e) {}
                     }
                 }
 
-                if (negocioId === 'giovanni') {
-                    setActiveModules(ALL_MODULES.map(m => m.id));
+                if (negocioId === 'giovanni' || currentPlan === 'Premium') {
+                    setActiveModules(rawActiveModules.length > 0 ? rawActiveModules : ALL_MODULES.map(m => m.id));
                 } else {
                     const baseModules = getModulesByPlan(currentPlan);
                     const finalModules = [...new Set([...baseModules, ...rawActiveModules])];
                     setActiveModules(finalModules);
                 }
 
-                const subRef = doc(db, 'saas_suscripciones', negocioId);
-                const subSnap = await getDoc(subRef);
+                try {
+                    const subRef = doc(db, 'saas_suscripciones', negocioId);
+                    const subSnap = await getDoc(subRef);
 
-                if (subSnap.exists()) {
-                    const subData = subSnap.data();
-                    setSubscription(subData);
-                    const today = new Date().toISOString().split('T')[0];
-                    const expired = subData.estado === 'vencido' || subData.estado === 'suspendido' || (subData.fecha_vencimiento < today);
-                    setIsExpired(expired);
-                } else {
+                    if (subSnap.exists()) {
+                        const subData = subSnap.data();
+                        setSubscription(subData);
+                        const today = new Date().toISOString().split('T')[0];
+                        const expired = subData.estado === 'vencido' || subData.estado === 'suspendido' || (subData.fecha_vencimiento < today);
+                        setIsExpired(expired);
+                    } else {
+                        setIsExpired(false);
+                    }
+                } catch(subErr) {
                     setIsExpired(false);
                 }
             } catch (err) {
                 console.error("Business data load error:", err);
-                if (negocioId === 'giovanni') {
-                    setConfig({ nombre: 'Complejo Giovanni', activeModules: ['reservas', 'bar', 'torneos'] });
-                    setActiveModules(['reservas', 'bar', 'torneos']);
-                }
+                const fallback = { nombre: negocioId, activeModules: ['reservas', 'bar', 'caja', 'espacios', 'horarios', 'promos'] };
+                setConfig(fallback);
+                setActiveModules(fallback.activeModules);
             } finally {
                 setLoading(false);
             }
@@ -134,6 +172,33 @@ export function ConfigProvider({ children }) {
 
         loadBusinessData();
     }, [negocioId]);
+
+    const updateConfig = useCallback(async (newConfig) => {
+        if (!negocioId) return { success: false, error: 'No negocioId' };
+        try {
+            const merged = { ...(config || {}), ...newConfig };
+            setConfig(merged);
+            if (merged.activeModules) {
+                setActiveModules(merged.activeModules);
+            }
+            try {
+                localStorage.setItem(`complejo_config_${negocioId}`, JSON.stringify(merged));
+                window.dispatchEvent(new Event('storage_config'));
+            } catch(e) {}
+
+            try {
+                const configRef = doc(db, 'negocios', negocioId, 'configuracion', 'general');
+                await setDoc(configRef, merged, { merge: true });
+            } catch(e) {
+                console.warn("Firestore config save error:", e);
+            }
+            setLastSync(Date.now());
+            return { success: true };
+        } catch (err) {
+            console.error("Error saving config:", err);
+            return { success: false, error: err.message };
+        }
+    }, [negocioId, config]);
 
     const loadOrders = useCallback(async () => {
         if (!negocioId) return;
@@ -181,7 +246,6 @@ export function ConfigProvider({ children }) {
                     id: `table-${i+1}`
                 }));
                 setTables(initial);
-                // Guardar las mesas por defecto en Firebase para que existan realmente
                 initial.forEach(async (t) => {
                     try {
                         await tablasService.updateTabla(negocioId, t.tableNumber, { status: 'disponible' });
@@ -224,8 +288,10 @@ export function ConfigProvider({ children }) {
         barProducts,
         tables, 
         lastSync, 
+        updateConfig,
+        updateBusinessInfo: updateConfig,
         forceSync: () => setLastSync(Date.now())
-    }), [negocioId, config, subscription, isExpired, activeModules, loading, error, orders, users, barProducts, tables, lastSync]);
+    }), [negocioId, config, subscription, isExpired, activeModules, loading, error, orders, users, barProducts, tables, lastSync, updateConfig]);
 
     return (
         <ConfigContext.Provider value={value}>

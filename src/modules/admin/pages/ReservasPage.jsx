@@ -376,7 +376,7 @@ export default function ReservasPage() {
                                             </button>
                                             {res.cliente?.telefono && (
                                                 <a 
-                                                    href={`https://wa.me/${res.cliente?.telefono?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${res.cliente?.nombre}, te contactamos de Complejo Giovanni por tu reserva en ${canchas[res.canchaId] || 'el complejo'} el día ${res.fecha} a las ${res.hora} hs. (Ref: ${res.id})`)}`}
+                                                    href={`https://wa.me/${res.cliente?.telefono?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${res.cliente?.nombre}, te contactamos de ${config?.nombre || 'nuestro complejo'} por tu reserva en ${canchas[res.canchaId] || 'el complejo'} el día ${res.fecha} a las ${res.hora} hs. (Ref: ${res.id})`)}`}
                                                     target="_blank" rel="noopener noreferrer"
                                                     className="p-2 bg-white/5 hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-400 rounded-xl border border-white/5 transition-all"
                                                     title="Contactar por WhatsApp"

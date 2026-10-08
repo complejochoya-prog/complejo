@@ -21,7 +21,19 @@ import {
 
 export default function useCaja() {
     const { negocioId } = useParams();
-    const [session, setSession] = useState(null);
+    const [session, setSession] = useState(() => {
+        if (!negocioId) return null;
+        try {
+            const cached = localStorage.getItem(`complejo_caja_session_${negocioId}`);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (parsed && (parsed.status === 'open' || parsed.isOpen)) {
+                    return { ...parsed, isOpen: true };
+                }
+            }
+        } catch(e) {}
+        return null;
+    });
     const [stats, setStats] = useState({
         totalBalance: 0,
         ingresosHoy: 0,
@@ -42,10 +54,53 @@ export default function useCaja() {
     useEffect(() => {
         if (!negocioId) return;
         const q = query(collection(db, 'negocios', negocioId, 'caja_sesiones'), where('status', '==', 'open'), limit(1));
-        return onSnapshot(q, (snap) => {
-            const data = snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
-            setSession(data ? { ...data, isOpen: true } : null);
+        const unsub = onSnapshot(q, (snap) => {
+            if (!snap.empty) {
+                const data = { id: snap.docs[0].id, ...snap.docs[0].data(), isOpen: true };
+                setSession(data);
+                try {
+                    localStorage.setItem(`complejo_caja_session_${negocioId}`, JSON.stringify(data));
+                } catch(e) {}
+            } else {
+                // If snap is empty, check if opened locally very recently (< 5 seconds) before clearing
+                const cached = localStorage.getItem(`complejo_caja_session_${negocioId}`);
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        const elapsed = Date.now() - (parsed.openedAtMs || 0);
+                        if (elapsed < 5000) {
+                            return;
+                        }
+                    } catch(e) {}
+                }
+                setSession(null);
+                try {
+                    localStorage.removeItem(`complejo_caja_session_${negocioId}`);
+                } catch(e) {}
+            }
+        }, (err) => {
+            console.error("Caja session listener error:", err);
         });
+
+        const handleStorageCaja = () => {
+            try {
+                const cached = localStorage.getItem(`complejo_caja_session_${negocioId}`);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (parsed && (parsed.status === 'open' || parsed.isOpen)) {
+                        setSession({ ...parsed, isOpen: true });
+                    }
+                } else {
+                    setSession(null);
+                }
+            } catch(e) {}
+        };
+        window.addEventListener('storage_caja', handleStorageCaja);
+
+        return () => {
+            unsub();
+            window.removeEventListener('storage_caja', handleStorageCaja);
+        };
     }, [negocioId]);
 
     useEffect(() => {

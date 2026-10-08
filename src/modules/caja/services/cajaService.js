@@ -82,11 +82,22 @@ export const calculateStats = (movements, session) => {
 
 export const fetchCajaStatus = async (negocioId) => {
     try {
-        const { session, movements } = await cajaService.getCajaStatus(negocioId);
+        let { session, movements } = await cajaService.getCajaStatus(negocioId);
+        if (!session && negocioId) {
+            try {
+                const cached = localStorage.getItem(`complejo_caja_session_${negocioId}`);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (parsed && (parsed.status === 'open' || parsed.isOpen)) {
+                        session = parsed;
+                    }
+                }
+            } catch(e) {}
+        }
         const stats = calculateStats(movements, session);
         
         return {
-            session: session ? { ...session, isOpen: session.status === 'open' } : null,
+            session: session ? { ...session, isOpen: session.status === 'open' || session.isOpen } : null,
             stats,
             movements: stats.processedMovements
         };
@@ -132,6 +143,12 @@ export const closeCaja = async (negocioId, user = 'Administrador', closeDetails 
             : (efectivoReal - efectivoEsperado);
             
         const finalBalance = efectivoReal; // Available cash to carry over to next day
+
+        // Clear local storage first
+        try {
+            localStorage.removeItem(`complejo_caja_session_${negocioId}`);
+            window.dispatchEvent(new Event('storage_caja'));
+        } catch(e) {}
 
         const sessionRef = doc(db, 'negocios', negocioId, 'caja_sesiones', status.session.id);
         

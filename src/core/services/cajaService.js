@@ -69,13 +69,29 @@ export const openCaja = async (negocioId, initialBalance, user) => {
         id,
         negocioId,
         status: 'open',
+        isOpen: true,
         openedAt: serverTimestamp(),
         openedAtMs: now,
         openedBy: user || 'Cajero',
         initialBalance: Number(initialBalance) || 0,
         createdAt: new Date().toISOString()
     };
-    await setDoc(doc(db, 'negocios', negocioId, 'caja_sesiones', id), session);
+    
+    // Save locally first for instantaneous persistence across reloads
+    try {
+        localStorage.setItem(`complejo_caja_session_${negocioId}`, JSON.stringify({
+            ...session,
+            openedAt: new Date().toISOString(),
+            openedAtMs: now
+        }));
+        window.dispatchEvent(new Event('storage_caja'));
+    } catch(e) {}
+
+    try {
+        await setDoc(doc(db, 'negocios', negocioId, 'caja_sesiones', id), session);
+    } catch(err) {
+        console.warn("Firestore openCaja warning:", err);
+    }
     return { success: true, session };
 };
 

@@ -39,6 +39,7 @@ import AnalyticsPage from './modules/admin/pages/AnalyticsPage';
 import PagosPage from './modules/admin/pages/PagosPage';
 import ClientesPage from './modules/admin/pages/ClientesPage';
 import EspaciosPage from './modules/admin/pages/EspaciosPage';
+import ConfiguracionPage from './modules/admin/pages/ConfiguracionPage';
 import AdminPromosPage from './modules/admin/pages/PromosPage';
 import NotificacionesPage from './modules/admin/pages/NotificacionesPage';
 import PromosPage from './modules/core/pages/PromosPage';
@@ -220,6 +221,7 @@ function BusinessApp() {
                             <Route path="/" element={<Home />} />
                             <Route path="menu" element={<ModuleGuard moduleId="bar"><BarMenu /></ModuleGuard>} />
                             <Route path="reservas" element={<ModuleGuard moduleId="reservas"><BookingFlow /></ModuleGuard>} />
+                            <Route path="reservar" element={<ModuleGuard moduleId="reservas"><BookingFlow /></ModuleGuard>} />
                             <Route path="app/reservar/:fieldId" element={<ModuleGuard moduleId="reservas"><BookingFlow /></ModuleGuard>} />
                             <Route path="torneos" element={<ModuleGuard moduleId="torneos"><ClientTournaments /></ModuleGuard>} />
                             <Route path="escuela" element={<ModuleGuard moduleId="escuela"><EscuelaHome /></ModuleGuard>} />
@@ -277,6 +279,8 @@ function BusinessApp() {
                             
                             <Route path="clientes" element={<ModuleGuard moduleId="clientes"><ClientesPage /></ModuleGuard>} />
                             <Route path="espacios" element={<ModuleGuard moduleId="reservas"><EspaciosPage /></ModuleGuard>} />
+                            <Route path="configuracion" element={<ConfiguracionPage />} />
+                            <Route path="admin/configuracion" element={<ConfiguracionPage />} />
                             <Route path="horarios" element={<ModuleGuard moduleId="reservas"><HorariosPage /></ModuleGuard>} />
                             <Route path="admin/promos" element={<ModuleGuard moduleId="marketing"><AdminPromosPage /></ModuleGuard>} />
                             <Route path="promos-admin" element={<Navigate to="admin/promos" replace />} />

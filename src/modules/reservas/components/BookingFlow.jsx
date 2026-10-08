@@ -367,9 +367,18 @@ export default function BookingFlow() {
                 await addBooking(newBooking);
             }
 
-            // Target phone number: 3855374835 -> +54 9 3855374835
-            const targetWsp = "5493855374835";
+            // Target phone number from business settings
+            const rawWsp = config?.whatsapp || config?.telefono || businessInfo?.whatsapp || businessInfo?.telefono || "5493855374835";
+            let cleanWsp = rawWsp.toString().replace(/[^0-9]/g, '');
+            if (cleanWsp.startsWith('0')) cleanWsp = cleanWsp.substring(1);
+            if (!cleanWsp.startsWith('549') && !cleanWsp.startsWith('54') && cleanWsp.length === 10) {
+                cleanWsp = '549' + cleanWsp;
+            }
+            const targetWsp = cleanWsp || "5493855374835";
+
             const dayFormatted = `${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} de ${MONTH_NAMES[selectedDate.getMonth()]}`;
+            const businessDisplayName = config?.nombre || businessInfo?.nombre || businessInfo?.name || negocioId?.toUpperCase() || 'Giovanni';
+
             let wspMsg = `👋 *¡NUEVA RESERVA CON SEÑA!* 🏆\n\n` +
                 `📍 *Espacio:* ${selectedResource.name}\n` +
                 `📅 *Fecha:* ${dayFormatted} (${dateStr})\n` +
@@ -382,7 +391,7 @@ export default function BookingFlow() {
                 `💰 *Total:* $${currentPrice.toLocaleString('es-AR')}\n` +
                 `💸 *Resta abonar:* $${(currentPrice - Number(montoSena)).toLocaleString('es-AR')}\n` +
                 (comprobanteFile ? `📎 *Comprobante:* Adjunto en la galería del chat\n` : '') +
-                `\n✅ _Reserva enviada desde la web de ${businessInfo?.name || 'Giovanni'}_`;
+                `\n✅ _Reserva enviada desde la web de ${businessDisplayName}_`;
 
             const wspUrl = `https://wa.me/${targetWsp}?text=${encodeURIComponent(wspMsg)}`;
 
@@ -397,6 +406,7 @@ export default function BookingFlow() {
             setConfirmedBooking({
                 ...newBooking,
                 wspUrl,
+                targetWsp,
                 dayFormatted
             });
             setCountdown(7);
@@ -734,7 +744,7 @@ export default function BookingFlow() {
                                         </h2>
                                         <p className="text-xs text-slate-400 mt-1">
                                             <span>Se abrió WhatsApp para enviar la confirmación al </span>
-                                            <strong className="text-emerald-400">3855374835</strong>
+                                            <strong className="text-emerald-400">+{confirmedBooking?.targetWsp || '5493855374835'}</strong>
                                         </p>
                                     </div>
                                 </>
@@ -827,7 +837,7 @@ export default function BookingFlow() {
                                                 className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/30"
                                             >
                                                 <MessageCircle size={18} />
-                                                <span>Reabrir WhatsApp (3855374835)</span>
+                                                <span>Reabrir WhatsApp (+{confirmedBooking?.targetWsp || '5493855374835'})</span>
                                             </a>
                                         )}
 
