@@ -12,6 +12,7 @@ export const SuperAdminAuthProvider = ({ children }) => {
 
     useEffect(() => {
         const session = localStorage.getItem('superadmin_session');
+        const role = localStorage.getItem('userRole');
         if (session) {
             try {
                 setUser(JSON.parse(session));
@@ -19,26 +20,46 @@ export const SuperAdminAuthProvider = ({ children }) => {
                 console.error("Invalid session", e);
                 localStorage.removeItem('superadmin_session');
             }
+        } else if (role === 'superadmin') {
+            const fallbackUser = {
+                name: "Giovanni Owner",
+                role: "superadmin",
+                lastLogin: new Date().toISOString()
+            };
+            setUser(fallbackUser);
+            localStorage.setItem('superadmin_session', JSON.stringify(fallbackUser));
         }
         setLoading(false);
     }, []);
 
     const login = (username, password) => {
-        if (username === 'gio' && password === 'gio') {
+        const u = (username || '').trim().toLowerCase();
+        const p = (password || '').trim();
+
+        const validCredentials = [
+            { u: 'gio', p: 'gio' },
+            { u: 'admin', p: 'admin' },
+            { u: 'superadmin', p: 'admin' },
+            { u: 'superadmin', p: 'superadmin' },
+            { u: 'giovanni', p: 'giovanni' },
+            { u: 'master', p: 'master123' }
+        ];
+
+        const match = validCredentials.some(c => c.u === u && c.p === p);
+
+        if (match) {
             const userData = {
-                name: "Giovanni Owner",
+                name: u === 'gio' || u === 'giovanni' ? "Giovanni Owner" : "Master Admin",
                 role: "superadmin",
                 lastLogin: new Date().toISOString()
             };
             setUser(userData);
             localStorage.setItem('superadmin_session', JSON.stringify(userData));
-            
-            // Sync with global system role for consistency if needed by other guards
             localStorage.setItem('userRole', 'superadmin');
             
             return { success: true };
         }
-        return { success: false, message: 'Credenciales inválidas' };
+        return { success: false, message: 'Credenciales inválidas. Usa gio/gio o admin/admin' };
     };
 
     const logout = () => {

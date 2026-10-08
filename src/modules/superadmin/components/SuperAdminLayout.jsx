@@ -7,15 +7,18 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Building2, CreditCard, Puzzle,
     Activity, BarChart3, LogOut, Shield, ChevronRight,
-    Menu, X, Globe, Zap, Bell
+    Menu, X, Globe, Zap, Bell, PlusCircle, Sparkles
 } from 'lucide-react';
 
 const navItems = [
     { to: '/superadmin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+    { to: '/superadmin/negocios', label: 'Negocios', icon: Building2 },
     { to: '/superadmin/complejos', label: 'Complejos', icon: Globe },
+    { to: '/superadmin/crear-complejo', label: 'Crear Complejo', icon: PlusCircle },
     { to: '/superadmin/planes', label: 'Planes', icon: CreditCard },
     { to: '/superadmin/suscripciones', label: 'Suscripciones', icon: Zap },
     { to: '/superadmin/modulos', label: 'Módulos', icon: Puzzle },
+    { to: '/superadmin/saas-engine', label: 'Motor SaaS', icon: Sparkles },
     { to: '/superadmin/sistema', label: 'Sistema', icon: Activity },
     { to: '/superadmin/stats', label: 'Estadísticas', icon: BarChart3 },
 ];
