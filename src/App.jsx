@@ -339,6 +339,7 @@ function BusinessApp() {
 
                         {/* ── MOBILE PWA (FASE 10 / 13) ── */}
                         <Route path="app/mozos/*" element={<AppErrorBoundary><ModuleGuard moduleId="bar"><MozoRoutes /></ModuleGuard></AppErrorBoundary>} />
+                        <Route path="app/mozo/*" element={<AppErrorBoundary><ModuleGuard moduleId="bar"><MozoRoutes /></ModuleGuard></AppErrorBoundary>} />
                         <Route path="app" element={<PWALayout />}>
                             <Route index element={<ClientHome />} />
                             <Route path="reserva-confirmada" element={<ModuleGuard moduleId="reservas"><ReservationSuccess /></ModuleGuard>} />
