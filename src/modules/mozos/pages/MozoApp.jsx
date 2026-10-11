@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { getMozoSession, logoutMozo } from '../services/mozoService';
-import MozoBottomNav from '../components/MozoBottomNav';
-import { Users, LogOut, Bell, UtensilsCrossed } from 'lucide-react';
+import { UtensilsCrossed, Bell, LogOut, LayoutGrid, ClipboardList, Plus, Moon } from 'lucide-react';
 
 export default function MozoApp() {
     const navigate = useNavigate();
     const { negocioId } = useParams();
-    const location = useLocation();
-    const { orders, config } = useConfig();
+    const { orders } = useConfig();
     const [mozo, setMozo] = useState(() => {
         const s = getMozoSession();
         return s?.id ? s : null;
@@ -37,16 +36,16 @@ export default function MozoApp() {
     useEffect(() => {
         if (!mozo?.id) return;
 
-        const readyOrders = orders?.filter(o => 
-            (o.estado === 'listo' || o.estado === 'listo_para_salir') && 
-            o.mozoId === mozo.id && 
+        const readyOrders = orders?.filter(o =>
+            (o.estado === 'listo' || o.estado === 'listo_para_salir') &&
+            o.mozoId === mozo.id &&
             !lastNotifiedRef.current.has(o.id)
         ) || [];
 
         if (readyOrders.length > 0) {
             readyOrders.forEach(o => {
                 try {
-                    const audio = new Audio('/sounds/notification.wav'); 
+                    const audio = new Audio('/sounds/notification.wav');
                     audio.play().catch(() => {});
                 } catch(e) {}
                 if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
@@ -56,86 +55,115 @@ export default function MozoApp() {
     }, [orders, mozo]);
 
     if (!mozo) return (
-        <div className="fixed inset-0 bg-[#0c0a09] flex items-center justify-center">
+        <div className="fixed inset-0 bg-slate-100 dark:bg-black flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-                <p className="text-[10px] text-amber-500 font-black uppercase tracking-[0.2em]">Cargando App...</p>
+                <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+                <p className="text-[10px] text-emerald-600 font-black uppercase tracking-[0.2em]">Cargando...</p>
             </div>
         </div>
     );
 
-    const getPageTitle = () => {
-        if (location.pathname.endsWith('/mesas')) return 'Mapa de Mesas';
-        if (location.pathname.endsWith('/pedidos')) return 'Órdenes Activas';
-        if (location.pathname.endsWith('/cobrar')) return 'Caja Remota';
-        return 'Panel Principal';
-    };
-
-    const notifCount = orders?.filter(o => (o.estado === 'listo' || o.estado === 'listo_para_salir') && o.mozoId === mozo.id).length || 0;
+    const notifCount = orders?.filter(o =>
+        (o.estado === 'listo' || o.estado === 'listo_para_salir') && o.mozoId === mozo.id
+    ).length || 0;
 
     return (
-        <div className="fixed inset-0 bg-[#0c0a09] text-white font-inter flex flex-col overflow-hidden selection:bg-amber-500/30">
-            {/* Ambient Lighting Background */}
-            <div className="absolute inset-0 z-0 pointer-events-none opacity-5 bg-[url('https://www.transparenttextures.com/patterns/microbial-mat.png')]" />
-            <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-rose-500/5 rounded-full blur-[120px] pointer-events-none" />
-
-            {/* Header Glass Shell */}
-            <header className="relative z-50 bg-[#0c0a09]/80 backdrop-blur-2xl border-b border-white/5 pt-safe-top">
-                <div className="px-3.5 py-2.5 sm:px-5 sm:py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 sm:gap-4">
-                        <div className="relative group">
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-tr from-amber-600 to-amber-400 rounded-xl sm:rounded-[18px] flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)] border border-white/10">
-                                <UtensilsCrossed size={18} className="text-amber-950 drop-shadow-sm sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
-                            </div>
-                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-emerald-500 border-2 border-[#0c0a09] rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
-                        </div>
-                        <div>
-                            <h1 className="text-xs sm:text-[13px] font-black uppercase tracking-widest text-white shadow-sm leading-none pt-0.5">
-                                {getPageTitle()}
-                            </h1>
-                            <p className="text-[9px] sm:text-[10px] text-amber-500/80 font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] mt-1 flex items-center gap-1.5">
-                                <Users size={10} className="text-amber-400" /> {mozo.name}
-                            </p>
-                        </div>
+        <div className="min-h-screen bg-slate-100 dark:bg-black flex flex-col max-w-lg mx-auto">
+            {/* Top Bar */}
+            <header className="sticky top-0 z-30 bg-emerald-600 text-white px-4 h-14 flex items-center justify-between shadow-lg">
+                <div className="flex items-center gap-2">
+                    <UtensilsCrossed size={20} className="text-white/90" />
+                    <div>
+                        <p className="font-bold text-sm leading-tight">Mozos</p>
+                        <p className="text-[10px] opacity-80">{mozo?.name || 'Acceso libre'}</p>
                     </div>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                        <button className="relative w-8 h-8 sm:w-10 sm:h-10 bg-white/5 rounded-lg sm:rounded-xl flex items-center justify-center text-slate-400 border border-white/5 active:scale-90 transition-transform">
-                             <Bell size={16} className="sm:w-[18px] sm:h-[18px]" />
-                             {notifCount > 0 && (
-                                 <span className="absolute -top-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-4 w-4 sm:h-5 sm:w-5 bg-rose-500 text-[8px] sm:text-[10px] font-black items-center justify-center text-white border-2 border-[#0c0a09]">
-                                        {notifCount}
-                                    </span>
-                                </span>
-                             )}
-                        </button>
-                        <button 
-                            onClick={handleLogout}
-                            className="w-8 h-8 sm:w-10 sm:h-10 bg-rose-500/10 rounded-lg sm:rounded-xl flex items-center justify-center text-rose-500 border border-rose-500/20 active:scale-90 hover:bg-rose-500 hover:text-white transition-all"
-                        >
-                            <LogOut size={14} className="sm:w-4 sm:h-4" />
-                        </button>
-                    </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    {/* Bell / Notificaciones */}
+                    <button className="relative p-2 rounded-full hover:bg-white/10 transition-colors">
+                        <Bell size={18} />
+                        {notifCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                {notifCount}
+                            </span>
+                        )}
+                    </button>
+                    {/* Dark mode toggle */}
+                    <button
+                        onClick={() => document.documentElement.classList.toggle('dark')}
+                        className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                    >
+                        <Moon size={18} />
+                    </button>
+                    {/* Logout */}
+                    <button
+                        onClick={handleLogout}
+                        className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                    >
+                        <LogOut size={18} />
+                    </button>
                 </div>
             </header>
 
-            {/* Content Area */}
-            <main className="relative z-10 flex-1 w-full overflow-y-auto overflow-x-hidden scroll-smooth select-none">
-                <div className="pb-32 min-h-full">
-                    <Outlet />
-                </div>
+            {/* Content */}
+            <main className="flex-1 overflow-y-auto pb-20">
+                <Outlet />
             </main>
 
             {/* Bottom Nav */}
-            <MozoBottomNav negocioId={negocioId} />
-            
+            <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex z-30">
+                {/* Mesas */}
+                <NavLink
+                    to={`/${negocioId}/app/mozos/mesas`}
+                    className={({ isActive }) =>
+                        `flex-1 flex flex-col items-center py-2.5 text-xs font-medium transition-colors ${
+                            isActive ? 'text-emerald-600' : 'text-slate-500'
+                        }`
+                    }
+                >
+                    <LayoutGrid size={22} />
+                    Mesas
+                </NavLink>
+
+                {/* FAB central — Nuevo pedido */}
+                <NavLink
+                    to={`/${negocioId}/app/mozos/dashboard`}
+                    className={({ isActive }) =>
+                        `flex-1 flex flex-col items-center py-2.5 text-xs font-medium transition-colors ${
+                            isActive ? 'text-emerald-600' : 'text-slate-500'
+                        }`
+                    }
+                >
+                    <div className="w-10 h-10 -mt-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg">
+                        <Plus size={24} />
+                    </div>
+                    Nuevo
+                </NavLink>
+
+                {/* Órdenes */}
+                <NavLink
+                    to={`/${negocioId}/app/mozos/pedidos`}
+                    className={({ isActive }) =>
+                        `flex-1 flex flex-col items-center py-2.5 text-xs font-medium transition-colors ${
+                            isActive ? 'text-emerald-600' : 'text-slate-500'
+                        }`
+                    }
+                >
+                    <span className="relative">
+                        <ClipboardList size={22} />
+                        {notifCount > 0 && (
+                            <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                {notifCount}
+                            </span>
+                        )}
+                    </span>
+                    Órdenes
+                </NavLink>
+            </nav>
+
             <style dangerouslySetInnerHTML={{ __html: `
                 * { scrollbar-width: none; -ms-overflow-style: none; }
                 *::-webkit-scrollbar { display: none; }
-                .pt-safe-top { padding-top: env(safe-area-inset-top, 0px); }
             `}} />
         </div>
     );
