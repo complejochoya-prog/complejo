@@ -86,13 +86,7 @@ export async function fetchHorariosDisponibles(negocioId, canchaId, fecha) {
 
         return hours.map(h => {
             const ocupada = reservas.some(r => r.time.includes(h));
-            const bloqueada = bloqueos.some(b => {
-                if (b.modo === 'dia_completo') return true;
-                const hNum = parseInt(h.split(':')[0]);
-                const s = parseInt(b.horaInicio.split(':')[0]);
-                const e = parseInt(b.horaFin.split(':')[0]);
-                return hNum >= s && hNum < e;
-            });
+            const bloqueada = bloqueos.some(b => isHoraEnBloqueo(b, h));
             
             return {
                 hora: h,
@@ -158,7 +152,20 @@ export async function fetchBarMenu(negocioId) {
             categoria: item.categoria,
             img: item.img || 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?auto=format&fit=crop&q=80&w=400'
         }));
-    } catch (e) {
+    } catch {
         return [];
+    }
+}
+
+export function isHoraEnBloqueo(b, hora) {
+    if (!b || !hora) return false;
+    if (b.modo === 'dia_completo') return true;
+    try {
+        const hNum = parseInt(String(hora).split(':')[0]);
+        const s = parseInt(String(b.horaInicio || '00:00').split(':')[0]);
+        const e = parseInt(String(b.horaFin || '24:00').split(':')[0]);
+        return hNum >= s && hNum < e;
+    } catch {
+        return false;
     }
 }

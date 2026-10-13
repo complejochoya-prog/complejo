@@ -1,76 +1,750 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../empleados/services/AuthContext';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useConfig } from '../../core/hooks/useConfig';
 import { usePedidos } from '../../bar/services/PedidosContext';
-import { ShoppingCart, Check, Clock, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../../empleados/services/AuthContext';
+import { useCaja } from '../../caja/services/CajaContext';
+import LockScreen from '../../core/components/LockScreen';
+import PromoCumpleModal from '../../promociones/components/PromoCumpleModal';
+import {
+    UtensilsCrossed,
+    Truck,
+    Minus,
+    Plus,
+    LogOut,
+    CheckCircle2,
+    Send,
+    ListChecks,
+    Receipt,
+    ClipboardList,
+    Bell,
+    Printer,
+    History,
+    Power,
+    Search,
+    X,
+    CreditCard,
+    ArrowLeft,
+    Clock
+} from 'lucide-react';
 
 export default function Mozo() {
-    const { users } = useAuth();
-    const { orders, addOrder, updateOrder } = usePedidos();
-    const [mozoId] = useState(() => localStorage.getItem('userId'));
-    const [mozoName] = useState(() => localStorage.getItem('userName') || 'Mozo');
+    const { config } = useConfig();
+    const { 
+        barProducts = [], addOrder, orders = [], updateOrder, 
+        isBarOpen = () => true, isKitchenOpen = () => true, getCurrentDiscount = () => 0, 
+        categoryAvailability = {}, promotions = [] 
+    } = usePedidos();
+    const { users = [] } = useAuth();
+    const { currentCaja, addMovement } = useCaja() || {};
+    
+    const navigate = useNavigate();
+    const mozoId = localStorage.getItem('userId');
+    const mozoName = localStorage.getItem('userName');
+    const businessName = config?.nombre || 'COMPLEJO GIOVANNI';
 
-    const myOrders = orders.filter(o => o.mozoId === mozoId);
-    const pendingOrders = myOrders.filter(o => (o.estado || o.status) === 'pendiente');
-    const activeOrders = myOrders.filter(o => ['confirmado', 'preparando', 'en_preparacion'].includes(o.estado || o.status));
+    const categoryOrder = ['Cafeteria', 'Licuados', 'Tortas', 'Bebidas', 'Cervezas', 'Carnes', 'Lomos', 'Burgers', 'Pizzas', 'Pastas', 'Ensaladas', 'Papas', 'Tacos', 'Tragos', 'Combos', 'Promos'];
+
+    // User status check & Auto-logout
+    const currentUser = (users || []).find(u => u.id === mozoId);
+
+    useEffect(() => {
+        if (currentUser && currentUser.activo === false) {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            navigate('/login');
+        }
+    }, [currentUser, navigate]);
+
+    // Main Tabs
+    const [activeTab, setActiveTab] = useState('pedido'); 
+    const [notifications, setNotifications] = useState([]);
+    const [hasNewNotification, setHasNewNotification] = useState(false);
+
+    // --- Shift Tracking ---
+    const [shiftStart] = useState(() => {
+        const saved = localStorage.getItem('mozoShiftStart');
+        if (saved) return saved;
+        const now = new Date().toISOString();
+        localStorage.setItem('mozoShiftStart', now);
+        return now;
+    });
+
+    // --- State for "Tomar Pedido" ---
+    const [orderType, setOrderType] = useState('Local'); 
+    const [tableNumber, setTableNumber] = useState('');
+    const [cart, setCart] = useState([]);
+    const [notes, setNotes] = useState('');
+    const [clientName, setClientName] = useState(''); 
+    const [clientPhone, setClientPhone] = useState('+54'); 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [isAddingAdditional, setIsAddingAdditional] = useState(false);
+
+    // Combo Modal State
+    const [selectedComboForModal, setSelectedComboForModal] = useState(null);
+    const [isBirthdayMode, setIsBirthdayMode] = useState(false);
+
+    const categories = categoryOrder.filter(cat => cat === 'Promos' || categoryAvailability[cat] !== false);
+    const activeCatFallback = categories.length > 0 ? categories[0] : 'Bebidas';
+    const [activeCategory, setActiveCategory] = useState(activeCatFallback);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const currentProducts = useMemo(() => {
+        const activePromationsAsProducts = (promotions || []).filter(p => p.active).map(promo => ({
+            id: promo.id,
+            name: promo.name,
+            desc: promo.desc || promo.description || '',
+            price: promo.price,
+            img: promo.img || promo.image || 'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?q=80&w=2000&auto=format&fit=crop',
+            category: 'Promos',
+            disponible: true,
+            activar_control_stock: false,
+            stock_actual: 0,
+            stock_minimo: 0,
+            isPromo: true,
+            tipo: 'combo',
+            comboItems: promo.comboItems,
+            modo_evento: promo.modo_evento || ''
+        }));
+
+        const unifiedProducts = [...(barProducts || []), ...activePromationsAsProducts];
+        const baseProducts = unifiedProducts.filter(p =>
+            p.disponible !== false &&
+            (p.category === 'Promos' || categoryAvailability[p.category] !== false)
+        );
+        if (!searchTerm.trim()) {
+            return baseProducts.filter(p => String(p.category).toLowerCase() === String(activeCategory).toLowerCase());
+        }
+        const lowerTerm = searchTerm.toLowerCase();
+        return baseProducts.filter(p =>
+            p.name.toLowerCase().includes(lowerTerm) ||
+            p.category.toLowerCase().includes(lowerTerm)
+        );
+    }, [barProducts, promotions, activeCategory, searchTerm, categoryAvailability]);
+
+    // --- State for "Mesas" ---
+    const [selectedTable, setSelectedTable] = useState(null); 
+    const [viewMode, setViewMode] = useState('list'); 
+    const [paymentMethod, setPaymentMethod] = useState(''); 
+    const [receiptImage, setReceiptImage] = useState(null); 
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+    const myOrders = useMemo(() => {
+        return (orders || []).filter(o => o.mozoId === mozoId);
+    }, [orders, mozoId]);
+
+    const notificationAudio = useMemo(() => {
+        const audio = new Audio('/sounds/notification.wav');
+        audio.preload = 'auto';
+        return audio;
+    }, []);
+
+    const [audioUnlocked, setAudioUnlocked] = useState(false);
+    useEffect(() => {
+        const unlock = () => {
+            if (!audioUnlocked) {
+                notificationAudio.volume = 0;
+                notificationAudio.play().then(() => {
+                    notificationAudio.pause();
+                    notificationAudio.currentTime = 0;
+                    notificationAudio.volume = 1;
+                    setAudioUnlocked(true);
+                }).catch(() => { });
+            }
+        };
+        document.addEventListener('touchstart', unlock, { once: true });
+        document.addEventListener('click', unlock, { once: true });
+        return () => {
+            document.removeEventListener('touchstart', unlock);
+            document.removeEventListener('click', unlock);
+        };
+    }, [audioUnlocked, notificationAudio]);
+
+    const playNotificationSound = useCallback(() => {
+        try {
+            notificationAudio.currentTime = 0;
+            notificationAudio.volume = 1;
+            notificationAudio.play().catch(e => console.warn('Audio play failed:', e));
+        } catch (e) {
+            console.warn('Audio notification not available:', e);
+        }
+    }, [notificationAudio]);
+
+    useEffect(() => {
+        const lastOrderStates = JSON.parse(localStorage.getItem('orderStates') || '{}');
+        const lastOrderIds = JSON.parse(localStorage.getItem('orderIds') || '[]');
+        const newStates = {};
+        const newOrderIds = (orders || []).map(o => o.id);
+
+        let shouldPlaySound = false;
+        let shouldVibrate = false;
+        let vibratePattern = [200, 100, 200];
+
+        (orders || []).forEach(order => {
+            newStates[order.id] = `${order.status}|${order.kitchenStatus}`;
+            const [prevStatus, prevKitchenStatus] = (lastOrderStates[order.id] || "undefined|undefined").split('|');
+
+            if (order.origin === 'online') {
+                if (order.status === 'confirmado' && !lastOrderIds.includes(order.id)) {
+                    const id = Date.now() + Math.random();
+                    setNotifications(prev => [{ id, message: "🔔 Nuevo pedido online recibido", isReady: false }, ...prev]);
+                    setHasNewNotification(true);
+                    shouldVibrate = true;
+                    setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 8000);
+                }
+                if (order.type === 'Local' && order.status === 'listo' && prevStatus && prevStatus !== 'listo') {
+                    const id = Date.now() + Math.random();
+                    setNotifications(prev => [{ id, message: `🔔 Pedido listo para retirar – Mesa ${order.tableNumber || order.mesa}`, isReady: true }, ...prev]);
+                    setHasNewNotification(true);
+                    shouldPlaySound = true;
+                    shouldVibrate = true;
+                    vibratePattern = [500, 110, 500, 110, 500];
+                    setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 10000);
+                }
+            }
+
+            if (order.mozoId === mozoId) {
+                let msg = '';
+                let isReady = false;
+                const tbl = order.tableNumber || order.mesa || '';
+                if (prevStatus !== order.status) {
+                    if (order.status === 'preparando') {
+                        msg = `🔔 Tu pedido de la Mesa ${tbl} fue confirmado por cocina`;
+                        shouldVibrate = true;
+                    }
+                    if (order.status === 'listo' && (order.origin !== 'online' || order.type !== 'Local')) {
+                        msg = `🔔 Pedido listo — Mesa ${tbl} — Retirar en cocina`;
+                        isReady = true;
+                        shouldPlaySound = true;
+                        shouldVibrate = true;
+                        vibratePattern = [500, 110, 500, 110, 500];
+                    }
+                }
+                if (prevKitchenStatus !== order.kitchenStatus) {
+                    if (order.kitchenStatus === 'Preparando') {
+                        msg = `🔔 La cocina está preparando tu pedido de la Mesa ${tbl}`;
+                        shouldVibrate = true;
+                    }
+                    if (order.kitchenStatus === 'Listo') {
+                        msg = `🔔 ¡El pedido de la Mesa ${tbl} está LISTO en cocina!`;
+                        isReady = true;
+                        shouldPlaySound = true;
+                        shouldVibrate = true;
+                        vibratePattern = [500, 110, 500, 110, 500];
+                    }
+                }
+                if (msg) {
+                    const id = Date.now() + Math.random();
+                    setNotifications(prev => [{ id, message: msg, isReady }, ...prev]);
+                    setHasNewNotification(true);
+                    setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 8000);
+                }
+            }
+        });
+
+        if (shouldPlaySound) playNotificationSound();
+        if (shouldVibrate && navigator.vibrate) navigator.vibrate(vibratePattern);
+        localStorage.setItem('orderStates', JSON.stringify(newStates));
+        localStorage.setItem('orderIds', JSON.stringify(newOrderIds));
+    }, [orders, mozoId, playNotificationSound]);
+
+    const shiftOrders = useMemo(() => {
+        const shiftDate = new Date(shiftStart);
+        return (orders || []).filter(o => {
+            if (o.mozoId !== mozoId) return false;
+            const orderDate = o.timestamp?.toDate ? o.timestamp.toDate() : new Date(o.timestamp);
+            return orderDate >= shiftDate;
+        });
+    }, [orders, mozoId, shiftStart]);
+
+    const shiftTotal = shiftOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const shiftPaidOrders = shiftOrders.filter(o => o.status === 'paid' || o.status === 'entregado');
+    const shiftPaidTotal = shiftPaidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+    const handlePrintTicket = (tableNo) => {
+        const tableOrders = (orders || []).filter(o => (o.tableNumber || o.mesa) === tableNo);
+        const name = mozoName || 'Mozo';
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-AR');
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const items = [];
+        tableOrders.forEach(o => {
+            (o.productos || o.items || []).forEach(item => {
+                const existing = items.find(i => i.name === (item.nombre || item.name));
+                if (existing) {
+                    existing.quantity += (item.cantidad || item.quantity || 1);
+                    existing.total += (item.price || 0) * (item.cantidad || item.quantity || 1);
+                } else {
+                    items.push({ 
+                        name: item.nombre || item.name, 
+                        quantity: item.cantidad || item.quantity || 1, 
+                        price: item.price || 0, 
+                        total: (item.price || 0) * (item.cantidad || item.quantity || 1) 
+                    });
+                }
+            });
+        });
+
+        const total = items.reduce((sum, i) => sum + i.total, 0);
+        const payMethod = tableOrders.find(o => o.paymentMethod)?.paymentMethod || 'Pendiente';
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return alert('Habilita las ventanas emergentes para imprimir.');
+        const html = `<html><head><title>Ticket Mesa ${tableNo}</title><style>body { font-family: 'Courier New', monospace; width: 80mm; margin: 0; padding: 8mm; font-size: 14px; } .center { text-align: center; } .bold { font-weight: bold; } .line { border-top: 1px dashed #000; margin: 8px 0; } .row { display: flex; justify-content: space-between; margin: 3px 0; } .total-row { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; margin: 8px 0; } .footer { margin-top: 15px; text-align: center; font-size: 12px; } </style></head><body><div class="center bold" style="font-size:18px;">${businessName}</div><div class="center" style="font-size:12px;">Sports & Bar</div><div class="center" style="margin-top:5px;">Fecha: ${dateStr}</div><div class="center">Hora: ${timeStr}</div><div class="center" style="margin-top:5px;">Mozo: ${name}</div><div class="center bold" style="font-size:16px;margin-top:5px;">Mesa: ${tableNo}</div><div class="line"></div><div class="bold">Pedido:</div>${items.map(i => `<div class="row"><span>${i.quantity}x ${i.name}</span><span>$${i.total.toLocaleString()}</span></div>`).join('')}<div class="line"></div><div class="total-row"><span>TOTAL:</span><span>$${total.toLocaleString()}</span></div><div class="row"><span>Forma de pago:</span><span>${payMethod}</span></div><div class="line"></div><div class="footer">Gracias por su visita<br>${businessName}</div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};</script></body></html>`;
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+    };
+
+    const handleCerrarTurno = () => {
+        if (!window.confirm('¿Estás seguro de cerrar tu turno? Se limpiará el historial de tu app.')) return;
+        localStorage.removeItem('mozoShiftStart');
+        localStorage.removeItem('orderStates');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        navigate('/login');
+    };
+
+    const activeOrdersForBilling = (orders || []).filter(o => ((o.tipo === 'Local' || o.type === 'Local' || o.mesa || o.tableNumber)) && o.status !== 'paid');
+    const activeTables = [...new Set(activeOrdersForBilling.map(o => o.tableNumber || o.mesa).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+    const ordersForSelectedTable = activeOrdersForBilling.filter(o => (o.tableNumber || o.mesa) === selectedTable);
+    const tableTotal = ordersForSelectedTable.reduce((sum, o) => sum + (o.total || 0), 0);
+
+    const handleLogout = () => {
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        navigate('/login');
+    };
+
+    const handleAddToCart = (product, discount = 0) => {
+        if (product.tipo === 'combo' || product.isPromo || (product.comboItems && product.comboItems.length > 0)) {
+            setSelectedComboForModal({
+                ...product,
+                price: discount > 0 ? product.price * (1 - discount / 100) : product.price,
+                discount
+            });
+            return;
+        }
+        const liveProduct = (barProducts || []).find(p => p.id === product.id);
+        const inCart = cart.find(item => item.id === product.id)?.quantity || 0;
+        if (liveProduct) {
+            if (liveProduct.disponible === false || (liveProduct.activar_control_stock && (liveProduct.stock_actual - inCart) <= 0)) {
+                alert("⚠️ Este producto no se encuentra disponible en este momento");
+                return;
+            }
+        }
+        const currentPrice = discount > 0 ? product.price * (1 - discount / 100) : product.price;
+        setCart(prev => {
+            const existing = prev.find(item => item.id === product.id);
+            if (existing) {
+                return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+            }
+            return [...prev, { ...product, quantity: 1, name: product.name, originalPrice: product.price, price: currentPrice, discount }];
+        });
+    };
+
+    const handleConfirmCombo = (selectedItems) => {
+        const comboRecord = {
+            ...selectedComboForModal,
+            quantity: 1,
+            isPromo: true,
+            comboItems: selectedItems.map(item => ({
+                id: item.id,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price || 0,
+                category: item.category,
+                isPromoItem: true
+            })),
+            modo_evento: selectedComboForModal.modo_evento || ''
+        };
+        setCart(prev => [...prev, comboRecord]);
+        setSelectedComboForModal(null);
+    };
+
+    const handleRemoveFromCart = (productId) => {
+        setCart(prev => {
+            const existing = prev.find(item => item.id === productId);
+            if (!existing) return prev;
+            if (existing.quantity === 1) return prev.filter(item => item.id !== productId);
+            return prev.map(item => item.id === productId ? { ...item, quantity: item.quantity - 1 } : item);
+        });
+    };
+
+    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    const handleSubmitOrder = async () => {
+        if (cart.length === 0) return;
+        if (orderType === 'Local' && !tableNumber) return alert('Por favor ingrese el número de mesa.');
+        if (orderType === 'Delivery' && !clientName) return alert('Por favor ingrese el nombre del cliente.');
+        if (orderType === 'Delivery' && (!clientPhone || !clientPhone.startsWith('+54') || clientPhone.length < 10)) return alert('Por favor ingrese un teléfono válido que comience con +54');
+
+        setIsSubmitting(true);
+        try {
+            await addOrder({
+                tipo: orderType,
+                mesa: orderType === 'Local' ? tableNumber : '',
+                clientName: orderType === 'Delivery' ? clientName : '',
+                clientPhone: orderType === 'Delivery' ? clientPhone : '',
+                productos: cart.flatMap(i => {
+                    const mainProduct = {
+                        id: i.id || Date.now().toString(),
+                        nombre: i.name || 'Producto sin nombre',
+                        cantidad: i.quantity || 1,
+                        price: i.price || 0,
+                        category: i.isPromo ? 'Promos' : ((barProducts || []).find(p => p.id === i.id)?.category || ''),
+                        isPromo: i.isPromo || false,
+                        promoItems: i.isPromo ? (i.comboItems || []) : []
+                    };
+                    if (i.isPromo && i.comboItems) {
+                        const subProducts = (i.comboItems || []).map(subItem => ({
+                            id: subItem.id || 'unknown',
+                            nombre: subItem.name || 'Producto combo',
+                            cantidad: (subItem.quantity || 1) * (i.quantity || 1),
+                            price: subItem.price || 0,
+                            category: subItem.category || '',
+                            isPromoItem: true,
+                            parentId: i.id || 'unknown',
+                            sector: ['Pizzas', 'Empanadas', 'Papas', 'Platos', 'Pastas', 'Burgers', 'Ensaladas', 'Lomos', 'Carnes', 'Tacos', 'Postres', 'Tortas', 'Combos', 'Promos'].includes(subItem.category) ? 'cocina' : 'barra'
+                        }));
+                        return [mainProduct, ...subProducts];
+                    }
+                    return [{
+                        ...mainProduct,
+                        sector: ['Pizzas', 'Empanadas', 'Papas', 'Platos', 'Pastas', 'Burgers', 'Ensaladas', 'Lomos', 'Carnes', 'Tacos', 'Postres', 'Tortas', 'Combos', 'Promos'].includes(mainProduct.category) ? 'cocina' : 'barra'
+                    }];
+                }),
+                notes: notes,
+                total: cartTotal,
+                origin: 'mozo',
+                mozoId: mozoId,
+                mozoName: mozoName,
+                prioridad: 'normal',
+                estado: 'pendiente',
+                modo_evento: isBirthdayMode || cart.some(i => i.modo_evento === 'cumpleaños') ? 'cumpleaños' : ''
+            });
+
+            if (isBirthdayMode || cart.some(i => i.modo_evento === 'cumpleaños')) {
+                try {
+                    const birthdayAudio = new Audio('/sounds/cumpleanos.mp3');
+                    birthdayAudio.play().catch(err => console.debug('Birthday audio play error:', err));
+                } catch (err) {
+                    console.debug('Birthday audio error:', err);
+                }
+            }
+            setCart([]);
+            setNotes('');
+            setClientName('');
+            setClientPhone('+54');
+            if (!isAddingAdditional) setTableNumber('');
+            setIsAddingAdditional(false);
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 2000);
+        } catch (error) {
+            alert(error.message || "Hubo un error al enviar el pedido.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleProcessPayment = async () => {
+        if (!currentCaja) { return alert('❌ Debe abrir caja antes de cobrar.'); }
+        if (!paymentMethod) return alert('Seleccione un método de pago.');
+        if (paymentMethod === 'Transferencia' && !receiptImage) return alert('Debe cargar el comprobante de transferencia.');
+        setIsProcessingPayment(true);
+        try {
+            if (addMovement) {
+                await addMovement({
+                    tipo: 'entrada',
+                    categoria: 'Venta mozo',
+                    monto: tableTotal,
+                    descripcion: `Mesa ${selectedTable} - Cuenta completa - Mozo ${mozoName || 'Mozo'}`,
+                    metodoPago: paymentMethod.toLowerCase(),
+                    origen: 'bar',
+                    usuario: mozoName || 'Mozo',
+                    mozo: mozoName || 'Mozo',
+                    receiptImage: paymentMethod === 'Transferencia' ? receiptImage : null
+                });
+            }
+
+            if (updateOrder) {
+                await Promise.all(ordersForSelectedTable.map(o => updateOrder(o.id, {
+                    status: 'paid',
+                    paymentMethod,
+                    receiptImage: paymentMethod === 'Transferencia' ? receiptImage : null,
+                    paidAt: new Date().toISOString()
+                })));
+            }
+            setSelectedTable(null);
+            setViewMode('list');
+            setPaymentMethod('');
+            setReceiptImage(null);
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 2000);
+        } catch {
+            alert("Hubo un error al procesar el cobro.");
+        } finally {
+            setIsProcessingPayment(false);
+        }
+    };
+
+    if (currentUser && currentUser.activo === false) {
+        return <LockScreen userType="mozo" />;
+    }
+
+    if (showSuccess) {
+        return (
+            <div className="bg-slate-950 min-h-screen text-white flex flex-col items-center justify-center p-6 text-center space-y-6">
+                <div className="size-24 bg-green-500 rounded-full flex items-center justify-center text-slate-900 shadow-[0_0_50px_rgba(34,197,94,0.4)] animate-bounce">
+                    <CheckCircle2 size={48} />
+                </div>
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter">¡Operación Exitosa!</h2>
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-sm text-balance">
+                    {activeTab === 'pedido' ? 'El pedido ha sido enviado con éxito' : 'El cobro ha sido registrado'}
+                </p>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6">
-            <div className="max-w-lg mx-auto">
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-2xl font-black uppercase tracking-tighter italic">Panel Mozo</h1>
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{mozoName}</p>
+        <div className="bg-slate-950 min-h-screen text-white font-inter flex flex-col md:pb-32 pb-40">
+            {/* Header */}
+            <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-xl border-b border-white/10 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="size-10 bg-gold rounded-xl flex items-center justify-center text-slate-950 shadow-lg shadow-gold/20">
+                        {activeTab === 'pedido' ? <UtensilsCrossed size={20} /> : <Receipt size={20} />}
                     </div>
-                    <div className="bg-gold/10 border border-gold/30 px-4 py-2 rounded-2xl">
-                        <p className="text-gold text-[10px] font-black uppercase tracking-widest">{myOrders.length} pedidos</p>
+                    <div>
+                        <h1 className="text-lg font-black italic uppercase tracking-tighter leading-none">Mozo <span className="text-gold">App</span></h1>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">{mozoName || 'Toma de Pedidos'}</p>
                     </div>
                 </div>
+                <button onClick={handleLogout} className="p-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"><LogOut size={20} /></button>
+            </header>
 
-                {pendingOrders.length > 0 && (
-                    <div className="mb-6">
-                        <h2 className="text-sm font-black uppercase tracking-widest text-yellow-500 mb-3 flex items-center gap-2">
-                            <Clock size={14} /> Pendientes ({pendingOrders.length})
-                        </h2>
-                        {pendingOrders.map(order => (
-                            <div key={order.id} className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-4 mb-3">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <p className="font-black text-sm">Mesa {order.mesa || 'N/A'}</p>
-                                        <p className="text-xs text-slate-500">{(order.productos || []).length} items</p>
-                                    </div>
-                                    <p className="text-gold font-black">${order.total || 0}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+            {/* Notification Bar */}
+            {notifications.length > 0 && (
+                <div className="bg-gold/20 border-b border-gold/30 p-2.5 px-4 flex flex-col gap-1">
+                    {notifications.map(n => (
+                        <p key={n.id} className="text-xs font-bold text-gold flex items-center gap-2">
+                            <span>{n.message}</span>
+                        </p>
+                    ))}
+                </div>
+            )}
 
-                {activeOrders.length > 0 && (
-                    <div className="mb-6">
-                        <h2 className="text-sm font-black uppercase tracking-widest text-blue-500 mb-3 flex items-center gap-2">
-                            <ShoppingCart size={14} /> En Preparación ({activeOrders.length})
-                        </h2>
-                        {activeOrders.map(order => (
-                            <div key={order.id} className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 mb-3">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <p className="font-black text-sm">Mesa {order.mesa || 'N/A'}</p>
-                                        <p className="text-xs text-slate-500">{order.estado || order.status}</p>
-                                    </div>
-                                    <p className="text-blue-400 font-black">${order.total || 0}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {myOrders.length === 0 && (
-                    <div className="text-center py-20 bg-white/[0.02] rounded-3xl border border-white/5">
-                        <ShoppingCart size={48} className="mx-auto text-slate-700 mb-4" />
-                        <p className="text-slate-600 text-sm font-black uppercase tracking-widest">Sin pedidos activos</p>
-                    </div>
-                )}
+            {/* Nav Tabs */}
+            <div className="p-4 border-b border-white/5">
+                <div className="flex rounded-2xl bg-white/5 p-1">
+                    <button onClick={() => { setActiveTab('pedido'); setIsAddingAdditional(false); setTableNumber(''); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pedido' ? 'bg-gold text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}><UtensilsCrossed size={16} /> Tomar</button>
+                    <button onClick={() => { setActiveTab('mesas'); setViewMode('list'); setSelectedTable(null); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'mesas' ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-slate-400 hover:text-white'}`}><ListChecks size={16} /> Mesas</button>
+                    <button onClick={() => { setActiveTab('mis-pedidos'); setHasNewNotification(false); }} className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'mis-pedidos' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white'} ${hasNewNotification ? 'animate-pulse ring-2 ring-gold' : ''}`}><div className="relative"><ClipboardList size={18} />{hasNewNotification && <span className="absolute -top-1 -right-1 size-2 bg-gold rounded-full border border-slate-900 animate-bounce"></span>}</div>Pedidos</button>
+                    <button onClick={() => setActiveTab('historial')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'historial' ? 'bg-purple-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><History size={16} /> Turno</button>
+                </div>
             </div>
+
+            {/* Main view area */}
+            <main className="flex-1 overflow-y-auto p-4 space-y-6 relative">
+                {/* 1. TOMAR PEDIDO */}
+                {activeTab === 'pedido' && (
+                    <div className="space-y-6 pb-10">
+                        {!isBarOpen() && (
+                            <div className="bg-red-500/10 border-2 border-red-500/30 rounded-2xl p-6 text-center space-y-3"><div className="size-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto"><Power size={32} className="text-red-500" /></div><h3 className="text-xl font-black italic uppercase tracking-tighter text-red-500">El bar se encuentra cerrado</h3></div>
+                        )}
+                        {isBarOpen() && !isKitchenOpen() && (
+                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 flex items-center gap-3"><div className="size-10 bg-orange-500/20 rounded-xl flex items-center justify-center text-orange-500 shrink-0"><Bell size={18} /></div><div><p className="text-sm font-black text-orange-400 uppercase italic">Cocina cerrada</p><p className="text-[10px] text-slate-400 font-bold uppercase">Solo Tragos y Bebidas disponibles.</p></div></div>
+                        )}
+                        {isAddingAdditional && (
+                            <div className="bg-gold/10 border border-gold/30 rounded-2xl p-4 flex items-center justify-between"><span className="text-xs font-black text-gold uppercase tracking-widest">Agregando a Mesa {tableNumber}</span><button onClick={() => { setIsAddingAdditional(false); setTableNumber(''); }} className="text-[10px] font-black underline uppercase text-gold/60">Cancelar</button></div>
+                        )}
+                        {!isAddingAdditional && (
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-2 flex relative h-16">
+                                <div className={`absolute top-2 bottom-2 w-[calc(50%-12px)] bg-gold rounded-xl transition-all duration-300 pointer-events-none ${orderType === 'Local' ? 'left-2' : 'left-[calc(50%+4px)]'}`}></div>
+                                <button className={`flex-1 flex flex-col items-center justify-center relative z-10 transition-colors ${orderType === 'Local' ? 'text-slate-950' : 'text-slate-400'}`} onClick={() => setOrderType('Local')}><UtensilsCrossed size={18} /><span>Mesa</span></button>
+                                <button className={`flex-1 flex flex-col items-center justify-center relative z-10 transition-colors ${orderType === 'Delivery' ? 'text-slate-950' : 'text-slate-400'}`} onClick={() => setOrderType('Delivery')}><Truck size={18} /><span>Delivery</span></button>
+                            </div>
+                        )}
+                        {orderType === 'Local' && !isAddingAdditional && (
+                            <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Número de Mesa</label><input type="number" value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder="Ej: 5" className="w-full bg-white/5 border border-white/10 text-white rounded-2xl p-4 text-xl font-black text-center focus:border-gold outline-none" /></div>
+                        )}
+                        {orderType === 'Delivery' && (
+                            <div className="grid gap-4"><input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nombre del Cliente" className="w-full bg-white/5 border border-white/10 text-white rounded-2xl p-4 text-lg font-black focus:border-gold outline-none" /><input type="tel" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+54..." className="w-full bg-white/5 border border-white/10 text-white rounded-2xl p-4 text-lg font-black focus:border-gold outline-none" /></div>
+                        )}
+                        <div onClick={() => setIsBirthdayMode(!isBirthdayMode)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${isBirthdayMode ? 'bg-gold/20 border-gold shadow-lg shadow-gold/10' : 'bg-white/5 border-white/5'}`}><div className="flex items-center gap-4"><div className={`size-10 rounded-xl flex items-center justify-center ${isBirthdayMode ? 'bg-gold text-slate-950 scale-110' : 'bg-slate-800 text-slate-500'}`}><span>🎂</span></div><div><p className={`text-xs font-black uppercase tracking-widest leading-none mb-1 ${isBirthdayMode ? 'text-gold' : 'text-white'}`}>Modo Cumpleaños</p><p className="text-[9px] font-bold text-slate-500 uppercase">Activar celebración</p></div></div><div className={`w-12 h-6 rounded-full relative transition-all ${isBirthdayMode ? 'bg-gold' : 'bg-slate-800'}`}><div className={`absolute top-1 size-4 bg-white rounded-full transition-all ${isBirthdayMode ? 'left-7' : 'left-1'}`}></div></div></div>
+                        <div className="relative"><div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search size={18} className="text-slate-500" /></div><input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar plato o bebida..." className="w-full bg-white/5 border border-white/10 text-white rounded-2xl py-4 pl-12 pr-12 text-sm font-bold focus:border-gold outline-none" />{searchTerm && <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500"><X size={18} /></button>}</div>
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">{categories.map(cat => <button key={cat} onClick={() => setActiveCategory(cat)} className={`shrink-0 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-white text-slate-950 shadow-lg' : 'bg-white/5 border border-white/10 text-slate-400'}`}>{cat}</button>)}</div>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            {currentProducts.map(product => {
+                                const inCart = cart.find(c => c.id === product.id)?.quantity || 0;
+                                const isOutOfStock = product.disponible === false || (product.activar_control_stock && product.stock_actual <= 0);
+                                const discount = getCurrentDiscount(product);
+                                const currentPrice = discount > 0 ? product.price * (1 - discount / 100) : product.price;
+                                return (
+                                    <div key={product.id} onClick={() => !isOutOfStock && handleAddToCart(product, discount)} className={`bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex flex-col relative transition-all cursor-pointer ${isOutOfStock ? 'opacity-40 grayscale' : ''}`}>
+                                        {inCart > 0 && <div className="absolute top-2 right-2 size-6 bg-gold text-slate-950 font-black text-xs rounded-full flex items-center justify-center z-10">{inCart}</div>}
+                                        {discount > 0 && <div className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md z-10 shadow-lg">-{discount}%</div>}
+                                        <div className="h-24 bg-slate-900 relative"><img src={product.img} alt={product.name} className="w-full h-full object-cover opacity-60" /><div className="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent"></div></div>
+                                        <div className="p-3 flex-1 flex flex-col justify-between -mt-5 z-10">
+                                            <div><h3 className="text-sm font-black italic leading-tight">{product.name}</h3><div className="flex justify-between items-end mt-1"><span className="text-gold font-bold text-sm">${currentPrice}</span></div></div>
+                                            <div className="flex justify-between items-center gap-1 mt-3 bg-slate-900 border border-white/5 p-1 rounded-xl">
+                                                <button onClick={(e) => { e.stopPropagation(); handleRemoveFromCart(product.id); }} disabled={inCart === 0} className="p-2 bg-white/5 text-slate-400 rounded-lg"><Minus size={16} /></button>
+                                                <span className="font-black text-sm">{inCart}</span>
+                                                <button onClick={(e) => { e.stopPropagation(); handleAddToCart(product, discount); }} disabled={isOutOfStock} className="p-2 bg-gold/10 text-gold rounded-lg"><Plus size={16} /></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* 2. MESAS */}
+                {activeTab === 'mesas' && viewMode === 'list' && (
+                    <div className="grid grid-cols-2 gap-4 animate-in fade-in">
+                        {activeTables.map(t => <button key={t} onClick={() => { setSelectedTable(t); setViewMode('detail'); }} className="bg-white/5 border border-white/10 rounded-[32px] p-6 flex flex-col items-center gap-2"><div className="size-16 bg-slate-900 rounded-2xl flex items-center justify-center"><UtensilsCrossed size={24} className="text-gold" /></div><p className="text-3xl font-black italic text-white">Mesa {t}</p></button>)}
+                        {activeTables.length === 0 && (
+                            <div className="col-span-2 py-16 text-center text-slate-500 font-bold uppercase text-xs">
+                                No hay mesas con pedidos pendientes
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* 2b. MESA DETALLE */}
+                {activeTab === 'mesas' && viewMode === 'detail' && selectedTable && (
+                    <div className="space-y-6 animate-in fade-in">
+                        <div className="flex items-center justify-between">
+                            <button onClick={() => setViewMode('list')} className="p-2 bg-white/5 rounded-xl flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white">
+                                <ArrowLeft size={16} /> Volver a Mesas
+                            </button>
+                            <h2 className="text-xl font-black italic uppercase text-gold">Mesa #{selectedTable}</h2>
+                        </div>
+
+                        {/* Order items */}
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Consumo de la Mesa</h3>
+                            {ordersForSelectedTable.map(o => (
+                                <div key={o.id} className="border-b border-white/5 pb-2 last:border-0">
+                                    {(o.productos || o.items || []).map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-xs py-1">
+                                            <span>{item.cantidad || item.quantity || 1}x {item.nombre || item.name}</span>
+                                            <span className="font-bold text-gold">${(item.price || 0) * (item.cantidad || item.quantity || 1)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                            <div className="flex justify-between items-center pt-2 border-t border-white/10 text-base font-black">
+                                <span>TOTAL</span>
+                                <span className="text-gold text-xl">${tableTotal.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => handlePrintTicket(selectedTable)} className="py-4 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-wider">
+                                <Printer size={16} /> Imprimir Ticket
+                            </button>
+                            <button onClick={() => { setTableNumber(selectedTable); setIsAddingAdditional(true); setActiveTab('pedido'); }} className="py-4 bg-gold/10 border border-gold/30 text-gold rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-wider">
+                                <Plus size={16} /> Agregar Pedido
+                            </button>
+                        </div>
+
+                        {/* Cobro */}
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Cobrar y Liberar Mesa</h3>
+                            <div className="grid grid-cols-3 gap-2">
+                                {['Efectivo', 'Transferencia', 'Tarjeta'].map(m => (
+                                    <button key={m} onClick={() => setPaymentMethod(m)} className={`py-3 rounded-xl text-xs font-black uppercase transition-all ${paymentMethod === m ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'bg-white/5 text-slate-400 hover:text-white'}`}>
+                                        {m}
+                                    </button>
+                                ))}
+                            </div>
+                            <button onClick={handleProcessPayment} disabled={isProcessingPayment} className="w-full py-4 bg-green-500 hover:bg-green-400 text-slate-950 font-black text-sm uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/20">
+                                <CreditCard size={18} /> {isProcessingPayment ? 'Procesando...' : 'Cobrar y Finalizar'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. MIS PEDIDOS */}
+                {activeTab === 'mis-pedidos' && (
+                    <div className="space-y-4 animate-in fade-in pb-12">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-sm font-black uppercase tracking-wider text-slate-400">Mis Pedidos ({myOrders.length})</h2>
+                        </div>
+                        {myOrders.length === 0 ? (
+                            <div className="py-16 text-center text-slate-500 font-bold uppercase text-xs">
+                                No has tomado pedidos en este turno
+                            </div>
+                        ) : (
+                            myOrders.map(order => (
+                                <div key={order.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-black text-sm text-white">Mesa {order.tableNumber || order.mesa || 'N/A'}</span>
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">{order.tipo || order.type || 'Local'}</span>
+                                        </div>
+                                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                            order.status === 'listo' ? 'bg-emerald-500/20 text-emerald-400' :
+                                            order.status === 'preparando' ? 'bg-sky-500/20 text-sky-400' :
+                                            'bg-amber-500/20 text-amber-400'
+                                        }`}>
+                                            {order.status || 'pendiente'}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1 pt-1">
+                                        {(order.productos || order.items || []).map((it, idx) => (
+                                            <p key={idx} className="text-xs text-slate-300">
+                                                {it.cantidad || it.quantity || 1}x {it.nombre || it.name}
+                                            </p>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                        <span className="text-[10px] text-slate-500 flex items-center gap-1"><Clock size={12} /> {order.timestamp ? new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                        <span className="font-black text-gold text-sm">${order.total || 0}</span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+
+                {/* 4. HISTORIAL DE TURNO */}
+                {activeTab === 'historial' && (
+                    <div className="space-y-6 pb-20">
+                        <div className="bg-purple-500/5 border border-purple-500/20 rounded-3xl p-5 flex justify-between items-center shadow-xl shadow-purple-500/10">
+                            <div>
+                                <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest">Turno Actual</p>
+                                <p className="text-lg font-black italic text-white">${shiftTotal.toLocaleString()}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[9px] font-black text-slate-500 uppercase">Cobrados</p>
+                                <p className="text-lg font-black italic text-green-400">${shiftPaidTotal.toLocaleString()}</p>
+                            </div>
+                        </div>
+                        {shiftOrders.length > 0 && (
+                            <button onClick={handleCerrarTurno} className="w-full py-5 bg-red-500/10 border-2 border-red-500/30 text-red-500 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-red-500 hover:text-white transition-all">
+                                <Power size={18} /> Cerrar Turno
+                            </button>
+                        )}
+                    </div>
+                )}
+            </main>
+
+            {/* Floating cart bar for 'pedido' */}
+            {activeTab === 'pedido' && cart.length > 0 && (
+                <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-white/10 p-4 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] z-50">
+                    <div className="flex justify-between items-center mb-3"><span className="text-[10px] uppercase font-black tracking-widest text-slate-400">{cart.reduce((a, b) => a + b.quantity, 0)} Productos</span><span className="text-2xl font-black italic text-gold tracking-tighter">${cartTotal.toLocaleString()}</span></div>
+                    <button onClick={handleSubmitOrder} disabled={isSubmitting} className="w-full py-5 bg-gold text-slate-950 text-base font-black uppercase tracking-widest italic rounded-2xl flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(242,185,13,0.3)]">{isSubmitting ? 'Enviando...' : <>{isAddingAdditional ? 'CONFIRMAR ADICIONAL' : 'ENVIAR A COCINA'} <Send size={20} /></>}</button>
+                </div>
+            )}
+            {selectedComboForModal && <PromoCumpleModal combo={selectedComboForModal} onClose={() => setSelectedComboForModal(null)} onConfirm={handleConfirmCombo} />}
         </div>
     );
 }

@@ -1,13 +1,11 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-    Users, Calendar, Beer, TrendingUp, Package,
-    ChevronRight, Zap, Target, ArrowUpRight, Clock,
-    CreditCard, ShoppingBag, Activity, Star, Flame,
-    Search, Filter, CheckCircle2, AlertCircle, X,
-    Phone, MessageCircle, DollarSign, UtensilsCrossed,
-    MapPin, FileText, ArrowDownRight, ExternalLink,
-    Receipt, UserCheck, Sparkles, RefreshCw
+    Users, Calendar, Beer, TrendingUp,
+    ChevronRight, Zap, ArrowUpRight,
+    CreditCard, Activity, Flame,
+    Search, X, MessageCircle, ExternalLink,
+    Receipt, UserCheck, Sparkles
 } from 'lucide-react';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { db } from '../../../firebase/config';
@@ -51,8 +49,7 @@ function formatActivityTime(date) {
 export default function Dashboard() {
     const { negocioId } = useParams();
     const { config } = useConfig();
-    const [animate, setAnimate] = useState(false);
-    useEffect(() => { setAnimate(true); }, []);
+    const [animate] = useState(true);
 
     const businessName = config?.nombre || negocioId?.toUpperCase() || 'NEGOCIO';
     const basePath = `/${negocioId}`;
@@ -395,8 +392,8 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3 shadow-lg shadow-emerald-500/5">
-                        <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-emerald-400"><span>Actividad en Tiempo Real</span></span>
+                        <span className={`w-2.5 h-2.5 rounded-full ${loadingData ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
+                        <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-emerald-400"><span>{loadingData ? 'Sincronizando...' : 'Actividad en Tiempo Real'}</span></span>
                     </div>
                 </div>
             </div>

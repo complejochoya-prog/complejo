@@ -10,7 +10,6 @@ import {
     CreditCard, 
     Timer, 
     MapPin,
-    ChevronRight,
     MoreHorizontal,
     XCircle,
     Download
@@ -18,13 +17,25 @@ import {
 import { useParams } from 'react-router-dom';
 import { useReservas } from '../../reservas/services/ReservasContext';
 import { db } from '../../../firebase/config';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, collection, onSnapshot } from 'firebase/firestore';
+import { useConfig } from '../../../core/services/ConfigContext';
+import { isHoraEnBloqueo } from '../../client_app/services/clientService';
 import { addMovement } from '../../../core/services/cajaService'; // Import integration
 import NuevaReservaModal from '../components/NuevaReservaModal';
 
 export default function ReservasPage() {
     const { negocioId } = useParams();
     const { bookings: reservas, resources: listEspacios } = useReservas();
+    const { config } = useConfig();
+    const [bloqueos, setBloqueos] = useState([]);
+
+    useEffect(() => {
+        if (!negocioId) return;
+        const unsub = onSnapshot(collection(db, 'negocios', negocioId, 'bloqueos'),
+            snap => setBloqueos(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+            err => console.error('Error en bloqueos:', err));
+        return () => unsub();
+    }, [negocioId]);
     
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDate, setFilterDate] = useState('');
@@ -105,9 +116,13 @@ export default function ReservasPage() {
         return reservas.some(res => 
             res.canchaId === canchaId && 
             res.fecha === targetDate && 
-            res.status !== 'cancelada' && 
-            res.hora.split(' - ').includes(hora)
+            String(res.status || '').toLowerCase() !== 'cancelada' && 
+            (res.hora || '').split(' - ').includes(hora)
         );
+    };
+
+    const isSlotBlocked = (canchaId, hora) => {
+        return bloqueos.some(b => b.fecha === targetDate && (!b.espacioId || b.espacioId === canchaId) && isHoraEnBloqueo(b, hora));
     };
 
     const handleExportCSV = () => {
@@ -253,6 +268,15 @@ export default function ReservasPage() {
                                 </div>
                                 {allHours.map(h => {
                                     const occupied = isSlotOccupied(cId, h);
+                                    const blocked = !occupied && isSlotBlocked(cId, h);
+                                    if (blocked) {
+                                        return (
+                                            <div key={h} title={`${canchas[cId]} - ${h} hs: BLOQUEADO`}
+                                                className="w-12 h-10 flex-none rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 flex items-center justify-center text-[10px] font-black cursor-not-allowed">
+                                                ✕
+                                            </div>
+                                        );
+                                    }
                                     return (
                                         <button 
                                             key={h} 

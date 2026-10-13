@@ -6,13 +6,9 @@ import { useClientAuth } from '../hooks/useClientAuth';
 import ReservationForm from './ReservationForm';
 import { 
     ArrowLeft, 
-    Clock, 
     CalendarDays, 
     Loader2, 
-    User, 
-    Phone, 
     CreditCard, 
-    ChevronRight, 
     Check,
     CalendarCheck,
     Sun,
@@ -24,7 +20,7 @@ import {
 export default function ClientFieldDetail() {
     const { negocioId, fieldId } = useParams();
     const navigate = useNavigate();
-    const { clientUser, loading: authLoading } = useClientAuth();
+    const { clientUser } = useClientAuth();
     const { config } = useConfig();
     
     const [espacios, setEspacios] = useState([]);
@@ -216,16 +212,11 @@ export default function ClientFieldDetail() {
                     } 
                 });
             }
-        } catch (error) {
+        } catch {
             alert("Error al procesar la reserva.");
         } finally {
             setBookingLoading(false);
         }
-    };
-
-    const formatearFechaTablero = (f) => {
-        const d = new Date(f + 'T00:00:00');
-        return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase();
     };
 
     const horariosDiurnos = horarios.filter(h => !h.esNocturno);
