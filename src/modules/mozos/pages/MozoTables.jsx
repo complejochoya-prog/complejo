@@ -6,6 +6,25 @@ import { useMesas } from '../../bar/services/MesasContext';
 import PaymentModal from '../components/PaymentModal';
 import { getMozoSession } from '../services/mozoService';
 import { playBeepKDS } from './MozoApp';
+import {
+    Smartphone,
+    X,
+    UtensilsCrossed,
+    Flame,
+    Sparkles,
+    Receipt,
+    Plus,
+    Check,
+    ShoppingCart,
+    Clock,
+    Activity,
+    Bell,
+    Send,
+    CheckCircle2,
+    Users,
+    Trophy,
+    Search
+} from 'lucide-react';
 
 /* ───── QUICK NOTES FOR KITCHEN MODIFIERS ───── */
 const QUICK_NOTES = ['Sin cebolla', 'Punto jugoso', 'Hielo extra', 'Papas bien crocantes', 'Sin sal agregada', 'Bien cocido', 'Sin picante'];
@@ -21,7 +40,7 @@ const STATUS_CONFIG = {
 };
 
 export default function MozoTables() {
-    const { negocioId, barProducts: configProducts, tables: configTables } = useConfig();
+    const { barProducts: configProducts, tables: configTables } = useConfig();
     const { orders = [], addOrder, barProducts: pedidosProducts = [] } = usePedidos();
     const { mesas = [], marcarMesaOcupada, marcarMesaDisponible, marcarMesaLimpieza } = useMesas();
     const outletCtx = useOutletContext() || {};
@@ -32,7 +51,6 @@ export default function MozoTables() {
     const [selectedTable, setSelectedTable] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isComandaOpen, setIsComandaOpen] = useState(false);
     const [modalTab, setModalTab] = useState('comandar'); // 'comandar' | 'kds'
     const [cart, setCart] = useState([]);
     const [category, setCategory] = useState('todas');
@@ -83,7 +101,9 @@ export default function MozoTables() {
 
     /* ───── CART OPERATIONS ───── */
     const addToCart = useCallback((product) => {
-        if ('vibrate' in navigator) navigator.vibrate(25);
+        if ('vibrate' in navigator) {
+            try { navigator.vibrate(25); } catch { /* */ }
+        }
         const pId = String(product.id);
         setCart(prev => {
             const existing = prev.find(item => String(item.id) === pId);
@@ -93,7 +113,9 @@ export default function MozoTables() {
     }, []);
 
     const decrementCart = useCallback((productId) => {
-        if ('vibrate' in navigator) navigator.vibrate(20);
+        if ('vibrate' in navigator) {
+            try { navigator.vibrate(20); } catch { /* */ }
+        }
         const pId = String(productId);
         setCart(prev => {
             const existing = prev.find(item => String(item.id) === pId);
@@ -109,7 +131,9 @@ export default function MozoTables() {
     /* ───── PLACE ORDER TO KITCHEN / KDS ───── */
     const handlePlaceOrder = useCallback(() => {
         if (cart.length === 0 || !selectedTable) return;
-        if ('vibrate' in navigator) navigator.vibrate([50, 50, 100]);
+        if ('vibrate' in navigator) {
+            try { navigator.vibrate([50, 50, 100]); } catch { /* */ }
+        }
         playBeepKDS();
 
         const modNotes = Array.from(activeModifiers).join(', ');
@@ -158,7 +182,7 @@ export default function MozoTables() {
                 sector: num <= 6 ? 'SALON' : (num <= 10 ? 'TERRAZAS' : (num === 11 ? 'PADEL' : 'FUTBOL')),
                 capacidad: num === 5 ? 6 : (num === 9 ? 8 : (num === 3 || num === 7 ? 2 : (num === 12 ? 10 : 4))),
                 isSport: num >= 11,
-                sportIcon: num === 11 ? 'sports_tennis' : (num === 12 ? 'sports_soccer' : null),
+                sportType: num === 11 ? 'padel' : (num === 12 ? 'futbol' : null),
                 salonName: num <= 3 ? 'Salón Principal' : (num <= 6 ? 'Salón Terraza' : (num <= 10 ? 'Salón Quincho' : (num === 11 ? 'Pista Central Vidrio' : 'Césped Sintético 1')))
             };
         });
@@ -175,7 +199,7 @@ export default function MozoTables() {
         return [...baseSlots, ...custom];
     }, [configTables]);
 
-    /* ───── TABLE CARD DATA (merge with orders/mesas) ───── */
+    /* ───── TABLE CARD DATA ───── */
     const tableCardsData = useMemo(() => {
         return allTableSlots.map(slot => {
             const tableOrders = (orders || []).filter(o =>
@@ -236,7 +260,9 @@ export default function MozoTables() {
 
     /* ───── HANDLERS ───── */
     const handleSelectMesa = (tableId) => {
-        if ('vibrate' in navigator) navigator.vibrate(30);
+        if ('vibrate' in navigator) {
+            try { navigator.vibrate(30); } catch { /* */ }
+        }
         setSelectedTable(prev => prev === tableId ? null : tableId);
     };
 
@@ -245,7 +271,9 @@ export default function MozoTables() {
             alert("Esta mesa no tiene consumos registrados para cobrar.");
             return;
         }
-        if ('vibrate' in navigator) navigator.vibrate(30);
+        if ('vibrate' in navigator) {
+            try { navigator.vibrate(30); } catch { /* */ }
+        }
         playBeepKDS();
         const consolidatedOrder = {
             id: `mesa_${selectedTable}_${Date.now()}`,
@@ -267,20 +295,6 @@ export default function MozoTables() {
         setSelectedTable(null);
     };
 
-    const handleToggleMesaStatus = () => {
-        if (!selectedTable || !currentSelectedData) return;
-        if (currentSelectedData.status === 'ocupada' || currentSelectedData.status === 'cuenta') {
-            if (window.confirm(`¿Liberar y marcar ${currentSelectedData.title} para limpieza?`)) {
-                if (marcarMesaLimpieza) marcarMesaLimpieza(selectedTable);
-                else if (marcarMesaDisponible) marcarMesaDisponible(selectedTable);
-            }
-        } else if (currentSelectedData.status === 'libre') {
-            if (marcarMesaOcupada) marcarMesaOcupada(selectedTable);
-        } else if (currentSelectedData.status === 'limpieza') {
-            if (marcarMesaDisponible) marcarMesaDisponible(selectedTable);
-        }
-    };
-
     const openComandero = (tableId) => {
         setSelectedTable(tableId);
         setModalTab('comandar');
@@ -296,22 +310,18 @@ export default function MozoTables() {
         });
     };
 
-    /* ───── STATUS HELPERS ───── */
     const getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.libre;
 
-    /* ═══════════════════════════════════════════════════════ */
-    /*                        RENDER                          */
-    /* ═══════════════════════════════════════════════════════ */
     return (
-        <div className="flex flex-col w-full text-[#e4e1e9] pb-8" style={{ fontFamily: "'Manrope', sans-serif" }}>
+        <div className="flex flex-col w-full text-[#e4e1e9] pb-8 notranslate" translate="no" style={{ fontFamily: "'Manrope', sans-serif" }}>
 
             {/* ── PWA INSTALL BANNER ── */}
             {showPWABanner && (
-                <section className="px-3.5 pt-2 pb-1">
+                <section className="pt-2 pb-1">
                     <div className="bg-gradient-to-r from-[#121722] via-[#1A202E] to-[#121722] border border-[rgba(255,255,255,0.08)] rounded-2xl p-2.5 shadow-sm flex items-center justify-between gap-2.5">
                         <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-9 h-9 rounded-xl bg-[#f59e0b]/20 border border-[#f59e0b]/40 flex items-center justify-center shrink-0">
-                                <span className="material-symbols-outlined text-[#FBBF24] text-[20px]">install_mobile</span>
+                            <div className="w-9 h-9 rounded-xl bg-[#f59e0b]/20 border border-[#f59e0b]/40 flex items-center justify-center shrink-0 text-[#FBBF24]">
+                                <Smartphone size={18} />
                             </div>
                             <div className="flex flex-col min-w-0">
                                 <span className="text-[10px] font-extrabold text-[#FBBF24] uppercase tracking-[0.06em]">PWA Modo Mozo Offline Ready</span>
@@ -321,7 +331,7 @@ export default function MozoTables() {
                         <div className="flex items-center gap-1 shrink-0">
                             <button className="px-3 py-1.5 rounded-xl bg-[#FBBF24] text-[#0A0A0F] text-[10px] font-extrabold uppercase tracking-[0.06em] active:scale-95 transition-all shadow-sm">INSTALAR</button>
                             <button className="p-1 text-[#64748B] hover:text-white" onClick={() => setShowPWABanner(false)}>
-                                <span className="material-symbols-outlined text-[16px]">close</span>
+                                <X size={16} />
                             </button>
                         </div>
                     </div>
@@ -329,21 +339,21 @@ export default function MozoTables() {
             )}
 
             {/* ── AUTO-SYNC BAR ── */}
-            <section className="px-3.5 py-1.5">
+            <section className="py-1.5">
                 <div className="flex items-center justify-between bg-[#121722] border border-[rgba(255,255,255,0.08)] rounded-xl px-3 py-1.5 text-xs">
                     <div className="flex items-center gap-1.5 min-w-0">
                         <div className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981] animate-pulse"></div>
-                        <span className="text-[10px] font-extrabold text-[#10B981] uppercase tracking-[0.06em]">Auto-Sync Activo</span>
+                        <span className="text-[10px] font-extrabold text-[#10B981] uppercase tracking-[0.06em]">Auto-Sync Activo (WebSocket en vivo)</span>
                     </div>
                     <div className="flex items-center gap-1 text-[11px]">
-                        <span className="text-[#64748B] font-normal">Facturación:</span>
+                        <span className="text-[#64748B] font-normal">Facturación Salón:</span>
                         <span className="font-extrabold text-[#FBBF24]">{facturacion}</span>
                     </div>
                 </div>
             </section>
 
             {/* ── FILTROS DE ESTADO RÁPIDOS ── */}
-            <section className="px-3.5 py-1">
+            <section className="py-1">
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 text-xs">
                     {[
                         { key: 'todos', label: `TODOS (${statusCounts.todos})`, color: null },
@@ -355,31 +365,31 @@ export default function MozoTables() {
                         <button
                             key={f.key}
                             onClick={() => setActiveFilter(f.key)}
-                            className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.06em] whitespace-nowrap flex items-center gap-1 active:scale-95 transition-all ${
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.06em] whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition-all ${
                                 activeFilter === f.key
                                     ? 'bg-[#FBBF24] text-[#0A0A0F] shadow-sm'
                                     : 'bg-[#1f1f25] hover:bg-[#2a292f] text-[#94A3B8]'
-                            } ${f.color ? `border border-[${f.color}]/30` : ''}`}
+                            }`}
                         >
                             {f.color && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: f.color }}></span>}
-                            {f.label}
+                            <span>{f.label}</span>
                         </button>
                     ))}
                 </div>
             </section>
 
             {/* ── GRID TITLE ── */}
-            <section className="px-3.5 py-1.5 flex flex-col gap-2.5">
+            <section className="py-1.5 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[#FBBF24] text-[18px]">table_restaurant</span>
+                    <div className="flex items-center gap-1.5 text-[#FBBF24]">
+                        <UtensilsCrossed size={18} />
                         <h2 className="text-sm font-bold text-white">Distribución Táctica de Mesas</h2>
                     </div>
                     <span className="text-[10px] text-[#64748B] uppercase font-extrabold tracking-[0.06em]">Piso 1 · Salón & Canchas</span>
                 </div>
 
-                {/* ── GRID 2 COLUMNAS ── */}
-                <div className="grid grid-cols-2 gap-2.5">
+                {/* ── GRID MESAS RESPONSIVE ── */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {displayedTables.map(table => {
                         const sc = getStatusConfig(table.status);
                         const isSelected = selectedTable === table.id;
@@ -388,7 +398,7 @@ export default function MozoTables() {
                             <div
                                 key={table.id}
                                 onClick={() => table.status === 'limpieza' ? null : handleSelectMesa(table.id)}
-                                className={`mesa-card cursor-pointer bg-[#121722] border-2 ${sc.borderClass} rounded-2xl p-3 shadow-md flex flex-col justify-between min-h-[145px] relative overflow-hidden active:scale-95 transition-all ${isSelected ? 'ring-2 ring-[#FBBF24]/60' : ''}`}
+                                className={`mesa-card cursor-pointer bg-[#121722] border-2 ${sc.borderClass} rounded-2xl p-3 shadow-md flex flex-col justify-between min-h-[148px] relative overflow-hidden active:scale-95 transition-all ${isSelected ? 'ring-2 ring-[#FBBF24]/60' : ''}`}
                             >
                                 {/* Ambient glow for occupied */}
                                 {(table.status === 'ocupada' || table.status === 'cuenta') && (
@@ -402,13 +412,12 @@ export default function MozoTables() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm ${sc.numBg}`}>
-                                            {table.sportIcon
-                                                ? <span className="material-symbols-outlined text-[20px]">{table.sportIcon}</span>
-                                                : table.displayNum
-                                            }
+                                            {table.isSport ? (
+                                                table.sportType === 'padel' ? <Activity size={18} /> : <Trophy size={18} />
+                                            ) : table.displayNum}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-white">{table.title}</span>
+                                            <span className="text-sm font-bold text-white leading-tight">{table.title}</span>
                                             {table.status === 'libre' && (
                                                 <span className="text-[9px] text-[#10B981] font-extrabold uppercase tracking-[0.06em]">DISPONIBLE</span>
                                             )}
@@ -429,48 +438,49 @@ export default function MozoTables() {
                                             )}
                                         </div>
                                     </div>
-                                    {/* Status badge or dot */}
-                                    {(table.status === 'cocina') && (
-                                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ${sc.badgeBg} border border-[${sc.color}]/40 ${sc.badgeText} text-[9px] font-extrabold uppercase tracking-[0.06em] animate-pulse`}>
-                                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sc.color }}></span>Cocina
+                                    
+                                    {/* Status badge / icon */}
+                                    {table.status === 'cocina' && (
+                                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ${sc.badgeBg} ${sc.badgeText} text-[9px] font-extrabold uppercase tracking-[0.06em] animate-pulse`}>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#06B6D4]"></span>Cocina
                                         </span>
                                     )}
-                                    {(table.status === 'ocupada') && (
+                                    {table.status === 'ocupada' && (
                                         <span className={`px-2 py-0.5 rounded-full ${sc.badgeBg} ${sc.badgeText} text-[9px] font-extrabold uppercase`}>Ocupada</span>
                                     )}
                                     {table.status === 'libre' && (
                                         <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]"></span>
                                     )}
                                     {table.status === 'limpieza' && (
-                                        <span className="material-symbols-outlined text-yellow-400 text-[18px] animate-bounce">cleaning_services</span>
+                                        <Sparkles size={18} className="text-yellow-400 animate-bounce" />
                                     )}
                                     {table.status === 'cuenta' && (
-                                        <span className="material-symbols-outlined text-[#8B5CF6] text-[20px] animate-bounce">receipt_long</span>
+                                        <Receipt size={18} className="text-[#8B5CF6] animate-bounce" />
                                     )}
                                     {table.status === 'reservada' && (
                                         <span className="px-1.5 py-0.5 rounded-full bg-[#4F46E5]/30 text-indigo-200 text-[9px] font-extrabold">21:30 HS</span>
                                     )}
                                 </div>
 
-                                {/* Body */}
+                                {/* Body / Details */}
                                 <div className="mt-auto pt-2 flex flex-col">
                                     {/* Cocina: marchando timer */}
                                     {table.status === 'cocina' && (
-                                        <div className="flex items-center gap-1 text-[11px] text-[#06B6D4] font-semibold">
-                                            <span className="material-symbols-outlined text-[13px] animate-spin">soup_kitchen</span>
+                                        <div className="flex items-center gap-1 text-[11px] text-[#06B6D4] font-semibold mb-1">
+                                            <Flame size={13} className="animate-pulse" />
                                             <span>Marchando: {table.minutes || '?'} min</span>
                                         </div>
                                     )}
                                     {/* Summary text */}
                                     {table.summaryText && (table.status === 'ocupada' || table.status === 'cocina' || table.status === 'cuenta') && (
-                                        <span className="text-[11px] text-[#94A3B8] truncate">{table.summaryText}</span>
+                                        <span className="text-[11px] text-[#94A3B8] truncate mb-1">{table.summaryText}</span>
                                     )}
                                     {table.status === 'reservada' && (
                                         <>
                                             <span className="text-[11px] text-[#94A3B8] truncate">{table.summaryText}</span>
                                             <div className="flex items-center justify-between mt-1 text-[11px] text-[#64748B]">
                                                 <span>{table.capacidad} Comensales</span>
-                                                <span className="material-symbols-outlined text-[16px] text-indigo-300">event_seat</span>
+                                                <Users size={14} className="text-indigo-300" />
                                             </div>
                                         </>
                                     )}
@@ -502,27 +512,27 @@ export default function MozoTables() {
                                     )}
                                     {/* Libre: Abrir button */}
                                     {table.status === 'libre' && (
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] text-[#64748B]">Cap. {table.capacidad} pers.</span>
+                                        <div className="flex items-center justify-between mt-1">
+                                            <span className="text-[11px] text-[#64748B]">Cap. {table.capacidad} p.</span>
                                             <button
                                                 className="px-2.5 py-1 rounded-xl bg-[#10B981] text-[#0A0A0F] text-[10px] font-extrabold flex items-center gap-0.5 shadow-sm active:scale-95 transition-all"
                                                 onClick={(e) => { e.stopPropagation(); openComandero(table.id); }}
                                             >
-                                                <span className="material-symbols-outlined text-[14px]">add</span> Abrir
+                                                <Plus size={13} strokeWidth={3} /> Abrir
                                             </button>
                                         </div>
                                     )}
                                     {/* Limpieza: Marcar limpia */}
                                     {table.status === 'limpieza' && (
-                                        <>
-                                            <span className="text-[11px] text-[#94A3B8]">Desocupada recientemente</span>
+                                        <div className="mt-1">
+                                            <span className="text-[11px] text-[#94A3B8] block mb-1.5">Desocupada</span>
                                             <button
-                                                className="mt-2 w-full py-1.5 rounded-xl bg-[#EAB308] text-[#0A0A0F] text-[10px] font-extrabold flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                                className="w-full py-1.5 rounded-xl bg-[#EAB308] text-[#0A0A0F] text-[10px] font-extrabold flex items-center justify-center gap-1 active:scale-95 transition-all"
                                                 onClick={(e) => { e.stopPropagation(); handleMarcarLimpia(table.id); }}
                                             >
-                                                <span className="material-symbols-outlined text-[14px]">check</span> Marcar Limpia
+                                                <Check size={14} strokeWidth={3} /> Marcar Limpia
                                             </button>
-                                        </>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -532,7 +542,7 @@ export default function MozoTables() {
             </section>
 
             {/* ── LEYENDA SEMÁFORO ── */}
-            <section className="px-3.5 py-2">
+            <section className="py-2">
                 <div className="bg-[#121722] border border-[rgba(255,255,255,0.08)] rounded-2xl p-2.5 flex items-center justify-around flex-wrap gap-2 text-center">
                     {Object.entries(STATUS_CONFIG).map(([key, sc]) => (
                         <div key={key} className="flex items-center gap-1.5">
@@ -548,7 +558,7 @@ export default function MozoTables() {
             {/* ══════════════════════════════════════════════════════ */}
             {isMenuOpen && currentSelectedData && (
                 <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col justify-end transition-all duration-300">
-                    <div className="bg-[#1A202E] border-t-2 border-[rgba(255,255,255,0.08)] rounded-t-3xl max-h-[92vh] flex flex-col w-full max-w-lg mx-auto shadow-[0_-16px_48px_rgba(0,0,0,0.9)] overflow-hidden animate-slide-up">
+                    <div className="bg-[#1A202E] border-t-2 border-[rgba(255,255,255,0.08)] rounded-t-3xl max-h-[92vh] flex flex-col w-full max-w-2xl mx-auto shadow-[0_-16px_48px_rgba(0,0,0,0.9)] overflow-hidden">
                         {/* Header */}
                         <div className="px-4 pt-3 pb-2.5 border-b border-[rgba(255,255,255,0.08)] bg-[#121722] shrink-0">
                             <div className="w-12 h-1 bg-[#35343a] rounded-full mx-auto mb-2"></div>
@@ -572,23 +582,23 @@ export default function MozoTables() {
                                     </div>
                                 </div>
                                 <button className="w-9 h-9 rounded-xl bg-[#1f1f25] hover:bg-[#2a292f] flex items-center justify-center text-[#64748B] hover:text-white" onClick={() => setIsMenuOpen(false)}>
-                                    <span className="material-symbols-outlined text-[20px]">close</span>
+                                    <X size={18} />
                                 </button>
                             </div>
                             {/* Tabs */}
                             <div className="grid grid-cols-2 gap-1.5 mt-3 bg-[#0A0A0F]/80 p-1 rounded-xl">
                                 <button
-                                    className={`py-1.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 ${modalTab === 'comandar' ? 'bg-[#FBBF24] text-[#0A0A0F]' : 'text-[#94A3B8] hover:text-white'}`}
+                                    className={`py-1.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1.5 ${modalTab === 'comandar' ? 'bg-[#FBBF24] text-[#0A0A0F]' : 'text-[#94A3B8] hover:text-white'}`}
                                     onClick={() => setModalTab('comandar')}
                                 >
-                                    <span className="material-symbols-outlined text-[15px]">add_shopping_cart</span>
-                                    COMANDAR
+                                    <ShoppingCart size={14} />
+                                    COMANDAR PRODUCTOS
                                 </button>
                                 <button
-                                    className={`py-1.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 ${modalTab === 'kds' ? 'bg-[#FBBF24] text-[#0A0A0F]' : 'text-[#94A3B8] hover:text-white'}`}
+                                    className={`py-1.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1.5 ${modalTab === 'kds' ? 'bg-[#FBBF24] text-[#0A0A0F]' : 'text-[#94A3B8] hover:text-white'}`}
                                     onClick={() => setModalTab('kds')}
                                 >
-                                    <span className="material-symbols-outlined text-[15px]">receipt_long</span>
+                                    <Receipt size={14} />
                                     SEGUIMIENTO KDS
                                 </button>
                             </div>
@@ -603,8 +613,10 @@ export default function MozoTables() {
                                         <button
                                             key={cat.id}
                                             onClick={() => setCategory(cat.id)}
-                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold whitespace-nowrap uppercase tracking-[0.06em] active:scale-95 transition-all ${
-                                                category === cat.id ? 'bg-[#FBBF24] text-[#0A0A0F]' : 'bg-[#1f1f25] text-[#94A3B8]'
+                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase whitespace-nowrap active:scale-95 transition-all ${
+                                                category === cat.id
+                                                    ? 'bg-[#FBBF24] text-[#0A0A0F] shadow-sm'
+                                                    : 'bg-[#1f1f25] text-[#94A3B8] hover:text-white'
                                             }`}
                                         >
                                             {cat.label} ({cat.count})
@@ -612,100 +624,142 @@ export default function MozoTables() {
                                     ))}
                                 </div>
 
-                                {/* Search */}
-                                <div className="relative">
-                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#64748B] text-[16px]">search</span>
+                                {/* Search Bar */}
+                                <div className="relative flex items-center">
+                                    <Search size={16} className="absolute left-3 text-[#64748B] pointer-events-none" />
                                     <input
                                         type="text"
-                                        placeholder="Buscar producto..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full bg-[#1f1f25] border border-[rgba(255,255,255,0.08)] rounded-xl py-2 pl-9 pr-8 text-xs font-bold text-white focus:outline-none focus:border-[#FBBF24] placeholder-[#64748B]"
+                                        placeholder="Buscar por nombre de producto..."
+                                        className="w-full bg-[#121722] border border-[rgba(255,255,255,0.08)] rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-[#64748B] outline-none focus:border-[#FBBF24]"
                                     />
                                     {searchTerm && (
-                                        <button onClick={() => setSearchTerm('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#64748B]">
-                                            <span className="material-symbols-outlined text-[14px]">close</span>
+                                        <button onClick={() => setSearchTerm('')} className="absolute right-2.5 text-[#64748B] hover:text-white">
+                                            <X size={14} />
                                         </button>
                                     )}
                                 </div>
 
-                                {/* Products List */}
-                                <div className="space-y-2">
+                                {/* Products List with Real Stock */}
+                                <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
                                     {filteredProducts.map(prod => {
-                                        const inCartItem = cart.find(c => String(c.id) === String(prod.id));
-                                        const qty = inCartItem?.quantity || 0;
-                                        const isOutOfStock = prod.stock !== null && prod.stock !== undefined && prod.stock <= 0;
-                                        const isLowStock = prod.stock !== null && prod.stock !== undefined && prod.stock > 0 && prod.stock <= 5;
+                                        const inCart = cart.find(c => String(c.id) === String(prod.id));
+                                        const qty = inCart?.quantity || 0;
+                                        const outOfStock = prod.stock !== null && prod.stock <= 0;
 
                                         return (
-                                            <div key={prod.id} className={`bg-[#121722] border border-[rgba(255,255,255,0.08)] rounded-2xl p-3 flex items-center justify-between gap-2.5 ${isOutOfStock ? 'opacity-60' : ''}`}>
+                                            <div
+                                                key={prod.id}
+                                                className={`bg-[#121722] border border-[rgba(255,255,255,0.08)] rounded-2xl p-3 flex items-center justify-between gap-2.5 ${outOfStock ? 'opacity-50' : ''}`}
+                                            >
                                                 <div className="flex flex-col min-w-0 flex-1">
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className={`text-xs font-bold ${isOutOfStock ? 'text-[#64748B]' : 'text-white'}`}>{prod.nombre}</span>
-                                                        {prod.stock !== null && prod.stock !== undefined && (
+                                                        <span className="text-xs font-bold text-white truncate">{prod.nombre}</span>
+                                                        {prod.stock !== null && (
                                                             <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold ${
-                                                                isOutOfStock ? 'bg-red-500/20 text-red-400' :
-                                                                isLowStock ? 'bg-amber-500/20 text-amber-400' :
-                                                                'bg-[#10B981]/20 text-[#10B981]'
+                                                                prod.stock <= 0
+                                                                    ? 'bg-red-500/20 text-red-400'
+                                                                    : (prod.stock < 5 ? 'bg-amber-500/20 text-amber-400' : 'bg-[#10B981]/20 text-[#10B981]')
                                                             }`}>
-                                                                {isOutOfStock ? 'AGOTADO' : `Stock: ${prod.stock} u.`}
+                                                                {prod.stock <= 0 ? 'AGOTADO' : `Stock: ${prod.stock}`}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    {prod.descripcion && <span className="text-[11px] text-[#94A3B8] truncate">{prod.descripcion}</span>}
-                                                    <span className={`text-xs font-bold mt-0.5 ${isOutOfStock ? 'text-[#64748B]' : 'text-[#FBBF24]'}`}>${prod.precio.toLocaleString('es-AR')}</span>
+                                                    <span className="text-[11px] text-[#94A3B8] truncate">{prod.categoria}</span>
+                                                    <span className="text-xs font-bold text-[#FBBF24] mt-0.5">${prod.precio.toLocaleString('es-AR')}</span>
                                                 </div>
-                                                {isOutOfStock ? (
-                                                    <div className="px-3 py-1.5 rounded-xl bg-[#1f1f25] text-[#64748B] text-[9px] font-bold uppercase tracking-[0.06em]">SIN STOCK</div>
+
+                                                {/* Controles + / - */}
+                                                {outOfStock ? (
+                                                    <span className="px-3 py-1.5 rounded-xl bg-[#1f1f25] text-[#64748B] text-[9px] font-bold">SIN STOCK</span>
                                                 ) : (
-                                                    <div className="flex items-center gap-2 shrink-0 bg-[#0A0A0F] px-2 py-1 rounded-xl border border-[rgba(255,255,255,0.08)]">
-                                                        <button className="w-8 h-8 rounded-lg bg-[#1f1f25] hover:bg-[#2a292f] text-white flex items-center justify-center font-bold text-lg active:scale-90 transition-all" onClick={() => decrementCart(prod.id)}>-</button>
-                                                        <span className="w-6 text-center text-sm font-extrabold text-[#FBBF24]">{qty}</span>
-                                                        <button className="w-8 h-8 rounded-lg bg-[#FBBF24] text-[#0A0A0F] flex items-center justify-center font-bold text-lg active:scale-90 transition-all" onClick={() => addToCart(prod)}>+</button>
+                                                    <div className="flex items-center gap-1.5 shrink-0 bg-[#0A0A0F] px-2 py-1 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                                                        {qty > 0 && (
+                                                            <>
+                                                                <button
+                                                                    className="w-7 h-7 rounded-lg bg-[#1f1f25] hover:bg-[#2a292f] text-white flex items-center justify-center font-bold text-sm active:scale-90 transition-all"
+                                                                    onClick={() => decrementCart(prod.id)}
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                <span className="w-5 text-center text-xs font-extrabold text-[#FBBF24]">{qty}</span>
+                                                            </>
+                                                        )}
+                                                        <button
+                                                            className="w-7 h-7 rounded-lg bg-[#FBBF24] text-[#0A0A0F] flex items-center justify-center font-bold text-sm active:scale-90 transition-all"
+                                                            onClick={() => addToCart(prod)}
+                                                        >
+                                                            +
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>
                                         );
                                     })}
+                                    {filteredProducts.length === 0 && (
+                                        <div className="py-8 text-center text-xs text-[#64748B]">No se encontraron productos en esta categoría</div>
+                                    )}
                                 </div>
 
-                                {/* Kitchen Modifiers */}
+                                {/* MODIFICADORES RÁPIDOS DE COCINA */}
                                 <div className="bg-[#121722] border border-[rgba(255,255,255,0.08)] rounded-2xl p-3 flex flex-col gap-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] text-[#94A3B8] uppercase font-extrabold tracking-[0.06em]">MODIFICADORES RÁPIDOS DE COCINA</span>
+                                        <span className="text-[10px] text-[#94A3B8] uppercase font-extrabold">MODIFICADORES RÁPIDOS DE COCINA</span>
                                         <span className="text-[10px] text-[#FBBF24]">Toque para tildar</span>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5">
-                                        {QUICK_NOTES.map(mod => (
-                                            <button
-                                                key={mod}
-                                                onClick={() => toggleModifier(mod)}
-                                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold active:scale-95 transition-all uppercase tracking-[0.06em] ${
-                                                    activeModifiers.has(mod) ? 'bg-[#FBBF24] text-[#0A0A0F]' : 'bg-[#1f1f25] text-[#94A3B8]'
-                                                }`}
-                                            >
-                                                {mod}
-                                            </button>
-                                        ))}
+                                        {QUICK_NOTES.map(note => {
+                                            const isActive = activeModifiers.has(note);
+                                            return (
+                                                <button
+                                                    key={note}
+                                                    onClick={() => toggleModifier(note)}
+                                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold active:scale-95 transition-all ${
+                                                        isActive
+                                                            ? 'bg-[#FBBF24] text-[#0A0A0F] shadow-sm font-extrabold'
+                                                            : 'bg-[#1f1f25] text-[#94A3B8] hover:text-white'
+                                                    }`}
+                                                >
+                                                    {note}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* ── TAB 2: KDS TRACKING ── */}
+                        {/* ── TAB 2: SEGUIMIENTO KDS ── */}
                         {modalTab === 'kds' && (
                             <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 space-y-3">
                                 <div className="bg-[#121722] border border-[rgba(255,255,255,0.08)] rounded-2xl p-3.5 flex flex-col gap-3">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="material-symbols-outlined text-[#06B6D4] text-[20px]">monitor_heart</span>
+                                        <div className="flex items-center gap-1.5 text-[#06B6D4]">
+                                            <Activity size={18} />
                                             <span className="text-xs font-bold text-white">Estado Comanda Cocina & Barra</span>
                                         </div>
+                                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#06B6D4]/20 text-[#06B6D4] font-extrabold uppercase">
+                                            {activeOrdersForSelected.length > 0 ? `TICKET #${String(activeOrdersForSelected[0].id).slice(-4)}` : 'SIN PEDIDOS'}
+                                        </span>
                                     </div>
-                                    {/* Progress Bar */}
+
+                                    {/* Timer */}
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-[#94A3B8]">Tiempo transcurrido:</span>
+                                        <div className="flex items-center gap-1 font-mono text-[#FBBF24] font-bold text-sm">
+                                            <Clock size={14} />
+                                            <span>{currentSelectedData.minutes > 0 ? `${currentSelectedData.minutes}:00 min` : 'En curso'}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Barra visual de progreso */}
                                     <div className="relative pt-2 pb-1">
                                         <div className="h-2 w-full bg-[#1f1f25] rounded-full overflow-hidden">
-                                            <div className="h-full bg-gradient-to-r from-[#10B981] via-[#06B6D4] to-[#FBBF24] w-2/3 transition-all duration-500"></div>
+                                            <div
+                                                className="h-full bg-gradient-to-r from-[#10B981] via-[#06B6D4] to-[#FBBF24] transition-all duration-500"
+                                                style={{ width: currentSelectedData.status === 'cocina' ? '66%' : (currentSelectedData.status === 'cuenta' ? '90%' : '33%') }}
+                                            />
                                         </div>
                                         <div className="grid grid-cols-3 gap-1 text-center mt-2.5 text-[10px]">
                                             <div className="flex flex-col items-center">
@@ -714,85 +768,89 @@ export default function MozoTables() {
                                             </div>
                                             <div className="flex flex-col items-center">
                                                 <span className="w-4 h-4 rounded-full bg-[#06B6D4] text-[#0A0A0F] flex items-center justify-center font-bold text-[9px] animate-pulse">2</span>
-                                                <span className="font-bold text-[#06B6D4] mt-1">En Horno / Bar</span>
+                                                <span className="font-bold text-[#06B6D4] mt-1">En Horno/Bar</span>
                                             </div>
                                             <div className="flex flex-col items-center">
                                                 <span className="w-4 h-4 rounded-full bg-[#1f1f25] text-[#64748B] flex items-center justify-center font-bold text-[9px]">3</span>
-                                                <span className="font-bold text-[#64748B] mt-1">¡Listo Retirar!</span>
+                                                <span className="font-bold text-[#64748B] mt-1">¡Listo!</span>
                                             </div>
                                         </div>
                                     </div>
-                                    {/* Items in process */}
+
+                                    {/* Items en proceso */}
                                     <div className="border-t border-[rgba(255,255,255,0.08)] pt-2.5 space-y-2">
-                                        <span className="text-[9px] text-[#94A3B8] uppercase font-bold tracking-[0.06em]">DETALLE EN PANTALLA BARRA/COCINA</span>
-                                        {activeOrdersForSelected.length > 0 ? (
-                                            activeOrdersForSelected.flatMap(o => o.productos || o.items || o.products || []).map((item, idx) => (
-                                                <div key={idx} className="flex items-center justify-between text-xs">
-                                                    <span className="text-white">{item.cantidad || 1}x {item.nombre || item.name}</span>
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold ${
-                                                        (item.estado === 'listo' || item.estado === 'entregado') ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#06B6D4]/20 text-[#06B6D4] animate-pulse'
-                                                    }`}>
-                                                        {item.estado === 'listo' ? '¡LISTO!' : 'EN PREPARACIÓN'}
-                                                    </span>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-xs text-[#64748B]">Sin items en proceso para esta mesa.</p>
+                                        <span className="text-[9px] text-[#94A3B8] uppercase font-bold">DETALLE EN PANTALLA BARRA/COCINA</span>
+                                        {activeOrdersForSelected.flatMap(o => o.productos || o.items || []).map((it, idx) => (
+                                            <div key={idx} className="flex items-center justify-between text-xs">
+                                                <span className="text-white">{it.cantidad || 1}x {it.nombre || it.name}</span>
+                                                <span className="px-2 py-0.5 rounded bg-[#10B981]/20 text-[#10B981] font-extrabold text-[9px]">
+                                                    {it.sector === 'cocina' ? 'EN PLANCHA' : '¡LISTO BARRA!'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                        {activeOrdersForSelected.length === 0 && (
+                                            <p className="text-xs text-[#64748B] italic">No hay comandas activas pendientes para esta mesa</p>
                                         )}
                                     </div>
                                 </div>
+
                                 <button
-                                    className="w-full py-2.5 rounded-xl bg-[#1f1f25] hover:bg-[#2a292f] border border-[rgba(255,255,255,0.08)] text-[#FBBF24] text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all uppercase tracking-[0.06em]"
-                                    onClick={() => playBeepKDS()}
+                                    className="w-full py-2.5 rounded-xl bg-[#1f1f25] hover:bg-[#2a292f] border border-[rgba(255,255,255,0.08)] text-[#FBBF24] text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                                    onClick={() => {
+                                        playBeepKDS();
+                                        if (outletCtx.showPushToast) {
+                                            outletCtx.showPushToast('🔔 ¡TEST ALERTA!', 'Notificación de prueba simulada');
+                                        }
+                                    }}
                                 >
-                                    <span className="material-symbols-outlined text-[18px]">ring_volume</span>
-                                    SIMULAR ALERTA DE BARRA LISTA
+                                    <Bell size={15} />
+                                    <span>SIMULAR ALERTA DE BARRA LISTA</span>
                                 </button>
                             </div>
                         )}
 
-                        {/* Footer: Subtotal & Send */}
+                        {/* FOOTER DEL MODAL */}
                         <div className="p-3.5 border-t border-[rgba(255,255,255,0.08)] bg-[#121722] shrink-0 space-y-2">
                             <div className="flex items-center justify-between">
                                 <div className="flex flex-col">
-                                    <span className="text-[9px] text-[#64748B] uppercase font-extrabold tracking-[0.06em]">NUEVO CONSUMO A ENVIAR</span>
-                                    <span className="text-[11px] text-[#94A3B8]">{cartItemCount} items seleccionados</span>
+                                    <span className="text-[9px] text-[#64748B] uppercase font-extrabold">NUEVO CONSUMO A ENVIAR</span>
+                                    <span className="text-[11px] text-[#94A3B8] font-bold">{cartItemCount} items seleccionados</span>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                    <span className="text-[9px] text-[#64748B] uppercase font-extrabold tracking-[0.06em]">SUBTOTAL ACTUAL</span>
+                                    <span className="text-[9px] text-[#64748B] uppercase font-extrabold">SUBTOTAL ACTUAL</span>
                                     <span className="text-lg font-extrabold text-[#FBBF24]">${cartTotal.toLocaleString('es-AR')}</span>
                                 </div>
                             </div>
                             <button
-                                onClick={handlePlaceOrder}
                                 disabled={cart.length === 0}
-                                className="w-full min-h-[50px] rounded-2xl bg-gradient-to-r from-[#f59e0b] via-[#FBBF24] to-[#f59e0b] text-[#0A0A0F] text-xs font-extrabold uppercase tracking-[0.1em] flex items-center justify-center gap-2 shadow-[0_6px_24px_rgba(245,158,11,0.4)] active:scale-95 transition-all disabled:opacity-40"
+                                onClick={handlePlaceOrder}
+                                className="w-full min-h-[50px] rounded-2xl bg-gradient-to-r from-[#f59e0b] via-[#FBBF24] to-[#f59e0b] text-[#0A0A0F] text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_6px_24px_rgba(245,158,11,0.4)] active:scale-95 transition-all disabled:opacity-40"
                             >
-                                <span className="material-symbols-outlined text-[22px]">send</span>
-                                ENVIAR COMANDA A COCINA & BARRA
+                                <Send size={18} />
+                                <span>ENVIAR COMANDA A COCINA & BARRA</span>
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ── FEEDBACK OVERLAY ── */}
+            {/* FEEDBACK OVERLAY */}
             {showFeedback && (
-                <div className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300">
+                <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300">
                     <div className="bg-[#1A202E] border-2 border-[#10B981] rounded-3xl p-6 text-center max-w-xs w-full shadow-[0_0_40px_rgba(16,185,129,0.5)] flex flex-col items-center gap-3">
-                        <div className="w-16 h-16 rounded-full bg-[#10B981]/20 text-[#10B981] flex items-center justify-center text-3xl font-extrabold ring-4 ring-[#10B981]/30 animate-pulse-fast">
-                            <span className="material-symbols-outlined text-[38px]">check_circle</span>
+                        <div className="w-16 h-16 rounded-full bg-[#10B981]/20 text-[#10B981] flex items-center justify-center text-3xl font-extrabold ring-4 ring-[#10B981]/30 animate-pulse">
+                            <CheckCircle2 size={36} />
                         </div>
                         <div className="flex flex-col gap-1">
                             <h4 className="text-base font-extrabold text-white">¡Comanda Disparada!</h4>
                             <p className="text-xs text-[#10B981] font-semibold">Sincronizada con KDS Cocina & Barra</p>
-                            <p className="text-[9px] text-[#64748B] mt-1">Timestamp: {feedbackTime} · WebSocket /{negocioId}/pantalla/bar</p>
+                            <p className="text-[9px] text-[#64748B] mt-1">Timestamp: {feedbackTime} · Socket en vivo</p>
                         </div>
-                        <div className="w-full bg-[#1f1f25] rounded-xl p-2 text-[11px] text-[#94A3B8]">
-                            Comanda táctil enviada exitosamente al sistema.
+                        <div className="w-full bg-[#121722] rounded-xl p-2 text-[11px] text-[#94A3B8]">
+                            Impresión de comanda y comanda táctil enviada exitosamente.
                         </div>
                         <button
-                            className="w-full py-2.5 rounded-xl bg-[#10B981] text-[#0A0A0F] text-xs font-extrabold active:scale-95 transition-all uppercase tracking-[0.06em]"
+                            className="w-full py-2.5 rounded-xl bg-[#10B981] text-[#0A0A0F] text-xs font-black uppercase active:scale-95 transition-all"
                             onClick={() => setShowFeedback(false)}
                         >
                             VOLVER A LAS MESAS
@@ -801,21 +859,20 @@ export default function MozoTables() {
                 </div>
             )}
 
-            {/* ── PAYMENT MODAL ── */}
+            {/* MODAL COBRO */}
             {isPaymentOpen && orderToPay && (
                 <PaymentModal
+                    isOpen={isPaymentOpen}
+                    onClose={() => setIsPaymentOpen(false)}
                     order={orderToPay}
-                    onClose={() => { setIsPaymentOpen(false); setOrderToPay(null); }}
-                    negocioId={negocioId}
+                    onSuccess={() => {
+                        setIsPaymentOpen(false);
+                        setSelectedTable(null);
+                        if (marcarMesaLimpieza) marcarMesaLimpieza(selectedTable);
+                        else if (marcarMesaDisponible) marcarMesaDisponible(selectedTable);
+                    }}
                 />
             )}
-
-            <style dangerouslySetInnerHTML={{ __html: `
-                @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-                .animate-slide-up { animation: slide-up 0.3s ease-out; }
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-            `}} />
         </div>
     );
 }
