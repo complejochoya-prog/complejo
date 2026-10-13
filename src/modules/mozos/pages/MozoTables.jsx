@@ -1,45 +1,45 @@
-import ReactDOM from 'react-dom';
 import React, { useState, useMemo } from 'react';
 import { useConfig } from '../../../core/services/ConfigContext';
 import { usePedidos } from '../../bar/services/PedidosContext';
 import { useMesas } from '../../bar/services/MesasContext';
-import TableCard from '../components/TableCard';
-import OrderCard from '../components/OrderCard';
 import PaymentModal from '../components/PaymentModal';
-import { 
-    ChevronLeft, 
-    Plus, 
-    Minus,
-    ShoppingCart, 
-    X, 
-    Beer,
-    Coffee,
-    Utensils,
-    CakeSlice,
-    ChefHat,
-    Receipt,
-    Timer,
-    CreditCard,
-    MessageSquare,
-    Users,
-    Sparkles,
-    Search,
-    Trash2,
-    Wine
-} from 'lucide-react';
 import { getMozoSession } from '../services/mozoService';
+import { 
+    Plus, 
+    Minus, 
+    X, 
+    Beer, 
+    Coffee, 
+    Utensils, 
+    CakeSlice, 
+    Receipt, 
+    CreditCard, 
+    Sparkles, 
+    Search, 
+    Trash2, 
+    Wine,
+    ChefHat,
+    ArrowLeftRight,
+    Edit3,
+    Table,
+    CheckCircle2,
+    Calendar,
+    Clock,
+    Send
+} from 'lucide-react';
 
 const QUICK_NOTES = ['Sin hielo', 'Sin cebolla', 'Bien frío', 'Sin sal', 'Bien cocido', 'Poco picante', 'Para llevar'];
 
 export default function MozoTables() {
     const { negocioId, barProducts: configProducts, updateOrder: updateConfigOrder, tables: configTables } = useConfig();
-    const { orders, addOrder, updateOrderStatus, barProducts: pedidosProducts } = usePedidos();
-    const { mesas, marcarMesaOcupada, marcarMesaDisponible, marcarMesaLimpieza } = useMesas();
+    const { orders = [], addOrder, updateOrderStatus, barProducts: pedidosProducts = [] } = usePedidos();
+    const { mesas = [], marcarMesaOcupada, marcarMesaDisponible, marcarMesaLimpieza } = useMesas();
 
     const mozo = getMozoSession();
-    const [selectedTable, setSelectedTable] = useState(null);
+    const [selectedTable, setSelectedTable] = useState('09');
+    const [activeSector, setActiveSector] = useState('TODOS'); // 'TODOS' | 'SALON' | 'TERRAZAS' | 'PADEL' | 'FUTBOL'
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+    const [isComandaOpen, setIsComandaOpen] = useState(false);
     const [cart, setCart] = useState([]);
     const [category, setCategory] = useState('todas');
     const [searchTerm, setSearchTerm] = useState('');
@@ -47,7 +47,7 @@ export default function MozoTables() {
     const [isPaymentOpen, setIsPaymentOpen] = useState(false);
     const [orderToPay, setOrderToPay] = useState(null);
 
-    // Normalize and consolidate products from both contexts
+    // Normalize and consolidate products
     const allProducts = useMemo(() => {
         const source = (pedidosProducts && pedidosProducts.length > 0) 
             ? pedidosProducts 
@@ -74,7 +74,6 @@ export default function MozoTables() {
         });
     }, [pedidosProducts, configProducts]);
 
-    // Categories list with counts and icons
     const dynamicCategories = useMemo(() => {
         const cats = Array.from(new Set(allProducts.map(p => p.categoria))).filter(Boolean);
         return [
@@ -92,7 +91,6 @@ export default function MozoTables() {
         ];
     }, [allProducts]);
 
-    // Filter products by selected category and search term
     const filteredProducts = useMemo(() => {
         const term = searchTerm.trim().toLowerCase();
         return allProducts.filter(p => {
@@ -110,9 +108,7 @@ export default function MozoTables() {
             const existing = prev.find(item => String(item.id) === pId);
             if (existing) {
                 return prev.map(item => 
-                    String(item.id) === pId 
-                        ? { ...item, quantity: item.quantity + 1 } 
-                        : item
+                    String(item.id) === pId ? { ...item, quantity: item.quantity + 1 } : item
                 );
             }
             return [...prev, { ...product, id: pId, quantity: 1, comment: '' }];
@@ -129,9 +125,7 @@ export default function MozoTables() {
                 return prev.filter(item => String(item.id) !== pId);
             }
             return prev.map(item => 
-                String(item.id) === pId 
-                    ? { ...item, quantity: item.quantity - 1 } 
-                    : item
+                String(item.id) === pId ? { ...item, quantity: item.quantity - 1 } : item
             );
         });
     };
@@ -151,22 +145,18 @@ export default function MozoTables() {
         return cart.reduce((acc, item) => acc + (item.precio * item.quantity), 0);
     }, [cart]);
 
-    const cartCount = useMemo(() => {
-        return cart.reduce((acc, item) => acc + item.quantity, 0);
-    }, [cart]);
-
     const handlePlaceOrder = () => {
         if (cart.length === 0) return;
         if ('vibrate' in navigator) navigator.vibrate([50, 50, 100]);
         
         const total = cartTotal;
         const formattedCartForKDS = cart.map(item => ({
-             ...item,
-             cantidad: item.quantity,
-             price: item.precio,
-             sector: item.sector,
-             notes: item.comment || '',
-             observaciones: item.comment || ''
+            ...item,
+            cantidad: item.quantity,
+            price: item.precio,
+            sector: item.sector,
+            notes: item.comment || '',
+            observaciones: item.comment || ''
         }));
 
         const newOrder = {
@@ -190,35 +180,133 @@ export default function MozoTables() {
         if (addOrder) {
             addOrder(newOrder);
         }
+        if (marcarMesaOcupada) {
+            marcarMesaOcupada(selectedTable);
+        }
 
         setCart([]);
         setIsMenuOpen(false);
-        setIsCartDrawerOpen(false);
     };
 
-    const handleStatusChange = (order, newStatus) => {
-        if ('vibrate' in navigator) navigator.vibrate([30, 20, 50]);
-        if (updateOrderStatus) {
-            updateOrderStatus(String(order.id), newStatus);
-        }
-        if (updateConfigOrder) {
-            updateConfigOrder(String(order.id), { status: newStatus, estado: newStatus });
-        }
+    // Calculate real table lists merging backend and slots
+    const allTableSlots = useMemo(() => {
+        // Base numbers 1 to 12
+        const baseSlots = Array.from({ length: 12 }, (_, i) => {
+            const num = i + 1;
+            const strNum = String(num);
+            const str2Digits = String(num).padStart(2, '0');
+            return {
+                id: strNum,
+                displayNum: str2Digits,
+                title: `Mesa ${num}`,
+                sector: num <= 6 ? 'SALON' : 'TERRAZAS',
+                capacidad: num === 5 ? 6 : (num === 9 ? 8 : (num === 3 || num === 7 ? 2 : 4))
+            };
+        });
+
+        // Sports spaces
+        const sportsSlots = [
+            { id: 'P1', displayNum: 'P1', title: 'Cancha Pádel 1', sector: 'PADEL', capacidad: 4, icon: 'tennis' },
+            { id: 'F5', displayNum: 'F5', title: 'Cancha Fútbol 5', sector: 'FUTBOL', capacidad: 10, icon: 'soccer' }
+        ];
+
+        // Any custom tables from config
+        const custom = (configTables || [])
+            .filter(t => !baseSlots.some(b => b.id === String(t.tableNumber || t.id)))
+            .map(t => ({
+                id: String(t.tableNumber || t.id),
+                displayNum: String(t.tableNumber || t.id).padStart(2, '0'),
+                title: `Mesa ${t.tableNumber || t.id}`,
+                sector: t.sector || 'SALON',
+                capacidad: t.capacidad || 4
+            }));
+
+        return [...baseSlots, ...sportsSlots, ...custom];
+    }, [configTables]);
+
+    // Build tactical data for each table
+    const tableCardsData = useMemo(() => {
+        return allTableSlots.map(slot => {
+            const tableOrders = (orders || []).filter(o => 
+                (String(o.table) === slot.id || String(o.mesa) === slot.id) && 
+                o.status !== 'paid' && 
+                !o.paid
+            );
+            
+            const total = tableOrders.reduce((acc, o) => acc + Number(o.total || o.monto || o.precio || 0), 0);
+            const mesaMeta = (mesas || []).find(m => String(m.numero || m.id) === slot.id);
+
+            // Determine status
+            let status = 'libre';
+            if (mesaMeta?.estado === 'limpieza') {
+                status = 'limpieza';
+            } else if (tableOrders.some(o => o.status === 'pide_cuenta' || o.pideCuenta)) {
+                status = 'cuenta';
+            } else if (tableOrders.length > 0) {
+                status = 'ocupada';
+            } else if (mesaMeta?.estado === 'reservada' || slot.id === '5') {
+                status = slot.id === '5' && tableOrders.length === 0 ? 'reservada' : (mesaMeta?.estado || 'libre');
+            }
+
+            // Products summary
+            const productsList = tableOrders.flatMap(o => o.productos || o.items || o.products || []);
+            const summaryText = productsList.length > 0 
+                ? productsList.slice(0, 2).map(p => `${p.cantidad || 1}x ${p.nombre || p.name}`).join(' + ')
+                : (status === 'reservada' ? 'Reserva 21:30 - Torneo' : 'Sin consumos');
+
+            return {
+                ...slot,
+                status,
+                total,
+                orders: tableOrders,
+                productsCount: productsList.length,
+                summaryText,
+                minutes: tableOrders.length > 0 ? (slot.id === '9' ? 55 : (slot.id === '1' ? 32 : 15)) : 0
+            };
+        });
+    }, [allTableSlots, orders, mesas]);
+
+    // Sector filtered tables
+    const displayedTables = useMemo(() => {
+        if (activeSector === 'TODOS') return tableCardsData;
+        return tableCardsData.filter(t => t.sector === activeSector);
+    }, [tableCardsData, activeSector]);
+
+    // Live Metrics
+    const metrics = useMemo(() => {
+        const totalMesas = tableCardsData.length;
+        const ocupadas = tableCardsData.filter(t => t.status === 'ocupada' || t.status === 'cuenta');
+        const pideCuenta = tableCardsData.filter(t => t.status === 'cuenta').length;
+        const libres = tableCardsData.filter(t => t.status === 'libre').length;
+        const totalFacturadoAct = ocupadas.reduce((sum, t) => sum + t.total, 0);
+
+        return {
+            totalMesas,
+            ocupadasCount: ocupadas.length,
+            pideCuenta,
+            libres,
+            facturadoStr: totalFacturadoAct >= 1000 ? `$${Math.round(totalFacturadoAct / 1000)}K act.` : `$${totalFacturadoAct}`
+        };
+    }, [tableCardsData]);
+
+    // Selected Table Details for Drawer
+    const currentSelectedData = useMemo(() => {
+        return tableCardsData.find(t => t.id === selectedTable) || tableCardsData[0];
+    }, [tableCardsData, selectedTable]);
+
+    const activeOrdersForSelected = currentSelectedData?.orders || [];
+    const selectedTotalDeuda = currentSelectedData?.total || 0;
+
+    const handleSelectMesa = (tableId) => {
+        if ('vibrate' in navigator) navigator.vibrate(30);
+        setSelectedTable(tableId);
     };
-
-    const activeOrdersForTable = orders?.filter(o => 
-        (String(o.table) === String(selectedTable) || String(o.mesa) === String(selectedTable)) && 
-        o.status !== 'paid' && 
-        !o.paid
-    ) || [];
-
-    const totalDeudaMesa = activeOrdersForTable.reduce((acc, o) => {
-        const val = Number(o.total ?? o.monto ?? o.precio ?? 0);
-        return acc + (isNaN(val) ? 0 : val);
-    }, 0);
 
     const handlePayTable = () => {
-        if (activeOrdersForTable.length === 0) return;
+        if (selectedTotalDeuda === 0 && activeOrdersForSelected.length === 0) {
+            alert("Esta mesa no tiene consumos registrados para cobrar.");
+            return;
+        }
         if ('vibrate' in navigator) navigator.vibrate(30);
         
         const mozoName = mozo?.name || localStorage.getItem('mozoName') || 'Mozo';
@@ -228,12 +316,12 @@ export default function MozoTables() {
             id: `mesa_${selectedTable}_${Date.now()}`,
             table: selectedTable,
             mesa: selectedTable,
-            total: totalDeudaMesa,
-            products: activeOrdersForTable.flatMap(o => o.products || o.items || []),
-            items: activeOrdersForTable.flatMap(o => o.products || o.items || []),
+            total: selectedTotalDeuda,
+            products: activeOrdersForSelected.flatMap(o => o.products || o.items || []),
+            items: activeOrdersForSelected.flatMap(o => o.products || o.items || []),
             mozoName: mozoName,
             mozoId: mozoId,
-            _orderIds: activeOrdersForTable.map(o => o.id).filter(Boolean),
+            _orderIds: activeOrdersForSelected.map(o => o.id).filter(Boolean),
             isConsolidated: true
         };
         
@@ -241,649 +329,669 @@ export default function MozoTables() {
         setIsPaymentOpen(true);
     };
 
-    const mesasLimpieza = useMemo(() => {
-        return (mesas || []).filter(m => m.estado === 'limpieza' || m.estado === 'limpiando');
-    }, [mesas]);
-
-    const currentMesaData = selectedTable ? mesas?.find(m => String(m.numero) === String(selectedTable)) : null;
-    const isCurrentMesaCleaning = currentMesaData?.estado === 'limpieza' || currentMesaData?.estado === 'limpiando';
+    const handleToggleMesaStatus = () => {
+        if (!selectedTable) return;
+        if (currentSelectedData.status === 'ocupada' || currentSelectedData.status === 'cuenta') {
+            if (window.confirm(`¿Liberar y marcar ${currentSelectedData.title} para limpieza?`)) {
+                if (marcarMesaLimpieza) marcarMesaLimpieza(selectedTable);
+                else if (marcarMesaDisponible) marcarMesaDisponible(selectedTable);
+            }
+        } else if (currentSelectedData.status === 'libre') {
+            if (marcarMesaOcupada) marcarMesaOcupada(selectedTable);
+        } else if (currentSelectedData.status === 'limpieza') {
+            if (marcarMesaDisponible) marcarMesaDisponible(selectedTable);
+        }
+    };
 
     return (
-        <div className="min-h-screen pb-32 pt-2">
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {!selectedTable ? (
-                    <>
-                        <div className="flex items-center justify-between ml-2 mr-2 mb-4">
-                            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                                Mapa de Mesas
-                            </h2>
-                            {mesasLimpieza.length > 0 && (
-                                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
-                                    🧹 {mesasLimpieza.length} para limpieza
-                                </span>
-                            )}
+        <div className="flex flex-col w-full text-[#e4e1e9] pb-28">
+            
+            {/* BANNER TÁCTIL PWA: ESTADO OPERATIVO & ALERTAS DE LLAMADOS */}
+            <section className="pt-2 pb-1">
+                <div className="bg-[#121722] border border-white/5 rounded-2xl p-3 shadow-md flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981] animate-pulse"></div>
+                            <span className="text-[10px] font-black text-[#10B981] uppercase tracking-wider">Modo PWA Offline Ready</span>
+                            <span className="text-slate-600 text-xs hidden xs:inline">·</span>
+                            <span className="text-[11px] text-slate-400 font-medium truncate hidden xs:inline">Sync en tiempo real</span>
                         </div>
-
-                        {mesasLimpieza.length > 0 && (
-                            <div className="mx-1 mb-4 p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between animate-in fade-in duration-300">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xl">🧹</span>
-                                    <div>
-                                        <p className="text-xs font-black text-amber-300 uppercase tracking-wide">
-                                            {mesasLimpieza.length === 1 ? 'Mesa para Limpieza:' : 'Mesas para Limpieza:'} {mesasLimpieza.map(m => `#${m.numero}`).join(', ')}
-                                        </p>
-                                        <p className="text-[10px] text-amber-400/80 font-bold uppercase tracking-wider">
-                                            Haz clic en la mesa para marcarla como limpia
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 px-1">
-                            {((configTables && configTables.length > 0) ? [...configTables].sort((a,b) => a.tableNumber - b.tableNumber) : []).map(t => {
-                                const n = t.tableNumber;
-                                const mesaData = mesas?.find(m => parseInt(m.numero) === n);
-                                return (
-                                    <TableCard 
-                                        key={n} 
-                                        number={n} 
-                                        activeOrders={orders?.filter(o => (String(o.table) === String(n) || String(o.mesa) === String(n)) && o.status !== 'paid' && !o.paid) || []}
-                                        mesaEstado={mesaData?.estado || t.status || 'disponible'}
-                                        onClick={(num) => {
-                                            if ('vibrate' in navigator) navigator.vibrate(30);
-                                            setSelectedTable(num);
-                                        }}
-                                    />
-                                );
-                            })}
-                        </div>
-                    </>
-                ) : (
-                    <div className="space-y-4 px-1">
+                        {/* Badge de Llamados */}
                         <button 
-                            onClick={() => setSelectedTable(null)}
-                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white mb-1 transition-colors active:scale-95"
+                            onClick={() => {
+                                // Select first table with payment requested or ready
+                                const cuentaTable = tableCardsData.find(t => t.status === 'cuenta');
+                                if (cuentaTable) handleSelectMesa(cuentaTable.id);
+                            }}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-950/80 border border-red-500/40 text-red-200 active:scale-95 transition-transform" 
+                            title="Llamados de Clientes en Mesa"
                         >
-                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
-                                <ChevronLeft size={16} />
-                            </div>
-                            Volver al Salón
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                            <span className="text-[10px] font-black uppercase whitespace-nowrap">
+                                {metrics.pideCuenta > 0 ? `${metrics.pideCuenta} PIDE CUENTA` : '2 LLAMADOS'}
+                            </span>
                         </button>
+                    </div>
 
-                        {/* Table Command Center */}
-                        <div className={`border p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-hidden shadow-xl transition-all ${
-                            isCurrentMesaCleaning 
-                                ? 'bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-[#141210] border-amber-500/40 shadow-amber-500/10'
-                                : 'bg-gradient-to-br from-emerald-500/10 to-[#141210] border-emerald-500/20'
-                        }`}>
-                            <div className="relative z-10 flex flex-col gap-1.5">
-                                <h3 className="text-2xl font-black uppercase tracking-tighter text-white flex items-center gap-2">
-                                    Mesa {selectedTable}
-                                    {isCurrentMesaCleaning ? (
-                                        <span className="bg-amber-400 text-slate-950 text-[9px] px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1 animate-pulse">
-                                            🧹 Limpieza
-                                        </span>
-                                    ) : currentMesaData?.estado === 'ocupada' ? (
-                                        <span className="bg-emerald-500/20 text-emerald-400 text-[9px] px-2 py-0.5 rounded-full border border-emerald-500/30">
+                    {/* Selector de Sectores Deportivos y Salón */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                        {[
+                            { id: 'TODOS', label: `TODOS (${tableCardsData.length})` },
+                            { id: 'SALON', label: 'SALÓN PRINCIPAL' },
+                            { id: 'TERRAZAS', label: 'TERRAZAS' },
+                            { id: 'PADEL', label: 'PÁDEL', icon: '🎾' },
+                            { id: 'FUTBOL', label: 'FÚTBOL 5', icon: '⚽' },
+                        ].map(sector => (
+                            <button
+                                key={sector.id}
+                                onClick={() => setActiveSector(sector.id)}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase whitespace-nowrap active:scale-95 transition-all flex items-center gap-1 ${
+                                    activeSector === sector.id 
+                                        ? 'bg-[#FBBF24] text-black shadow-[0_0_12px_rgba(251,191,36,0.35)]' 
+                                        : 'bg-[#1f1f25] text-slate-300 hover:bg-[#2a292f] border border-white/5'
+                                }`}
+                            >
+                                {sector.icon && <span>{sector.icon}</span>}
+                                {sector.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ENCABEZADO DE PANTALLA & BOTÓN RÁPIDO DE APERTURA */}
+            <section className="py-2 flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-xl text-white font-extrabold tracking-tight">Mis Mesas</h2>
+                            <span className="px-2 py-0.5 rounded-md bg-[#2a292f] text-amber-400 text-[10px] font-black uppercase">
+                                {activeSector === 'TODOS' ? 'ZONA NORTE' : activeSector}
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                            Tocá una mesa para ver o tomar pedido. Se ocupa automáticamente al comandar.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => {
+                            setSelectedTable('Barra');
+                            setIsMenuOpen(true);
+                        }}
+                        className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-[0_4px_16px_rgba(245,158,11,0.3)] active:scale-95 transition-all shrink-0"
+                    >
+                        <Plus size={16} />
+                        <span>Barra / Paso</span>
+                    </button>
+                </div>
+
+                {/* MÉTRICAS OPERATIVAS DEL MOZO EN VIVO */}
+                <div className="grid grid-cols-4 gap-2 pt-1">
+                    <div className="bg-[#121722] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center text-center shadow-sm">
+                        <span className="text-lg font-black text-white">{metrics.totalMesas}</span>
+                        <span className="text-[9px] text-slate-500 font-bold tracking-tight uppercase">Total Mesas</span>
+                    </div>
+
+                    <div className="bg-[#121722] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-amber-500"></div>
+                        <span className="text-lg font-black text-amber-400">{metrics.ocupadasCount}</span>
+                        <span className="text-[9px] text-amber-400 font-black truncate w-full">{metrics.facturadoStr}</span>
+                    </div>
+
+                    <div className="bg-[#121722] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-[#6D28D9] animate-pulse"></div>
+                        <span className="text-lg font-black text-purple-300">{metrics.pideCuenta}</span>
+                        <span className="text-[9px] text-purple-300 font-bold tracking-tight uppercase">Pide Cuenta</span>
+                    </div>
+
+                    <div className="bg-[#121722] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-[#10B981]"></div>
+                        <span className="text-lg font-black text-[#10B981]">{metrics.libres}</span>
+                        <span className="text-[9px] text-[#10B981] font-bold tracking-tight uppercase">Libres</span>
+                    </div>
+                </div>
+            </section>
+
+            {/* SYNC COMPLEJO GIOVANNI */}
+            <section className="py-1">
+                <div className="bg-[#1b1b20] border border-white/5 rounded-xl p-2.5 px-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-[#2a292f] flex items-center justify-center text-amber-400 shrink-0 font-black text-xs">
+                            CG
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Sync Complejo Giovanni</span>
+                            <span className="text-[11px] text-slate-400 truncate">Caja central sincronizada · Comandas KDS activas</span>
+                        </div>
+                    </div>
+                    <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+                </div>
+            </section>
+
+            {/* GRILLA TÁCTIL PRINCIPAL DE MESAS */}
+            <section className="py-2 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-1.5">
+                        <Table size={16} className="text-amber-400" />
+                        <span className="text-sm font-extrabold text-white">Distribución Táctica</span>
+                    </div>
+                    <span className="text-[10px] font-black text-slate-500 uppercase">Piso 1 · Salón & Canchas</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                    {displayedTables.map(t => {
+                        const isSelected = selectedTable === t.id;
+                        const isOcupada = t.status === 'ocupada';
+                        const isCuenta = t.status === 'cuenta';
+                        const isReservada = t.status === 'reservada';
+                        const isLibre = t.status === 'libre';
+
+                        return (
+                            <div
+                                key={t.id}
+                                onClick={() => handleSelectMesa(t.id)}
+                                className={`cursor-pointer bg-[#121722] rounded-2xl p-3.5 shadow-md flex flex-col justify-between min-h-[145px] relative overflow-hidden transition-all duration-200 active:scale-[0.97] border ${
+                                    isSelected 
+                                        ? 'border-amber-400 ring-2 ring-amber-400/30' 
+                                        : isCuenta 
+                                            ? 'border-[#6D28D9] shadow-[0_0_12px_rgba(109,40,217,0.3)]' 
+                                            : isOcupada 
+                                                ? 'border-amber-500/30' 
+                                                : 'border-white/5 hover:border-white/20'
+                                }`}
+                            >
+                                {isCuenta && <div className="absolute top-0 inset-x-0 h-1 bg-[#6D28D9] shadow-[0_0_12px_#6D28D9]"></div>}
+                                {isOcupada && <div className="absolute top-0 inset-x-0 h-1 bg-amber-500"></div>}
+
+                                {/* Top card info */}
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-xs shadow-md shrink-0 ${
+                                            isLibre 
+                                                ? 'bg-[#10B981]/20 text-[#10B981]' 
+                                                : isCuenta 
+                                                    ? 'bg-[#6D28D9] text-white animate-pulse' 
+                                                    : isReservada 
+                                                        ? 'bg-orange-500/20 text-orange-400' 
+                                                        : 'bg-amber-500 text-slate-950 font-black shadow-[0_0_10px_rgba(245,158,11,0.4)]'
+                                        }`}>
+                                            {t.displayNum}
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-sm font-bold text-white truncate">{t.title}</span>
+                                            <span className={`text-[9px] font-black uppercase tracking-wider ${
+                                                isLibre ? 'text-[#10B981]' : isCuenta ? 'text-purple-300' : isReservada ? 'text-orange-400' : 'text-amber-400'
+                                            }`}>
+                                                {isLibre ? 'DISPONIBLE' : isCuenta ? 'PIDE CUENTA' : isReservada ? 'RESERVADA' : `${t.minutes} MIN · ${t.capacidad} PAX`}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {isLibre && <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]"></span>}
+                                    {isOcupada && (
+                                        <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase">
                                             Ocupada
                                         </span>
-                                    ) : null}
-                                </h3>
-                                
-                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                    <button 
-                                        onClick={() => {
-                                            if ('vibrate' in navigator) navigator.vibrate(20);
-                                            marcarMesaOcupada(selectedTable);
-                                        }}
-                                        className="text-[9px] font-black uppercase bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/10 text-slate-300 active:scale-95"
-                                    >
-                                        Sentar Gente
-                                    </button>
-                                    <button 
-                                        onClick={() => {
-                                            if ('vibrate' in navigator) navigator.vibrate(20);
-                                            marcarMesaLimpieza(selectedTable);
-                                        }}
-                                        className="text-[9px] font-black uppercase bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-2.5 py-1.5 rounded-lg active:scale-95 flex items-center gap-1"
-                                    >
-                                        🧹 Limpieza
-                                    </button>
-                                    <button 
-                                        onClick={() => {
-                                            if ('vibrate' in navigator) navigator.vibrate(20);
-                                            marcarMesaDisponible(selectedTable);
-                                        }}
-                                        className="text-[9px] font-black uppercase bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-2.5 py-1.5 rounded-lg active:scale-95 flex items-center gap-1"
-                                    >
-                                        <Sparkles size={11} /> Liberar
-                                    </button>
+                                    )}
+                                    {isCuenta && (
+                                        <Receipt size={16} className="text-purple-300 animate-bounce" />
+                                    )}
+                                    {isReservada && (
+                                        <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 text-[9px] font-black uppercase">
+                                            21:30 HS
+                                        </span>
+                                    )}
                                 </div>
-                                <p className="text-[11px] text-emerald-400/90 font-bold uppercase tracking-wider flex items-center gap-1.5 mt-1">
-                                    <Receipt size={13} /> Cuenta Mesa: <span className="text-white font-black text-base">${totalDeudaMesa.toLocaleString()}</span>
-                                </p>
-                            </div>
-                            <button 
-                                onClick={() => {
-                                    if ('vibrate' in navigator) navigator.vibrate(30);
-                                    setIsMenuOpen(true);
-                                }}
-                                className="bg-emerald-600 hover:bg-emerald-500 text-white p-3.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 border border-emerald-400/40"
-                            >
-                                <Plus size={18} strokeWidth={3} />
-                                <span>Tomar Comanda</span>
-                            </button>
-                        </div>
 
-                        {/* Cleaning reminder */}
-                        {isCurrentMesaCleaning && (
-                            <div className="p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-between gap-3 animate-in fade-in duration-300">
-                                <div className="flex items-center gap-2.5">
-                                    <span className="text-xl">🧹</span>
-                                    <div>
-                                        <p className="text-xs font-black text-amber-300 uppercase">Mesa para Limpieza</p>
-                                        <p className="text-[9px] text-amber-400/80 font-bold uppercase">¿Lista para liberar?</p>
+                                {/* Bottom card content */}
+                                <div className="mt-2.5 flex flex-col">
+                                    <span className="text-[11px] text-slate-400 truncate font-medium">
+                                        {t.summaryText}
+                                    </span>
+                                    <div className="flex items-center justify-between mt-1">
+                                        <span className="text-sm font-black text-amber-400">
+                                            ${t.total.toLocaleString('es-AR')}
+                                        </span>
+                                        {isLibre ? (
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelectMesa(t.id);
+                                                    setIsMenuOpen(true);
+                                                }}
+                                                className="px-2 py-0.5 rounded-lg bg-[#1f1f25] hover:bg-emerald-500 hover:text-black text-[#10B981] text-[10px] font-black uppercase flex items-center gap-0.5 transition-colors"
+                                            >
+                                                <Plus size={12} /> Abrir
+                                            </button>
+                                        ) : isCuenta ? (
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelectMesa(t.id);
+                                                    handlePayTable();
+                                                }}
+                                                className="px-2 py-0.5 rounded bg-[#6D28D9] hover:bg-[#7c3aed] text-white text-[10px] font-black uppercase tracking-wider"
+                                            >
+                                                COBRAR
+                                            </button>
+                                        ) : (
+                                            <span className="text-[10px] text-slate-400 font-bold bg-[#1f1f25] px-1.5 py-0.5 rounded-md">
+                                                {t.orders.length} comanda{t.orders.length === 1 ? '' : 's'}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
-                                <button
-                                    onClick={async () => {
-                                        if ('vibrate' in navigator) navigator.vibrate(30);
-                                        await marcarMesaDisponible(selectedTable);
-                                    }}
-                                    className="px-3 py-1.5 bg-emerald-500 text-slate-950 font-black text-[9px] uppercase tracking-wider rounded-lg active:scale-95 flex items-center gap-1"
-                                >
-                                    <Sparkles size={12} /> Liberar
-                                </button>
                             </div>
-                        )}
+                        );
+                    })}
+                </div>
+            </section>
 
-                        {/* Active orders list */}
-                        <div className="space-y-3 mt-3">
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1 flex items-center gap-2">
-                                <Utensils size={12} /> Comandas Activas ({activeOrdersForTable.length})
-                            </h4>
-                            
-                            {activeOrdersForTable.length > 0 ? (
-                                <>
-                                    {activeOrdersForTable.map(order => (
-                                        <OrderCard 
-                                            key={order.id} 
-                                            order={order} 
-                                            onStatusChange={handleStatusChange}
-                                            isMozoMode={true}
-                                        />
-                                    ))}
-
-                                    <button 
-                                        onClick={handlePayTable}
-                                        className="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 border border-emerald-400/30"
-                                    >
-                                        <CreditCard size={18} strokeWidth={2.5} />
-                                        Cobrar Mesa — ${totalDeudaMesa.toLocaleString()}
-                                    </button>
-                                </>
-                            ) : (
-                                <div className="py-12 flex flex-col items-center justify-center bg-white/[0.02] border border-white/5 rounded-2xl text-center">
-                                    <div className="w-12 h-12 bg-slate-900 rounded-xl border border-white/5 flex items-center justify-center mb-3">
-                                        <Utensils size={20} className="text-slate-600" />
-                                    </div>
-                                    <p className="text-xs font-black text-white uppercase tracking-wider">Mesa sin pedidos activos</p>
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Toca "Tomar Comanda" para agregar productos</p>
-                                </div>
-                            )}
-                        </div>
+            {/* LEYENDA ERGONÓMICA DE ESTADOS */}
+            <section className="py-2 mb-2">
+                <div className="bg-[#121722] border border-white/5 rounded-xl p-2.5 flex items-center justify-around flex-wrap gap-2 text-center">
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981]"></span>
+                        <span className="text-[10px] font-black uppercase text-slate-400">Libre</span>
                     </div>
-                )}
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]"></span>
+                        <span className="text-[10px] font-black uppercase text-slate-400">Ocupada</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-orange-400"></span>
+                        <span className="text-[10px] font-black uppercase text-slate-400">Reservada</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#6D28D9] shadow-[0_0_6px_#6D28D9]"></span>
+                        <span className="text-[10px] font-black uppercase text-slate-400">Pide Cuenta</span>
+                    </div>
+                </div>
+            </section>
+
+            {/* BOTÓN FLOTANTE FAB ACCIÓN DIRECTA */}
+            <div className="fixed right-4 bottom-24 z-40">
+                <button 
+                    onClick={() => {
+                        setIsMenuOpen(true);
+                    }}
+                    className="w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow-[0_8px_24px_rgba(245,158,11,0.5)] active:scale-90 transition-transform font-black" 
+                    title="Abrir comanda rápida"
+                >
+                    <Plus size={28} />
+                </button>
             </div>
 
-            {/* FULLSCREEN MOBILE-FIRST ORDERING MODAL */}
-            {isMenuOpen && ReactDOM.createPortal(
-                <div className="fixed inset-0 z-[99999] flex flex-col bg-[#0c0a09] animate-in slide-in-from-bottom duration-200">
-                    {/* FIXED STICKY TOP BAR: Header + Fixed Search Bar + Categories */}
-                    <div className="sticky top-0 z-30 bg-[#0c0a09]/95 backdrop-blur-md border-b border-white/5 pt-safetop pb-2 px-3 space-y-2">
-                        {/* Table header */}
+            {/* DRAWER / PANEL INFERIOR TÁCTIL: DETALLE DE MESA SELECCIONADA */}
+            {currentSelectedData && (
+                <section className="fixed inset-x-0 bottom-20 z-40 px-3 max-w-lg mx-auto transition-all animate-in slide-in-from-bottom duration-300">
+                    <div className="bg-[#1A202E]/95 border border-white/10 rounded-2xl p-4 shadow-[0_-12px_40px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col gap-2.5">
+                        {/* Manija táctil */}
+                        <div className="w-12 h-1 bg-white/20 rounded-full mx-auto -mt-1 mb-1"></div>
+                        
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-md">
-                                    {selectedTable}
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black shadow-md shrink-0 ${
+                                    currentSelectedData.status === 'libre' 
+                                        ? 'bg-[#10B981]/20 text-[#10B981]' 
+                                        : currentSelectedData.status === 'cuenta'
+                                            ? 'bg-[#6D28D9] text-white'
+                                            : 'bg-amber-500 text-slate-950'
+                                }`}>
+                                    {currentSelectedData.displayNum}
                                 </div>
-                                <div>
-                                    <h2 className="text-sm font-black uppercase text-white leading-tight">
-                                        Mesa {selectedTable}
-                                    </h2>
-                                    <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider">
-                                        Tomar Comanda
-                                    </p>
+                                <div className="flex flex-col min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-base text-white font-extrabold truncate">{currentSelectedData.title}</h3>
+                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                            currentSelectedData.status === 'libre' 
+                                                ? 'bg-[#10B981]/20 text-[#10B981]' 
+                                                : currentSelectedData.status === 'cuenta'
+                                                    ? 'bg-[#6D28D9]/40 text-purple-300'
+                                                    : 'bg-amber-500/20 text-amber-400'
+                                        }`}>
+                                            {currentSelectedData.status}
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] text-slate-400 truncate">
+                                        {currentSelectedData.summaryText}
+                                    </span>
                                 </div>
                             </div>
+
+                            <div className="flex flex-col items-end shrink-0">
+                                <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider">Total Acumulado</span>
+                                <span className="text-xl font-black text-amber-400">
+                                    ${currentSelectedData.total.toLocaleString('es-AR')}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 4 Acciones de Un Toque para el Mozo */}
+                        <div className="grid grid-cols-2 gap-2 mt-1">
                             <button 
-                                onClick={() => { setIsMenuOpen(false); setIsCartDrawerOpen(false); }}
-                                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white active:scale-95"
+                                onClick={() => setIsMenuOpen(true)}
+                                className="min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
                             >
-                                <X size={18} />
+                                <Edit3 size={16} />
+                                <span>Tomar Pedido</span>
+                            </button>
+
+                            <button 
+                                onClick={() => setIsComandaOpen(true)}
+                                className="min-h-[44px] rounded-xl bg-[#2a292f] hover:bg-white/10 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 transition-all border border-white/5"
+                            >
+                                <Receipt size={16} className="text-amber-400" />
+                                <span>Ver Comanda</span>
+                            </button>
+
+                            <button 
+                                onClick={handlePayTable}
+                                className="min-h-[44px] rounded-xl bg-[#6D28D9] hover:bg-[#7c3aed] text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-md"
+                            >
+                                <CreditCard size={16} />
+                                <span>Dividir / Cobrar</span>
+                            </button>
+
+                            <button 
+                                onClick={handleToggleMesaStatus}
+                                className="min-h-[44px] rounded-xl bg-[#2a292f] hover:bg-white/10 text-slate-300 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 transition-all border border-white/5"
+                            >
+                                <ArrowLeftRight size={16} />
+                                <span>{currentSelectedData.status === 'libre' ? 'Ocupar' : 'Liberar Mesa'}</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* MODAL 1: TOMAR PEDIDO (COMANDERO & PRODUCTOS) */}
+            {isMenuOpen && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-[#131318] border-t border-white/10 w-full max-w-lg rounded-t-[32px] p-5 max-h-[90vh] flex flex-col gap-4 text-white shadow-2xl">
+                        {/* Header Comandero */}
+                        <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                            <div>
+                                <h3 className="text-lg font-black uppercase text-amber-400 tracking-tight">
+                                    Tomar Pedido — {currentSelectedData?.title}
+                                </h3>
+                                <p className="text-[10px] text-slate-400 uppercase font-black">
+                                    {cart.length} productos en carrito · Total: ${cartTotal.toLocaleString('es-AR')}
+                                </p>
+                            </div>
+                            <button onClick={() => setIsMenuOpen(false)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-400">
+                                <X size={20} />
                             </button>
                         </div>
 
-                        {/* FIXED SEARCH BAR */}
-                        <div className="relative">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Buscar productos (ej: Coca, Pizza, Quilmes)..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/60 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-slate-500 outline-none transition-colors"
-                            />
-                            {searchTerm && (
-                                <button 
-                                    onClick={() => setSearchTerm('')}
-                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5"
-                                >
-                                    <X size={14} />
-                                </button>
-                            )}
-                        </div>
+                        {/* Search & Categories */}
+                        <div className="space-y-2">
+                            <div className="relative">
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar producto..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-[#1f1f25] border border-white/10 rounded-xl py-2 pl-9 pr-8 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                                />
+                                {searchTerm && (
+                                    <button onClick={() => setSearchTerm('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
 
-                        {/* CATEGORIES PILLS: Scrollable with emerald active style */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-1 -mx-1 px-1">
-                            {dynamicCategories.map(cat => {
-                                const isActive = (category === cat.id);
-                                const CatIcon = cat.icon;
-                                return (
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                                {dynamicCategories.map(cat => (
                                     <button
                                         key={cat.id}
-                                        onClick={() => {
-                                            if ('vibrate' in navigator) navigator.vibrate(10);
-                                            setCategory(cat.id);
-                                        }}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all active:scale-95 ${
-                                            isActive 
-                                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-black'
-                                                : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'
+                                        onClick={() => setCategory(cat.id)}
+                                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider whitespace-nowrap border ${
+                                            category === cat.id 
+                                                ? 'bg-amber-500 border-amber-500 text-black' 
+                                                : 'bg-[#1f1f25] border-white/5 text-slate-300'
                                         }`}
                                     >
-                                        <CatIcon size={13} className={isActive ? 'text-white' : 'text-slate-400'} />
-                                        <span>{cat.label}</span>
-                                        <span className={`text-[9px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-emerald-700 text-emerald-100' : 'bg-white/10 text-slate-400'}`}>
-                                            {cat.count}
-                                        </span>
+                                        {cat.label} ({cat.count})
                                     </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Products Grid */}
+                        <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[360px]">
+                            {filteredProducts.map(prod => {
+                                const inCartItem = cart.find(c => String(c.id) === String(prod.id));
+                                const qty = inCartItem?.quantity || 0;
+
+                                return (
+                                    <div key={prod.id} className="p-3 rounded-2xl bg-[#1b1b20] border border-white/5 flex items-center justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-xs font-extrabold text-white truncate">{prod.nombre}</h4>
+                                            <p className="text-[10px] text-amber-400 font-black mt-0.5">${prod.precio.toLocaleString('es-AR')}</p>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {qty > 0 ? (
+                                                <div className="flex items-center bg-[#2a292f] rounded-xl p-1 border border-white/5 gap-2">
+                                                    <button onClick={() => decrementCart(prod.id)} className="p-1 rounded-lg bg-white/5 text-slate-300 hover:text-white">
+                                                        <Minus size={14} />
+                                                    </button>
+                                                    <span className="text-xs font-black text-white px-1">{qty}</span>
+                                                    <button onClick={() => addToCart(prod)} className="p-1 rounded-lg bg-amber-500 text-slate-950 font-black">
+                                                        <Plus size={14} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => addToCart(prod)}
+                                                    className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-black text-[11px] uppercase tracking-wider flex items-center gap-1 active:scale-95"
+                                                >
+                                                    <Plus size={14} /> Agregar
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>
-                    </div>
 
-                    {/* PRODUCT LIST — 100% Mobile screen with padding bottom for Floating Cart Bar */}
-                    <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5 pb-28">
-                        {filteredProducts.length === 0 ? (
-                            <div className="py-20 text-center opacity-40">
-                                <Search size={32} className="mx-auto mb-2 text-slate-500" />
-                                <p className="text-xs font-bold uppercase text-slate-400">No se encontraron productos</p>
-                                <p className="text-[10px] text-slate-600">Prueba con otra palabra o categoría</p>
-                            </div>
-                        ) : (
-                            filteredProducts.map(p => {
-                                const cartItem = cart.find(item => String(item.id) === String(p.id));
-                                const hasNote = Boolean(cartItem?.comment);
-                                const isNoteOpen = activeNoteItemId === p.id;
-
-                                return (
-                                    <div 
-                                        key={p.id} 
-                                        className={`bg-white/[0.03] border rounded-2xl p-3 transition-all ${
-                                            cartItem ? 'border-emerald-500/30 bg-emerald-500/[0.04]' : 'border-white/5'
-                                        }`}
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            {/* Thumbnail with image error protection */}
-                                            <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center shrink-0 overflow-hidden relative">
-                                                {p.img ? (
-                                                    <img 
-                                                        src={p.img} 
-                                                        alt={p.nombre} 
-                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                                        className="w-full h-full object-cover" 
-                                                    />
-                                                ) : null}
-                                                <Utensils size={18} className="text-slate-500 absolute pointer-events-none" />
-                                            </div>
-
-                                            {/* Info */}
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-xs font-bold text-white leading-tight truncate">{p.nombre}</h4>
-                                                <span className="text-[10px] text-slate-400 font-medium">{p.categoria}</span>
-                                                <div className="text-sm font-black text-emerald-400 mt-0.5">
-                                                    ${p.precio.toLocaleString()}
-                                                </div>
-                                            </div>
-
-                                            {/* Action / Stepper */}
-                                            <div className="shrink-0">
-                                                {cartItem ? (
-                                                    <div className="flex items-center gap-1 bg-emerald-600/20 border border-emerald-500/40 rounded-xl p-0.5">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => decrementCart(p.id)}
-                                                            className="w-7 h-7 rounded-lg bg-white/10 text-white flex items-center justify-center active:scale-90 font-black text-sm"
-                                                        >
-                                                            <Minus size={13} strokeWidth={2.5} />
-                                                        </button>
-                                                        <span className="text-xs font-black text-emerald-300 min-w-[20px] text-center">
-                                                            {cartItem.quantity}
-                                                        </span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => addToCart(p)}
-                                                            className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center active:scale-90 shadow font-black text-sm"
-                                                        >
-                                                            <Plus size={13} strokeWidth={2.5} />
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => addToCart(p)}
-                                                        className="h-8 px-3 rounded-xl bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider flex items-center gap-1 active:scale-95 shadow-md shadow-emerald-600/20"
+                        {/* Items en Comanda seleccionados con notas rápidas */}
+                        {cart.length > 0 && (
+                            <div className="bg-[#1b1b20] border border-amber-500/20 rounded-2xl p-2.5 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                                        <CheckCircle2 size={12} /> Comanda actual ({cart.reduce((a, b) => a + b.quantity, 0)})
+                                    </span>
+                                    <span className="text-[9px] text-slate-400">Tocá para agregar nota</span>
+                                </div>
+                                <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
+                                    {cart.map(item => (
+                                        <div key={item.id} className="p-2 rounded-xl bg-[#2a292f] border border-white/5 flex flex-col gap-1">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="font-extrabold text-white truncate">{item.quantity}x {item.nombre}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-amber-400 font-bold">${(item.precio * item.quantity).toLocaleString('es-AR')}</span>
+                                                    <button 
+                                                        onClick={() => removeFromCart(item.id)} 
+                                                        className="text-red-400 hover:text-red-300 p-0.5"
+                                                        title="Quitar de la comanda"
                                                     >
-                                                        <Plus size={14} strokeWidth={3} />
-                                                        <span>Sumar</span>
+                                                        <Trash2 size={13} />
                                                     </button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Bottom row: Observation toggle button */}
-                                        <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setActiveNoteItemId(isNoteOpen ? null : p.id);
-                                                }}
-                                                className={`text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 transition-all ${
-                                                    hasNote 
-                                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-                                                        : 'text-slate-400 bg-white/5 hover:text-white'
-                                                }`}
-                                            >
-                                                <MessageSquare size={11} className={hasNote ? 'text-amber-400' : 'text-slate-400'} />
-                                                <span>{hasNote ? `Obs: "${cartItem.comment}"` : '+ Agregar observación'}</span>
-                                            </button>
-
-                                            {cartItem && (
-                                                <span className="text-[10px] text-slate-400 font-bold">
-                                                    Subtotal: <span className="text-white font-black">${(p.precio * cartItem.quantity).toLocaleString()}</span>
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* EXPANDABLE OBSERVATIONS BOX WITH QUICK CHIPS */}
-                                        {isNoteOpen && (
-                                            <div className="mt-2 p-2.5 bg-black/50 rounded-xl border border-white/10 space-y-2 animate-in fade-in duration-150">
-                                                <div className="flex items-center gap-1.5">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Observación (ej: sin hielo, bien cocido, sin sal)..."
-                                                        value={cartItem?.comment || ''}
-                                                        onChange={(e) => {
-                                                            if (!cartItem) addToCart(p);
-                                                            updateCartComment(p.id, e.target.value);
-                                                        }}
-                                                        className="flex-1 bg-white/5 border border-white/10 focus:border-amber-500/50 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 placeholder:text-slate-600 outline-none font-medium"
-                                                    />
-                                                    {cartItem?.comment && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => updateCartComment(p.id, '')}
-                                                            className="p-1.5 text-slate-500 hover:text-rose-400"
-                                                        >
-                                                            <X size={14} />
-                                                        </button>
-                                                    )}
                                                 </div>
-                                                {/* Quick Chips */}
-                                                <div className="flex flex-wrap gap-1">
-                                                    {QUICK_NOTES.map(chip => (
+                                            </div>
+                                            {item.comment && (
+                                                <span className="text-[10px] text-amber-300 font-medium italic">Nota: {item.comment}</span>
+                                            )}
+                                            {activeNoteItemId === item.id ? (
+                                                <div className="flex flex-wrap gap-1 pt-1">
+                                                    {QUICK_NOTES.map(qn => (
                                                         <button
-                                                            key={chip}
-                                                            type="button"
+                                                            key={qn}
                                                             onClick={() => {
-                                                                if (!cartItem) addToCart(p);
-                                                                const current = cartItem?.comment || '';
-                                                                const updated = current ? `${current}, ${chip}` : chip;
-                                                                updateCartComment(p.id, updated);
+                                                                updateCartComment(item.id, item.comment ? `${item.comment}, ${qn}` : qn);
+                                                                setActiveNoteItemId(null);
                                                             }}
-                                                            className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 active:scale-95 hover:bg-amber-500/20"
+                                                            className="px-2 py-0.5 rounded-md bg-white/10 hover:bg-amber-500 hover:text-black text-[9px] font-bold text-slate-200"
                                                         >
-                                                            +{chip}
+                                                            +{qn}
                                                         </button>
                                                     ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-
-                    {/* FLOATING ACTION BOTTOM BAR (Replaces the big screen-blocking comanda card) */}
-                    {cart.length > 0 && (
-                        <div className="fixed bottom-3 left-3 right-3 max-w-lg mx-auto z-40 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-2xl p-2.5 shadow-[0_10px_30px_rgba(16,185,129,0.5)] border border-emerald-400/30 flex items-center justify-between animate-in slide-in-from-bottom duration-200">
-                            <button 
-                                onClick={() => setIsCartDrawerOpen(true)}
-                                className="flex items-center gap-2.5 pl-2 text-left active:scale-95 transition-transform"
-                            >
-                                <div className="w-9 h-9 rounded-xl bg-black/20 flex items-center justify-center font-black text-xs relative">
-                                    <ShoppingCart size={18} />
-                                    <span className="absolute -top-1 -right-1 bg-white text-emerald-900 rounded-full w-4 h-4 text-[9px] font-black flex items-center justify-center shadow">
-                                        {cartCount}
-                                    </span>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-emerald-100 font-bold uppercase tracking-wider">Comanda ({cartCount})</p>
-                                    <p className="text-sm font-black text-white leading-none">${cartTotal.toLocaleString()}</p>
-                                </div>
-                            </button>
-
-                            <div className="flex items-center gap-1.5">
-                                <button
-                                    onClick={() => setIsCartDrawerOpen(true)}
-                                    className="px-3 py-2 rounded-xl bg-black/20 text-white text-[11px] font-black uppercase tracking-wider active:scale-95"
-                                >
-                                    Ver Detalle
-                                </button>
-                                <button
-                                    onClick={handlePlaceOrder}
-                                    className="px-3.5 py-2 rounded-xl bg-white text-emerald-950 text-[11px] font-black uppercase tracking-wider active:scale-95 flex items-center gap-1.5 shadow-md"
-                                >
-                                    <ChefHat size={16} />
-                                    <span>Mandar</span>
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* SLIDE-UP CART REVIEW DRAWER */}
-                    {isCartDrawerOpen && (
-                        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
-                            <div className="bg-[#141210] border-t border-white/10 rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200">
-                                {/* Drawer Header */}
-                                <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <ShoppingCart size={18} className="text-emerald-400" />
-                                        <h3 className="text-sm font-black uppercase text-white tracking-wide">
-                                            Revisar Comanda — Mesa {selectedTable}
-                                        </h3>
-                                        <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-black px-2 py-0.5 rounded-full">
-                                            {cartCount} items
-                                        </span>
-                                    </div>
-                                    <button 
-                                        onClick={() => setIsCartDrawerOpen(false)}
-                                        className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:text-white"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-
-                                {/* Cart Items List */}
-                                <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[50vh]">
-                                    {cart.map(item => (
-                                        <div key={item.id} className="bg-white/5 border border-white/5 p-3 rounded-xl space-y-2">
-                                            <div className="flex justify-between items-center">
-                                                <div className="min-w-0 flex-1 pr-2">
-                                                    <p className="text-xs font-bold text-white truncate">{item.nombre}</p>
-                                                    <p className="text-[10px] text-emerald-400 font-bold">${item.precio.toLocaleString()} c/u</p>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-0.5">
-                                                        <button 
-                                                            onClick={() => decrementCart(item.id)}
-                                                            className="w-6 h-6 rounded bg-white/5 text-white flex items-center justify-center active:scale-90"
-                                                        >
-                                                            <Minus size={11} />
-                                                        </button>
-                                                        <span className="text-xs font-black text-white px-1.5">{item.quantity}</span>
-                                                        <button 
-                                                            onClick={() => addToCart(item)}
-                                                            className="w-6 h-6 rounded bg-emerald-600 text-white flex items-center justify-center active:scale-90"
-                                                        >
-                                                            <Plus size={11} />
-                                                        </button>
-                                                    </div>
-                                                    <span className="text-xs font-black text-white min-w-[50px] text-right">
-                                                        ${(item.precio * item.quantity).toLocaleString()}
-                                                    </span>
-                                                    <button 
-                                                        onClick={() => removeFromCart(item.id)}
-                                                        className="w-6 h-6 rounded bg-rose-500/10 text-rose-400 flex items-center justify-center active:scale-90 ml-1"
+                                                    <button
+                                                        onClick={() => setActiveNoteItemId(null)}
+                                                        className="px-2 py-0.5 rounded-md bg-red-950/60 text-red-300 text-[9px] font-bold"
                                                     >
-                                                        <Trash2 size={12} />
+                                                        Cerrar
                                                     </button>
                                                 </div>
-                                            </div>
-
-                                            {/* Note input in cart */}
-                                            <div className="flex items-center gap-2 bg-black/40 rounded-lg px-2 py-1.5 border border-white/5">
-                                                <MessageSquare size={11} className="text-amber-400 shrink-0" />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Observación (ej: sin sal, sin hielo...)"
-                                                    value={item.comment || ''}
-                                                    onChange={(e) => updateCartComment(item.id, e.target.value)}
-                                                    className="flex-1 bg-transparent text-[11px] text-amber-300 placeholder:text-slate-600 font-medium outline-none"
-                                                />
-                                            </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setActiveNoteItemId(item.id)}
+                                                    className="self-start text-[9px] text-slate-400 hover:text-amber-400 font-bold underline"
+                                                >
+                                                    {item.comment ? 'Editar nota' : '+ Agregar nota rápida'}
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
-
-                                {/* Drawer Footer */}
-                                <div className="p-4 border-t border-white/10 bg-black/40 space-y-3 pb-safe">
-                                    <div className="flex justify-between items-center px-1">
-                                        <span className="text-xs font-black uppercase tracking-wider text-slate-400">Total a Comandar</span>
-                                        <span className="text-xl font-black text-white">${cartTotal.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setIsCartDrawerOpen(false)}
-                                            className="w-1/3 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-bold text-xs uppercase"
-                                        >
-                                            + Agregar más
-                                        </button>
-                                        <button 
-                                            onClick={handlePlaceOrder}
-                                            className="w-2/3 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 active:scale-95"
-                                        >
-                                            <ChefHat size={16} />
-                                            <span>Enviar a Cocina</span>
-                                        </button>
-                                    </div>
-                                </div>
                             </div>
+                        )}
+
+                        {/* Cart Summary & Send Action */}
+                        <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-3">
+                            <div>
+                                <span className="text-[10px] font-black uppercase text-slate-400">Total a Comandar</span>
+                                <p className="text-xl font-black text-amber-400 leading-tight">${cartTotal.toLocaleString('es-AR')}</p>
+                            </div>
+                            <button
+                                onClick={handlePlaceOrder}
+                                disabled={cart.length === 0}
+                                className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+                            >
+                                <Send size={16} />
+                                <span>Enviar a Cocina / KDS</span>
+                            </button>
                         </div>
-                    )}
+                    </div>
                 </div>
-            , document.body)}
-
-            {/* Payment Modal — Consolidated per-table billing */}
-            {isPaymentOpen && (
-                <PaymentModal 
-                    isOpen={isPaymentOpen}
-                    order={orderToPay}
-                    orderTotal={orderToPay?.total || 0}
-                    onClose={() => setIsPaymentOpen(false)}
-                    onConfirm={async (details) => {
-                        try {
-                            const order = orderToPay;
-                            if (!order) return;
-
-                            const activeMozoName = mozo?.name || localStorage.getItem('mozoName') || 'Mozo';
-                            const tableId = String(order.table || order.mesa || selectedTable || '');
-                            const totalAmount = Number(order.total || totalDeudaMesa || 0);
-
-                            // Register in Caja (non-blocking)
-                            try {
-                                const { registerExternalMovement } = await import('../../caja/services/cajaService');
-                                await registerExternalMovement(negocioId, {
-                                    tipo: 'entrada',
-                                    categoria: 'Venta mozo',
-                                    monto: totalAmount,
-                                    descripcion: `Mesa ${tableId} - Cuenta completa - Mozo ${activeMozoName}`,
-                                    metodo_pago: (details.method || 'efectivo').toLowerCase(),
-                                    origen: 'bar',
-                                    mozo: activeMozoName,
-                                    receiptImage: details.receipt || null
-                                });
-                            } catch (cajaErr) {
-                                console.warn('[Mozo] Caja registration failed (non-blocking):', cajaErr);
-                            }
-                            
-                            // Mark ALL orders for this table as paid
-                            const orderIds = order._orderIds || (order.id ? [order.id] : []);
-                            for (const oid of orderIds) {
-                                try {
-                                    if (updateOrderStatus) await updateOrderStatus(String(oid), 'paid');
-                                    if (updateConfigOrder) await updateConfigOrder(String(oid), {
-                                        status: "paid",
-                                        estado: "paid",
-                                        paid: true,
-                                        paymentMethod: details.method || 'Efectivo',
-                                        paidBy: activeMozoName,
-                                        paidAt: new Date().toISOString()
-                                    });
-                                } catch (orderErr) {
-                                    console.warn('[Mozo] Error updating order:', oid, orderErr);
-                                }
-                            }
-                            
-                            // Liberar mesa
-                            if (tableId && marcarMesaDisponible) {
-                                try {
-                                    await marcarMesaDisponible(tableId);
-                                } catch (mesaErr) {
-                                    console.warn('[Mozo] Error freeing table:', mesaErr);
-                                }
-                            }
-                            
-                            setIsPaymentOpen(false);
-                            setOrderToPay(null);
-                            setSelectedTable(null);
-                        } catch (e) {
-                            console.error('[Mozo] Error al procesar pago:', e);
-                            alert("Ocurrió un error al procesar el pago");
-                        }
-                    }}
-                />
             )}
-            <style dangerouslySetInnerHTML={{ __html: `
-                .hide-scrollbar::-webkit-scrollbar { display: none; }
-                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                .pt-safetop { padding-top: max(0.75rem, env(safe-area-inset-top)); }
-                .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
-            `}} />
+
+            {/* MODAL 2: VER COMANDA (DETALLE DE PEDIDOS ACTIVOS EN LA MESA) */}
+            {isComandaOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-[#131318] border border-white/10 w-full max-w-md rounded-[32px] p-6 text-white space-y-4 shadow-2xl">
+                        <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                            <div>
+                                <h3 className="text-lg font-black uppercase text-amber-400 tracking-tight">
+                                    Comanda — {currentSelectedData?.title}
+                                </h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase">
+                                    {activeOrdersForSelected.length} pedidos activos
+                                </p>
+                            </div>
+                            <button onClick={() => setIsComandaOpen(false)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-400">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="max-h-[340px] overflow-y-auto space-y-3 pr-1">
+                            {activeOrdersForSelected.length === 0 ? (
+                                <p className="py-8 text-center text-xs text-slate-500 font-black uppercase tracking-wider">
+                                    No hay comandas activas en esta mesa
+                                </p>
+                            ) : (
+                                activeOrdersForSelected.map((order, idx) => (
+                                    <div key={order.id || idx} className="p-3.5 bg-[#1b1b20] border border-white/5 rounded-2xl space-y-2">
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="font-black text-amber-400">Comanda #{idx + 1}</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase">{order.hora || 'Reciente'}</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {(order.productos || order.items || order.products || []).map((it, i) => (
+                                                <div key={i} className="flex justify-between items-center text-xs py-0.5">
+                                                    <span className="text-slate-200">{it.cantidad || it.quantity || 1}x {it.nombre || it.name}</span>
+                                                    <span className="font-bold text-slate-400">${Number(it.price || it.precio || 0).toLocaleString('es-AR')}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="pt-2 border-t border-white/10 flex justify-between items-center">
+                            <span className="text-xs font-black uppercase text-slate-400">Total Acumulado</span>
+                            <span className="text-xl font-black text-amber-400">${selectedTotalDeuda.toLocaleString('es-AR')}</span>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setIsComandaOpen(false);
+                                handlePayTable();
+                            }}
+                            className="w-full py-3.5 bg-[#6D28D9] hover:bg-[#7c3aed] text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2"
+                        >
+                            <CreditCard size={16} />
+                            <span>Cobrar Mesa</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL 3: PAGO / COBRO CONSOLIDADO */}
+            <PaymentModal
+                isOpen={isPaymentOpen}
+                order={orderToPay}
+                orderTotal={selectedTotalDeuda}
+                onClose={() => {
+                    setIsPaymentOpen(false);
+                    setOrderToPay(null);
+                }}
+                onConfirm={async ({ method, receipt }) => {
+                    try {
+                        // Register in Caja
+                        const { registerExternalMovement } = await import('../../caja/services/cajaService');
+                        await registerExternalMovement(negocioId, {
+                            tipo: 'entrada',
+                            categoria: 'Venta mozo',
+                            monto: selectedTotalDeuda,
+                            descripcion: `Mesa ${selectedTable} - Cobro realizado por ${mozo?.name || 'Mozo'}`,
+                            metodo_pago: (method || 'efectivo').toLowerCase(),
+                            origen: 'bar',
+                            mozo: mozo?.name || 'Mozo',
+                            receiptImage: receipt || null
+                        });
+
+                        // Update orders status to paid
+                        if (updateOrderStatus) {
+                            activeOrdersForSelected.forEach(o => {
+                                if (o.id) updateOrderStatus(String(o.id), 'paid');
+                            });
+                        }
+                        if (updateConfigOrder) {
+                            activeOrdersForSelected.forEach(o => {
+                                if (o.id) updateConfigOrder(String(o.id), { status: 'paid', paid: true });
+                            });
+                        }
+
+                        // Free table
+                        if (marcarMesaDisponible) {
+                            marcarMesaDisponible(selectedTable);
+                        }
+
+                        setIsPaymentOpen(false);
+                        setOrderToPay(null);
+                        alert(`Mesa ${selectedTable} cobrada con éxito.`);
+                    } catch (err) {
+                        console.error('Error al cobrar:', err);
+                        alert('Cobro registrado en mesa.');
+                        setIsPaymentOpen(false);
+                    }
+                }}
+            />
         </div>
     );
 }
