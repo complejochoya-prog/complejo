@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Users, Calendar, Phone, MessageCircle, ShieldCheck, Star, Trophy, X, CheckCircle2, Loader2 } from 'lucide-react';
+import { Users, Calendar, Phone, MessageCircle, ShieldCheck, Star, Trophy, X, CheckCircle2, Loader2, MapPin } from 'lucide-react';
 import {
     submitInscripcion,
     subscribeCursos,
     subscribeProfesores,
+    subscribeEscuelaConfig,
+    DEFAULT_ESCUELA_CONFIG,
     formatAgeRange,
     formatDays,
     formatPrice,
@@ -12,7 +14,8 @@ import {
 } from '../services/escuelaService';
 
 export default function EscuelaHome() {
-    const { negocioId } = useParams();
+    const { negocioId: paramNegocioId } = useParams();
+    const negocioId = paramNegocioId || 'giovanni';
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -21,11 +24,13 @@ export default function EscuelaHome() {
     const [formData, setFormData] = useState(EMPTY_FORM);
     const [allCourses, setAllCourses] = useState([]);
     const [teachers, setTeachers] = useState([]);
+    const [config, setConfig] = useState(DEFAULT_ESCUELA_CONFIG);
 
     useEffect(() => {
         const unsubs = [
             subscribeCursos(negocioId, setAllCourses),
             subscribeProfesores(negocioId, setTeachers),
+            subscribeEscuelaConfig(negocioId, setConfig),
         ];
         return () => unsubs.forEach(u => u && u());
     }, [negocioId]);
@@ -63,6 +68,8 @@ export default function EscuelaHome() {
         }
     };
 
+    const waPhone = (config.whatsapp || '5491122334455').replace(/[^0-9]/g, '');
+
     return (
         <div className="min-h-screen bg-[#030303] text-white pt-24 pb-32">
             <div className="max-w-7xl mx-auto px-6 lg:px-12 space-y-24">
@@ -71,52 +78,78 @@ export default function EscuelaHome() {
                 <section className="relative rounded-[40px] overflow-hidden bg-gradient-to-br from-blue-900 to-black p-8 lg:p-16 border border-blue-500/20">
                     <div className="absolute top-0 right-0 w-1/2 h-full opacity-30 pointer-events-none">
                         <img
-                            src="https://images.unsplash.com/photo-1551958219-acbc608c6377?q=80&w=1000"
+                            src={config.portadaUrl || "https://images.unsplash.com/photo-1551958219-acbc608c6377?q=80&w=1000"}
                             className="w-full h-full object-cover"
-                            alt="Fútbol Base"
+                            alt={config.nombre}
                         />
                         <div className="absolute inset-0 bg-gradient-to-l from-transparent to-blue-900" />
                     </div>
 
                     <div className="relative z-10 space-y-8 max-w-2xl">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 rounded-full border border-blue-400/30">
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-500/20 rounded-full border border-blue-400/30">
                             <Star size={14} className="text-blue-400 fill-current" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-300">Inscripciones Abiertas 2026</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-300">
+                                {config.badge || 'Inscripciones Abiertas'}
+                            </span>
                         </div>
 
                         <h1 className="text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.9]">
                             Escuela de Fútbol <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 italic">GIOVANNI KIDS</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 italic">
+                                {config.nombre || 'GIOVANNI KIDS'}
+                            </span>
                         </h1>
 
-                        <p className="text-lg text-blue-100/60 font-medium leading-relaxed">
-                            Formamos futbolistas, educamos personas. Entrenamientos especializados con profesionales de primer nivel en las mejores instalaciones del país.
+                        <p className="text-lg text-blue-100/70 font-medium leading-relaxed">
+                            {config.descripcion || 'Formamos futbolistas, educamos personas. Entrenamientos especializados con profesionales de primer nivel.'}
                         </p>
 
-                        <div className="flex flex-wrap gap-4">
+                        {config.direccion && (
+                            <div className="flex items-center gap-2 text-xs font-bold text-blue-200/80 uppercase tracking-wider">
+                                <MapPin size={14} className="text-blue-400" />
+                                <span>{config.direccion}</span>
+                            </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-4 pt-2">
                             <button
                                 onClick={() => setIsModalOpen(true)}
-                                className="px-8 py-4 bg-white text-blue-950 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-400 hover:text-white transition-all shadow-xl"
+                                className="px-8 py-4 bg-white text-blue-950 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-400 hover:text-white transition-all shadow-xl shadow-blue-500/10"
                             >
                                 Inscribirse Ahora
                             </button>
                             <a
-                                href="https://wa.me/5491122334455?text=Hola! Quiero info sobre la escuela de fútbol"
+                                href={`https://wa.me/${waPhone}?text=${encodeURIComponent(`Hola! Quiero info sobre ${config.nombre}`)}`}
                                 target="_blank" rel="noreferrer"
                                 className="px-8 py-4 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2"
                             >
-                                <MessageCircle size={18} /> Contactar Admin
+                                <MessageCircle size={18} /> Contactar WhatsApp
                             </a>
                         </div>
                     </div>
                 </section>
 
-                {/* ── Features ───────────────────────────────────────────── */}
+                {/* ── Features / Beneficios ───────────────────────────────────────────── */}
                 <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {[
-                        { icon: ShieldCheck, color: 'blue', title: 'Seguridad Total', desc: 'Predio cerrado, servicio de emergencias médicas y coordinación permanente durante toda la jornada.' },
-                        { icon: Users, color: 'amber', title: 'Grupos Reducidos', desc: 'Atención personalizada para cada niño, asegurando un aprendizaje técnico y táctico efectivo.' },
-                        { icon: Trophy, color: 'emerald', title: 'Competición', desc: 'Participación en ligas inter-complejos y torneos regionales para fomentar el espíritu deportivo.' },
+                        { 
+                            icon: ShieldCheck, 
+                            color: 'blue', 
+                            title: config.beneficio1Titulo || 'Seguridad Total', 
+                            desc: config.beneficio1Desc || 'Predio cerrado, servicio de emergencias médicas y coordinación permanente durante toda la jornada.' 
+                        },
+                        { 
+                            icon: Users, 
+                            color: 'amber', 
+                            title: config.beneficio2Titulo || 'Grupos Reducidos', 
+                            desc: config.beneficio2Desc || 'Atención personalizada para cada niño, asegurando un aprendizaje técnico y táctico efectivo.' 
+                        },
+                        { 
+                            icon: Trophy, 
+                            color: 'emerald', 
+                            title: config.beneficio3Titulo || 'Competición', 
+                            desc: config.beneficio3Desc || 'Participación en ligas inter-complejos y torneos regionales para fomentar el espíritu deportivo.' 
+                        },
                     ].map(({ icon: Icon, color, title, desc }) => (
                         <div key={title} className="glass-premium p-8 rounded-[32px] border border-white/5 space-y-4">
                             <div className={`w-12 h-12 rounded-2xl bg-${color}-500/20 flex items-center justify-center text-${color}-500 border border-${color}-500/30`}>
@@ -128,7 +161,7 @@ export default function EscuelaHome() {
                     ))}
                 </section>
 
-                {/* ── Categorías ─────────────────────────────────────────── */}
+                {/* ── Categorías y Cursos ─────────────────────────────────── */}
                 <section className="space-y-12">
                     <div className="text-center space-y-4">
                         <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter">
@@ -139,7 +172,7 @@ export default function EscuelaHome() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {courses.map((cat) => (
-                            <div key={cat.id} className="group relative bg-[#0a0a0a] border border-white/10 rounded-[32px] p-8 hover:border-blue-500/50 transition-all duration-500 overflow-hidden">
+                            <div key={cat.id} className="group relative bg-[#0a0a0a] border border-white/10 rounded-[32px] p-8 hover:border-blue-500/50 transition-all duration-500 overflow-hidden flex flex-col justify-between">
                                 <div className="absolute -right-8 -top-8 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all" />
                                 <div className="space-y-6">
                                     <div className="space-y-1">
@@ -148,24 +181,32 @@ export default function EscuelaHome() {
                                     </div>
                                     <div className="space-y-4 pt-4 border-t border-white/5">
                                         <div className="flex items-center gap-3 text-white/60">
-                                            <Calendar size={16} className="text-blue-500" />
+                                            <Calendar size={16} className="text-blue-500 shrink-0" />
                                             <span className="text-xs font-medium uppercase tracking-wider">{formatDays(cat.days)}</span>
                                         </div>
                                         <div className="flex items-center gap-3 text-white/60">
-                                            <Users size={16} className="text-blue-500" />
+                                            <Users size={16} className="text-blue-500 shrink-0" />
                                             <span className="text-xs font-medium uppercase tracking-wider">{formatTime(cat)}</span>
                                         </div>
                                         {teacherNames(cat).length > 0 && (
                                             <div className="flex items-center gap-3 text-white/60">
-                                                <ShieldCheck size={16} className="text-blue-500" />
+                                                <ShieldCheck size={16} className="text-blue-500 shrink-0" />
                                                 <span className="text-xs font-medium uppercase tracking-wider">Prof. {teacherNames(cat).join(', ')}</span>
                                             </div>
                                         )}
+                                        {cat.location && (
+                                            <div className="flex items-center gap-3 text-white/60">
+                                                <MapPin size={16} className="text-blue-500 shrink-0" />
+                                                <span className="text-xs font-medium uppercase tracking-wider">{cat.location}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="pt-6">
+                                    <div className="pt-4 border-t border-white/5">
                                         <div className="text-3xl font-black text-white italic tracking-tighter">{formatPrice(cat.price)}</div>
                                         <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">por mes</p>
                                     </div>
+                                </div>
+                                <div className="pt-6">
                                     <button
                                         onClick={() => openModalWithCategory(cat)}
                                         className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
@@ -185,14 +226,23 @@ export default function EscuelaHome() {
                             ¿Tenés <span className="italic text-blue-600">dudas?</span>
                         </h2>
                         <p className="text-black/60 font-medium max-w-md">
-                            Nuestro equipo de administración está listo para asesorarte sobre inscripciones, uniformes y planes familiares.
+                            Nuestro equipo de administración está listo para asesorarte sobre inscripciones, uniformes y planes familiares de {config.nombre}.
                         </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                        <a href="tel:+5491122334455" className="flex items-center justify-center gap-3 px-8 py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20">
-                            <Phone size={18} /> Llamar Ahora
-                        </a>
-                        <a href="https://wa.me/5491122334455" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-3 px-8 py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all">
+                        {config.telefono && (
+                            <a 
+                                href={`tel:${config.telefono.replace(/\s+/g, '')}`} 
+                                className="flex items-center justify-center gap-3 px-8 py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20"
+                            >
+                                <Phone size={18} /> Llamar Ahora
+                            </a>
+                        )}
+                        <a 
+                            href={`https://wa.me/${waPhone}?text=${encodeURIComponent(`Hola! Quiero consultar sobre ${config.nombre}`)}`} 
+                            target="_blank" rel="noreferrer" 
+                            className="flex items-center justify-center gap-3 px-8 py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all"
+                        >
                             <MessageCircle size={18} /> Chat WhatsApp
                         </a>
                     </div>
@@ -215,9 +265,11 @@ export default function EscuelaHome() {
                             <form onSubmit={handleSubmit} className="p-8 lg:p-12 space-y-8">
                                 <div className="space-y-2">
                                     <h3 className="text-3xl font-black uppercase italic tracking-tighter">
-                                        Inscripción <span className="text-blue-500">2026</span>
+                                        Inscripción <span className="text-blue-500">{config.badge || '2026'}</span>
                                     </h3>
-                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Completá los datos para reservar tu lugar</p>
+                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                                        Reservá tu lugar en {config.nombre}
+                                    </p>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -234,7 +286,7 @@ export default function EscuelaHome() {
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Edad</label>
                                         <input
-                                            type="number" min="4" max="15"
+                                            type="number" min="4" max="18"
                                             value={formData.edad}
                                             onChange={(e) => setFormData({ ...formData, edad: e.target.value })}
                                             className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 px-5 text-sm text-white focus:border-blue-500/50 outline-none transition-colors"
@@ -294,7 +346,7 @@ export default function EscuelaHome() {
                                 <div className="space-y-3">
                                     <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white">¡Solicitud Enviada!</h3>
                                     <p className="text-sm text-slate-400 font-medium max-w-sm mx-auto">
-                                        Recibimos tus datos correctamente. Un coordinador de la escuela se pondrá en contacto con vos vía WhatsApp en las próximas 24hs.
+                                        Recibimos tus datos correctamente. Un coordinador de {config.nombre} se pondrá en contacto con vos vía WhatsApp en las próximas 24hs.
                                     </p>
                                 </div>
                                 <button

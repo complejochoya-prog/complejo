@@ -17,6 +17,7 @@ import {
  *   negocios/{negocioId}/escuela_inscripciones  → alumnos
  *   negocios/{negocioId}/escuela_cursos         → cursos / categorías
  *   negocios/{negocioId}/escuela_profesores     → profesores
+ *   negocios/{negocioId}/escuela_config         → configuración general de la escuela
  *
  * Todo se guarda primero en localStorage (funciona sin conexión) y se
  * sincroniza con Firestore cuando está disponible.
@@ -25,7 +26,8 @@ import {
 const LS_KEYS = {
     alumnos: 'escuela_inscripciones_db',
     cursos: 'escuela_cursos_db',
-    profesores: 'escuela_profesores_db'
+    profesores: 'escuela_profesores_db',
+    config: 'escuela_config_db'
 };
 
 export const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -76,6 +78,34 @@ const toNum = (v, fallback = 0) => {
     return Number.isNaN(n) ? fallback : n;
 };
 
+export const DEFAULT_ESCUELA_CONFIG = {
+    nombre: 'GIOVANNI KIDS',
+    lema: 'Escuela de Fútbol Infantil y Juvenil',
+    badge: 'Inscripciones Abiertas 2026',
+    descripcion: 'Formamos futbolistas, educamos personas. Entrenamientos especializados con profesionales de primer nivel en las mejores instalaciones del país.',
+    telefono: '+5491122334455',
+    whatsapp: '5491122334455',
+    email: 'escuela@complejo.com',
+    direccion: 'Predio Deportivo Complejo Choya, Canchas 1 y 2',
+    portadaUrl: 'https://images.unsplash.com/photo-1551958219-acbc608c6377?q=80&w=1000',
+    matricula: 10000,
+    incluyeUniforme: true,
+    notasPadres: 'Traer botines para césped sintético, canilleras obligatorias y botella de hidratación individual.',
+    beneficio1Titulo: 'Seguridad Total',
+    beneficio1Desc: 'Predio cerrado, servicio de emergencias médicas y coordinación permanente durante toda la jornada.',
+    beneficio2Titulo: 'Grupos Reducidos',
+    beneficio2Desc: 'Atención personalizada para cada niño, asegurando un aprendizaje técnico y táctico efectivo.',
+    beneficio3Titulo: 'Competición',
+    beneficio3Desc: 'Participación en ligas inter-complejos y torneos regionales para fomentar el espíritu deportivo.'
+};
+
+export function normalizeEscuelaConfig(data) {
+    return {
+        ...DEFAULT_ESCUELA_CONFIG,
+        ...(data || {})
+    };
+}
+
 function normalizeStudent(data, firestoreId) {
     return {
         id: firestoreId || data.id || `esc-${Date.now()}`,
@@ -120,9 +150,14 @@ function normalizeTeacher(data, firestoreId) {
     return {
         id: firestoreId || data.id || `prof-${Date.now()}`,
         name: data.name || 'Profesor sin nombre',
+        dni: data.dni || '',
         phone: data.phone || '',
         email: data.email || '',
-        specialty: data.specialty || '',
+        specialty: data.specialty || 'Director Técnico',
+        avatar: data.avatar || '',
+        certifications: data.certifications || '',
+        schedule: data.schedule || '',
+        salary: data.salary || '',
         notes: data.notes || '',
         status: data.status || 'active',
         order: typeof data.order === 'number' ? data.order : Date.now(),
@@ -141,6 +176,12 @@ const DEFAULT_COURSES = [
     { id: 'curso-juveniles', name: 'Juveniles', ageMin: 13, ageMax: 15, days: ['Mar', 'Jue'], timeStart: '19:00', timeEnd: '21:00', price: 20000, capacity: 20, order: 4 },
 ].map(c => normalizeCourse(c));
 
+const DEFAULT_TEACHERS = [
+    { id: 'prof-1', name: 'Matías Silva', dni: '36.890.123', phone: '11 4455-6677', email: 'matias@complejo.com', specialty: 'Director Técnico FIFA / Infantil', certifications: 'Licencia PRO ATFA, Primeros Auxilios Cruz Roja', schedule: 'Lunes a Viernes 16:30 a 20:30', salary: '120.000', notes: 'A cargo de Mini-Cracks y Pre-Infantil.', status: 'active', order: 1 },
+    { id: 'prof-2', name: 'Lucas Benítez', dni: '38.456.789', phone: '11 6677-8899', email: 'lucas.benitez@complejo.com', specialty: 'Preparador Físico / Juveniles', certifications: 'Profesorado Nacional de Educación Física', schedule: 'Martes y Jueves 18:00 a 21:00', salary: '95.000', notes: 'Especialista en coordinación y velocidad.', status: 'active', order: 2 },
+    { id: 'prof-3', name: 'Gonzalo Navarro', dni: '39.112.233', phone: '11 8899-0011', email: 'gonzalo@complejo.com', specialty: 'Entrenador de Arqueros', certifications: 'Clínica de arqueros AFA', schedule: 'Miércoles y Sábados 17:00 a 19:00', salary: '80.000', notes: 'Entrenamiento específico de porteros.', status: 'active', order: 3 },
+].map(t => normalizeTeacher(t));
+
 const DEFAULT_STUDENTS = [
     { id: 'esc-1', name: 'Mateo González', courseId: 'curso-mini-cracks', category: 'Mini-Cracks', age: 5, guardian: 'Juan González', phone: '11 2233-4455', status: 'active', payment: 'paid' },
     { id: 'esc-2', name: 'Bautista Lopez', courseId: 'curso-pre-infantil', category: 'Pre-Infantil', age: 8, guardian: 'Maria Lopez', phone: '11 5566-7788', status: 'active', payment: 'pending' },
@@ -153,7 +194,7 @@ const DEFAULT_STUDENTS = [
 const CONFIGS = {
     alumnos: { lsKey: LS_KEYS.alumnos, col: 'escuela_inscripciones', normalize: normalizeStudent, defaults: DEFAULT_STUDENTS, seed: false },
     cursos: { lsKey: LS_KEYS.cursos, col: 'escuela_cursos', normalize: normalizeCourse, defaults: DEFAULT_COURSES, seed: true },
-    profesores: { lsKey: LS_KEYS.profesores, col: 'escuela_profesores', normalize: normalizeTeacher, defaults: [], seed: false },
+    profesores: { lsKey: LS_KEYS.profesores, col: 'escuela_profesores', normalize: normalizeTeacher, defaults: DEFAULT_TEACHERS, seed: true },
 };
 
 const sortList = (list) =>
@@ -190,8 +231,6 @@ function subscribe(cfg, negocioId, onData, { sorted = false } = {}) {
 
     try {
         const colRef = collection(db, 'negocios', key, cfg.col);
-        // Alumnos se ordenan en Firestore; cursos/profesores se ordenan en el cliente
-        // (orderBy descarta documentos que no tengan el campo).
         const q = cfg === CONFIGS.alumnos ? query(colRef, orderBy('createdAt', 'desc')) : colRef;
 
         return onSnapshot(q, (snap) => {
@@ -201,7 +240,6 @@ function subscribe(cfg, negocioId, onData, { sorted = false } = {}) {
                 emit(list);
             } else {
                 const local = readLocal(cfg, key);
-                // Primera vez: subir los datos iniciales para que se puedan editar en Firestore
                 if (cfg.seed && !seeded && local.length) {
                     seeded = true;
                     local.forEach(item =>
@@ -229,7 +267,6 @@ async function upsert(cfg, negocioId, item, { isNew = false } = {}) {
 
     try {
         const ref = doc(db, 'negocios', key, cfg.col, item.id);
-        // En ediciones no se toca createdAt (en Firestore es un Timestamp y se usa para ordenar)
         const rest = { ...item };
         delete rest.createdAt;
         const payload = isNew ? { ...item, createdAt: serverTimestamp() } : rest;
@@ -250,17 +287,74 @@ async function remove(cfg, negocioId, id) {
     }
 }
 
+// ─── API: Configuración de la Escuela ──────────────────────────────────────
+
+export function readEscuelaConfigLocal(negocioId) {
+    const key = negocioId || 'giovanni';
+    try {
+        const raw = localStorage.getItem(`${LS_KEYS.config}_${key}`);
+        if (raw) return normalizeEscuelaConfig(JSON.parse(raw));
+    } catch (e) {
+        console.error('Error leyendo config de escuela:', e);
+    }
+    return { ...DEFAULT_ESCUELA_CONFIG };
+}
+
+export function subscribeEscuelaConfig(negocioId, onData) {
+    const key = negocioId || 'giovanni';
+    onData(readEscuelaConfigLocal(key));
+
+    try {
+        const docRef = doc(db, 'negocios', key, 'escuela_config', 'general');
+        return onSnapshot(docRef, (snap) => {
+            if (snap.exists()) {
+                const conf = normalizeEscuelaConfig(snap.data());
+                try {
+                    localStorage.setItem(`${LS_KEYS.config}_${key}`, JSON.stringify(conf));
+                } catch { }
+                onData(conf);
+            } else {
+                const local = readEscuelaConfigLocal(key);
+                setDoc(docRef, local, { merge: true }).catch(() => { });
+                onData(local);
+            }
+        }, (err) => {
+            console.warn('Error listener config escuela:', err);
+            onData(readEscuelaConfigLocal(key));
+        });
+    } catch (e) {
+        console.warn('Firestore config escuela no disponible:', e);
+        return () => { };
+    }
+}
+
+export async function saveEscuelaConfig(negocioId, configData) {
+    const key = negocioId || 'giovanni';
+    const normalized = normalizeEscuelaConfig(configData);
+    try {
+        localStorage.setItem(`${LS_KEYS.config}_${key}`, JSON.stringify(normalized));
+    } catch (e) {
+        console.error('Error guardando en localStorage:', e);
+    }
+
+    try {
+        const docRef = doc(db, 'negocios', key, 'escuela_config', 'general');
+        await setDoc(docRef, { ...normalized, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (err) {
+        console.warn('Error guardando config escuela en Firestore:', err);
+    }
+    return normalized;
+}
+
 // ─── API: Alumnos ──────────────────────────────────────────────────────────
 
 export const subscribeInscripciones = (negocioId, onData) => subscribe(CONFIGS.alumnos, negocioId, onData);
 
-/** Alta de alumno (formulario público o panel admin). Acepta {alumno,tutor,...} o {name,guardian,...}. */
 export async function submitInscripcion(negocioId, formData) {
     const student = normalizeStudent({ ...formData, id: `esc-${Date.now()}` });
     return upsert(CONFIGS.alumnos, negocioId, student, { isNew: true });
 }
 
-/** Actualiza cualquier campo de un alumno (pago, estado, curso, datos personales...). */
 export async function updateInscripcionStatus(negocioId, studentId, updates) {
     const current = readLocal(CONFIGS.alumnos, negocioId || 'giovanni').find(s => s.id === studentId);
     return upsert(CONFIGS.alumnos, negocioId, normalizeStudent({ ...(current || {}), ...updates, id: studentId }, studentId));

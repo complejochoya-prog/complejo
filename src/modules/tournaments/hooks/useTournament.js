@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { db } from '../../../firebase/config';
-import { collection, onSnapshot } from 'firebase/firestore';
 import { 
+    subscribeTournaments,
     fetchStandings, 
     fetchMatches, 
     fetchScorers, 
@@ -17,40 +16,12 @@ export function useTournament(negocioId) {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (!negocioId) {
-            setTournaments(DEFAULT_TOURNAMENTS);
-            setLoading(false);
-            return;
-        }
-
         setLoading(true);
-        const colRef = collection(db, 'negocios', negocioId, 'tournaments');
-        
-        const unsubscribe = onSnapshot(colRef, (snapshot) => {
-            if (snapshot.empty) {
-                setTournaments(DEFAULT_TOURNAMENTS);
-            } else {
-                const list = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                // Safe in-memory sorting
-                list.sort((a, b) => {
-                    const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (new Date(a.createdAt || 0).getTime() || 0);
-                    const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (new Date(b.createdAt || 0).getTime() || 0);
-                    return timeB - timeA;
-                });
-                setTournaments(list.length > 0 ? list : DEFAULT_TOURNAMENTS);
-            }
-            setLoading(false);
-        }, (err) => {
-            console.warn("Error in tournament listener, using defaults:", err);
-            setTournaments(DEFAULT_TOURNAMENTS);
-            setError(err);
+        const unsubscribe = subscribeTournaments(negocioId, (data) => {
+            setTournaments(data || DEFAULT_TOURNAMENTS);
             setLoading(false);
         });
-
-        return () => unsubscribe();
+        return () => unsubscribe && unsubscribe();
     }, [negocioId]);
 
     const getStandings = async (tournamentId) => {
