@@ -1,7 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Users, Calendar, Phone, MessageCircle, ShieldCheck, Star, Trophy, X, CheckCircle2, Loader2 } from 'lucide-react';
-import { submitInscripcion } from '../services/escuelaService';
+import {
+    submitInscripcion,
+    subscribeCursos,
+    subscribeProfesores,
+    formatAgeRange,
+    formatDays,
+    formatPrice,
+    formatTime,
+} from '../services/escuelaService';
 
 export default function EscuelaHome() {
     const { negocioId } = useParams();
@@ -9,18 +17,26 @@ export default function EscuelaHome() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const EMPTY_FORM = { alumno: '', edad: '', tutor: '', telefono: '', categoria: 'Mini-Cracks' };
+    const EMPTY_FORM = { alumno: '', edad: '', tutor: '', telefono: '', courseId: '', categoria: '' };
     const [formData, setFormData] = useState(EMPTY_FORM);
+    const [allCourses, setAllCourses] = useState([]);
+    const [teachers, setTeachers] = useState([]);
 
-    const categories = [
-        { id: 1, name: 'Mini-Cracks', age: '4-6 años', days: 'Mar y Jue', time: '17:00 - 18:30', price: '$15.000' },
-        { id: 2, name: 'Pre-Infantil', age: '7-9 años', days: 'Lun, Mie y Vie', time: '18:00 - 19:30', price: '$18.000' },
-        { id: 3, name: 'Infantil', age: '10-12 años', days: 'Lun, Mie y Vie', time: '18:30 - 20:00', price: '$18.000' },
-        { id: 4, name: 'Juveniles', age: '13-15 años', days: 'Mar y Jue', time: '19:00 - 21:00', price: '$20.000' },
-    ];
+    useEffect(() => {
+        const unsubs = [
+            subscribeCursos(negocioId, setAllCourses),
+            subscribeProfesores(negocioId, setTeachers),
+        ];
+        return () => unsubs.forEach(u => u && u());
+    }, [negocioId]);
 
-    const openModalWithCategory = (catName) => {
-        setFormData(prev => ({ ...prev, categoria: catName }));
+    // Solo los cursos activos se muestran al público
+    const courses = allCourses.filter(c => c.status === 'active');
+    const teacherNames = (c) =>
+        c.teacherIds.map(id => teachers.find(t => t.id === id)).filter(t => t && t.status === 'active').map(t => t.name);
+
+    const openModalWithCategory = (course) => {
+        setFormData(prev => ({ ...prev, courseId: course.id, categoria: course.name }));
         setIsModalOpen(true);
     };
 
@@ -122,30 +138,36 @@ export default function EscuelaHome() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {categories.map((cat) => (
+                        {courses.map((cat) => (
                             <div key={cat.id} className="group relative bg-[#0a0a0a] border border-white/10 rounded-[32px] p-8 hover:border-blue-500/50 transition-all duration-500 overflow-hidden">
                                 <div className="absolute -right-8 -top-8 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all" />
                                 <div className="space-y-6">
                                     <div className="space-y-1">
                                         <h4 className="text-2xl font-black uppercase tracking-tight text-white">{cat.name}</h4>
-                                        <p className="text-xs font-bold text-blue-400 uppercase tracking-widest">{cat.age}</p>
+                                        <p className="text-xs font-bold text-blue-400 uppercase tracking-widest">{formatAgeRange(cat)}</p>
                                     </div>
                                     <div className="space-y-4 pt-4 border-t border-white/5">
                                         <div className="flex items-center gap-3 text-white/60">
                                             <Calendar size={16} className="text-blue-500" />
-                                            <span className="text-xs font-medium uppercase tracking-wider">{cat.days}</span>
+                                            <span className="text-xs font-medium uppercase tracking-wider">{formatDays(cat.days)}</span>
                                         </div>
                                         <div className="flex items-center gap-3 text-white/60">
                                             <Users size={16} className="text-blue-500" />
-                                            <span className="text-xs font-medium uppercase tracking-wider">{cat.time}</span>
+                                            <span className="text-xs font-medium uppercase tracking-wider">{formatTime(cat)}</span>
                                         </div>
+                                        {teacherNames(cat).length > 0 && (
+                                            <div className="flex items-center gap-3 text-white/60">
+                                                <ShieldCheck size={16} className="text-blue-500" />
+                                                <span className="text-xs font-medium uppercase tracking-wider">Prof. {teacherNames(cat).join(', ')}</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="pt-6">
-                                        <div className="text-3xl font-black text-white italic tracking-tighter">{cat.price}</div>
+                                        <div className="text-3xl font-black text-white italic tracking-tighter">{formatPrice(cat.price)}</div>
                                         <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">por mes</p>
                                     </div>
                                     <button
-                                        onClick={() => openModalWithCategory(cat.name)}
+                                        onClick={() => openModalWithCategory(cat)}
                                         className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
                                     >
                                         Solicitar Vacante
@@ -242,14 +264,17 @@ export default function EscuelaHome() {
                                     <div className="space-y-2 sm:col-span-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Categoría de Interés</label>
                                         <select
-                                            value={formData.categoria}
-                                            onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                                            value={formData.courseId}
+                                            onChange={(e) => {
+                                                const c = courses.find(x => x.id === e.target.value);
+                                                setFormData({ ...formData, courseId: e.target.value, categoria: c?.name || '' });
+                                            }}
                                             className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 px-5 text-sm text-white focus:border-blue-500/50 outline-none transition-colors appearance-none"
                                         >
-                                            <option value="Mini-Cracks">Mini-Cracks (4-6 años)</option>
-                                            <option value="Pre-Infantil">Pre-Infantil (7-9 años)</option>
-                                            <option value="Infantil">Infantil (10-12 años)</option>
-                                            <option value="Juveniles">Juveniles (13-15 años)</option>
+                                            <option value="">Todavía no sé / consultar</option>
+                                            {courses.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name} ({formatAgeRange(c)})</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>

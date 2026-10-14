@@ -2,181 +2,295 @@ import { db } from '../../../firebase/config';
 import {
     collection,
     doc,
-    getDocs,
     setDoc,
     deleteDoc,
-    updateDoc,
     query,
     orderBy,
     onSnapshot,
     serverTimestamp
 } from 'firebase/firestore';
 
-const LOCAL_STORAGE_KEY = 'escuela_inscripciones_db';
+/**
+ * Servicio de la Escuela de Fútbol.
+ *
+ * Colecciones (por negocio):
+ *   negocios/{negocioId}/escuela_inscripciones  → alumnos
+ *   negocios/{negocioId}/escuela_cursos         → cursos / categorías
+ *   negocios/{negocioId}/escuela_profesores     → profesores
+ *
+ * Todo se guarda primero en localStorage (funciona sin conexión) y se
+ * sincroniza con Firestore cuando está disponible.
+ */
 
-export const CATEGORY_DETAILS = {
-    'Mini-Cracks': { days: 'Mar y Jue', time: '17:00 - 18:30', price: '$15.000', ageRange: '4-6 años' },
-    'Pre-Infantil': { days: 'Lun, Mie y Vie', time: '18:00 - 19:30', price: '$18.000', ageRange: '7-9 años' },
-    'Infantil': { days: 'Lun, Mie y Vie', time: '18:30 - 20:00', price: '$18.000', ageRange: '10-12 años' },
-    'Juveniles': { days: 'Mar y Jue', time: '19:00 - 21:00', price: '$20.000', ageRange: '13-15 años' }
+const LS_KEYS = {
+    alumnos: 'escuela_inscripciones_db',
+    cursos: 'escuela_cursos_db',
+    profesores: 'escuela_profesores_db'
 };
 
-/**
- * Normaliza cualquier objeto de alumno a los campos estándar,
- * sin importar si vino del formulario público (alumno/tutor/...)
- * o del panel admin (name/guardian/...).
- */
-function normalizeStudent(data, firestoreId) {
-    const category = data.category || data.categoria || 'Mini-Cracks';
-    const cat = CATEGORY_DETAILS[category] || CATEGORY_DETAILS['Mini-Cracks'];
+export const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
+// ─── Helpers de formato (compartidos por admin y página pública) ───────────
+
+export function formatPrice(n) {
+    if (n === null || n === undefined || n === '' || isNaN(Number(n))) return '—';
+    return `$${Number(n).toLocaleString('es-AR')}`;
+}
+
+export function formatDays(days) {
+    if (!days) return '—';
+    if (typeof days === 'string') return days;
+    const list = DAYS.filter(d => days.includes(d)); // orden de semana
+    if (list.length === 0) return '—';
+    if (list.length === 1) return list[0];
+    return `${list.slice(0, -1).join(', ')} y ${list[list.length - 1]}`;
+}
+
+export function formatTime(c) {
+    if (!c?.timeStart && !c?.timeEnd) return '—';
+    return `${c.timeStart || '?'} - ${c.timeEnd || '?'}`;
+}
+
+export function formatAgeRange(c) {
+    const min = c?.ageMin, max = c?.ageMax;
+    if (min !== '' && min != null && max !== '' && max != null) return `${min}-${max} años`;
+    if (min !== '' && min != null) return `${min}+ años`;
+    if (max !== '' && max != null) return `hasta ${max} años`;
+    return 'Todas las edades';
+}
+
+/** Busca el curso de un alumno: por id y, si es un alumno viejo, por nombre. */
+export function findCourseForStudent(student, courses) {
+    if (!student) return null;
+    return (
+        courses.find(c => c.id === student.courseId) ||
+        (!student.courseId ? courses.find(c => c.name === student.category) : null) ||
+        null
+    );
+}
+
+// ─── Normalizadores ────────────────────────────────────────────────────────
+
+const toNum = (v, fallback = 0) => {
+    const n = parseInt(v, 10);
+    return Number.isNaN(n) ? fallback : n;
+};
+
+function normalizeStudent(data, firestoreId) {
     return {
         id: firestoreId || data.id || `esc-${Date.now()}`,
         name: data.name || data.alumno || 'Alumno Sin Nombre',
-        age: parseInt(data.age || data.edad) || 0,
+        age: toNum(data.age ?? data.edad, 0),
         guardian: data.guardian || data.tutor || 'No especificado',
         phone: data.phone || data.telefono || 'Sin teléfono',
-        category,
-        scheduleDays: data.scheduleDays || cat.days,
-        scheduleTime: data.scheduleTime || cat.time,
-        monthlyFee: data.monthlyFee || cat.price,
-        ageRange: data.ageRange || cat.ageRange,
+        courseId: data.courseId || null,
+        category: data.category || data.categoria || '',
         status: data.status || 'active',
         payment: data.payment || 'pending',
+        notes: data.notes || '',
         createdAt: data.createdAt?.toDate
             ? data.createdAt.toDate().toISOString()
             : (data.createdAt || new Date().toISOString()),
     };
 }
 
+function normalizeCourse(data, firestoreId) {
+    return {
+        id: firestoreId || data.id || `curso-${Date.now()}`,
+        name: data.name || 'Curso sin nombre',
+        ageMin: data.ageMin === '' || data.ageMin == null ? '' : toNum(data.ageMin, ''),
+        ageMax: data.ageMax === '' || data.ageMax == null ? '' : toNum(data.ageMax, ''),
+        days: Array.isArray(data.days) ? data.days : (data.days ? [data.days] : []),
+        timeStart: data.timeStart || '',
+        timeEnd: data.timeEnd || '',
+        price: toNum(data.price, 0),
+        capacity: toNum(data.capacity, 0), // 0 = sin límite
+        location: data.location || '',
+        description: data.description || '',
+        teacherIds: Array.isArray(data.teacherIds) ? data.teacherIds : [],
+        status: data.status || 'active',
+        order: typeof data.order === 'number' ? data.order : Date.now(),
+        createdAt: data.createdAt?.toDate
+            ? data.createdAt.toDate().toISOString()
+            : (data.createdAt || new Date().toISOString()),
+    };
+}
+
+function normalizeTeacher(data, firestoreId) {
+    return {
+        id: firestoreId || data.id || `prof-${Date.now()}`,
+        name: data.name || 'Profesor sin nombre',
+        phone: data.phone || '',
+        email: data.email || '',
+        specialty: data.specialty || '',
+        notes: data.notes || '',
+        status: data.status || 'active',
+        order: typeof data.order === 'number' ? data.order : Date.now(),
+        createdAt: data.createdAt?.toDate
+            ? data.createdAt.toDate().toISOString()
+            : (data.createdAt || new Date().toISOString()),
+    };
+}
+
+// ─── Datos de ejemplo iniciales ────────────────────────────────────────────
+
+const DEFAULT_COURSES = [
+    { id: 'curso-mini-cracks', name: 'Mini-Cracks', ageMin: 4, ageMax: 6, days: ['Mar', 'Jue'], timeStart: '17:00', timeEnd: '18:30', price: 15000, capacity: 20, order: 1 },
+    { id: 'curso-pre-infantil', name: 'Pre-Infantil', ageMin: 7, ageMax: 9, days: ['Lun', 'Mié', 'Vie'], timeStart: '18:00', timeEnd: '19:30', price: 18000, capacity: 20, order: 2 },
+    { id: 'curso-infantil', name: 'Infantil', ageMin: 10, ageMax: 12, days: ['Lun', 'Mié', 'Vie'], timeStart: '18:30', timeEnd: '20:00', price: 18000, capacity: 20, order: 3 },
+    { id: 'curso-juveniles', name: 'Juveniles', ageMin: 13, ageMax: 15, days: ['Mar', 'Jue'], timeStart: '19:00', timeEnd: '21:00', price: 20000, capacity: 20, order: 4 },
+].map(c => normalizeCourse(c));
+
 const DEFAULT_STUDENTS = [
-    { id: 'esc-1', name: 'Mateo González', category: 'Mini-Cracks', age: 5, guardian: 'Juan González', phone: '11 2233-4455', status: 'active', payment: 'paid', createdAt: new Date().toISOString() },
-    { id: 'esc-2', name: 'Bautista Lopez', category: 'Pre-Infantil', age: 8, guardian: 'Maria Lopez', phone: '11 5566-7788', status: 'active', payment: 'pending', createdAt: new Date().toISOString() },
-    { id: 'esc-3', name: 'Santino Rodriguez', category: 'Infantil', age: 11, guardian: 'Pedro Rodriguez', phone: '11 9900-1122', status: 'inactive', payment: 'overdue', createdAt: new Date().toISOString() },
-    { id: 'esc-4', name: 'Thiago Diaz', category: 'Juveniles', age: 14, guardian: 'Lucia Diaz', phone: '11 3344-5566', status: 'active', payment: 'paid', createdAt: new Date().toISOString() },
+    { id: 'esc-1', name: 'Mateo González', courseId: 'curso-mini-cracks', category: 'Mini-Cracks', age: 5, guardian: 'Juan González', phone: '11 2233-4455', status: 'active', payment: 'paid' },
+    { id: 'esc-2', name: 'Bautista Lopez', courseId: 'curso-pre-infantil', category: 'Pre-Infantil', age: 8, guardian: 'Maria Lopez', phone: '11 5566-7788', status: 'active', payment: 'pending' },
+    { id: 'esc-3', name: 'Santino Rodriguez', courseId: 'curso-infantil', category: 'Infantil', age: 11, guardian: 'Pedro Rodriguez', phone: '11 9900-1122', status: 'inactive', payment: 'overdue' },
+    { id: 'esc-4', name: 'Thiago Diaz', courseId: 'curso-juveniles', category: 'Juveniles', age: 14, guardian: 'Lucia Diaz', phone: '11 3344-5566', status: 'active', payment: 'paid' },
 ].map(s => normalizeStudent(s));
 
-// ─── LocalStorage helpers ──────────────────────────────────────────────────
+// ─── Configuración por colección ───────────────────────────────────────────
 
-function getLocalStorageInscripciones(negocioId) {
-    try {
-        const raw = localStorage.getItem(`${LOCAL_STORAGE_KEY}_${negocioId || 'default'}`);
-        if (raw) {
-            const parsed = JSON.parse(raw);
-            // Normaliza por si hay datos viejos con nombres distintos
-            return parsed.map(s => normalizeStudent(s));
-        }
-    } catch (e) {
-        console.error('Error reading localStorage:', e);
-    }
-    return DEFAULT_STUDENTS;
+const CONFIGS = {
+    alumnos: { lsKey: LS_KEYS.alumnos, col: 'escuela_inscripciones', normalize: normalizeStudent, defaults: DEFAULT_STUDENTS, seed: false },
+    cursos: { lsKey: LS_KEYS.cursos, col: 'escuela_cursos', normalize: normalizeCourse, defaults: DEFAULT_COURSES, seed: true },
+    profesores: { lsKey: LS_KEYS.profesores, col: 'escuela_profesores', normalize: normalizeTeacher, defaults: [], seed: false },
+};
+
+const sortList = (list) =>
+    [...list].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || (a.name || '').localeCompare(b.name || ''));
+
+function lsName(cfg, negocioId) {
+    return `${cfg.lsKey}_${negocioId || 'giovanni'}`;
 }
 
-function saveLocalStorageInscripciones(negocioId, list) {
+function readLocal(cfg, negocioId) {
     try {
-        localStorage.setItem(`${LOCAL_STORAGE_KEY}_${negocioId || 'default'}`, JSON.stringify(list));
+        const raw = localStorage.getItem(lsName(cfg, negocioId));
+        if (raw !== null) return JSON.parse(raw).map(x => cfg.normalize(x));
     } catch (e) {
-        console.error('Error saving localStorage:', e);
+        console.error('Error leyendo localStorage:', e);
+    }
+    return cfg.defaults;
+}
+
+function writeLocal(cfg, negocioId, list) {
+    try {
+        localStorage.setItem(lsName(cfg, negocioId), JSON.stringify(list));
+    } catch (e) {
+        console.error('Error guardando localStorage:', e);
     }
 }
 
-// ─── Public API ────────────────────────────────────────────────────────────
-
-/**
- * Suscripción en tiempo real a las inscripciones.
- */
-export function subscribeInscripciones(negocioId, onData) {
+function subscribe(cfg, negocioId, onData, { sorted = false } = {}) {
     const key = negocioId || 'giovanni';
+    const emit = (list) => onData(sorted ? sortList(list) : list);
+    let seeded = false;
 
-    // Lectura inicial desde localStorage (ya normalizada)
-    onData(getLocalStorageInscripciones(key));
+    emit(readLocal(cfg, key));
 
     try {
-        const q = query(
-            collection(db, 'negocios', key, 'escuela_inscripciones'),
-            orderBy('createdAt', 'desc')
-        );
+        const colRef = collection(db, 'negocios', key, cfg.col);
+        // Alumnos se ordenan en Firestore; cursos/profesores se ordenan en el cliente
+        // (orderBy descarta documentos que no tengan el campo).
+        const q = cfg === CONFIGS.alumnos ? query(colRef, orderBy('createdAt', 'desc')) : colRef;
 
-        const unsubscribe = onSnapshot(q, (snap) => {
+        return onSnapshot(q, (snap) => {
             if (!snap.empty) {
-                const list = snap.docs.map(d => normalizeStudent(d.data(), d.id));
-                saveLocalStorageInscripciones(key, list);
-                onData(list);
+                const list = snap.docs.map(d => cfg.normalize(d.data(), d.id));
+                writeLocal(cfg, key, list);
+                emit(list);
             } else {
-                onData(getLocalStorageInscripciones(key));
+                const local = readLocal(cfg, key);
+                // Primera vez: subir los datos iniciales para que se puedan editar en Firestore
+                if (cfg.seed && !seeded && local.length) {
+                    seeded = true;
+                    local.forEach(item =>
+                        setDoc(doc(db, 'negocios', key, cfg.col, item.id), item).catch(() => { })
+                    );
+                }
+                emit(local);
             }
         }, (err) => {
-            console.warn('Firestore snapshot fallback → localStorage:', err);
-            onData(getLocalStorageInscripciones(key));
+            console.warn(`Firestore (${cfg.col}) → localStorage:`, err);
+            emit(readLocal(cfg, key));
         });
-
-        return unsubscribe;
     } catch (err) {
         console.warn('Firestore no disponible, usando localStorage:', err);
         return () => { };
     }
 }
 
-/**
- * Envía una nueva inscripción (desde el formulario público o el panel admin).
- */
+async function upsert(cfg, negocioId, item, { isNew = false } = {}) {
+    const key = negocioId || 'giovanni';
+    const current = readLocal(cfg, key);
+    const exists = current.some(x => x.id === item.id);
+    const next = exists ? current.map(x => (x.id === item.id ? { ...x, ...item } : x)) : [item, ...current];
+    writeLocal(cfg, key, next);
+
+    try {
+        const ref = doc(db, 'negocios', key, cfg.col, item.id);
+        // En ediciones no se toca createdAt (en Firestore es un Timestamp y se usa para ordenar)
+        const rest = { ...item };
+        delete rest.createdAt;
+        const payload = isNew ? { ...item, createdAt: serverTimestamp() } : rest;
+        await setDoc(ref, payload, { merge: true });
+    } catch (e) {
+        console.warn(`Firestore (${cfg.col}) guardado → localStorage:`, e);
+    }
+    return item;
+}
+
+async function remove(cfg, negocioId, id) {
+    const key = negocioId || 'giovanni';
+    writeLocal(cfg, key, readLocal(cfg, key).filter(x => x.id !== id));
+    try {
+        await deleteDoc(doc(db, 'negocios', key, cfg.col, id));
+    } catch (e) {
+        console.warn(`Firestore (${cfg.col}) borrado → localStorage:`, e);
+    }
+}
+
+// ─── API: Alumnos ──────────────────────────────────────────────────────────
+
+export const subscribeInscripciones = (negocioId, onData) => subscribe(CONFIGS.alumnos, negocioId, onData);
+
+/** Alta de alumno (formulario público o panel admin). Acepta {alumno,tutor,...} o {name,guardian,...}. */
 export async function submitInscripcion(negocioId, formData) {
-    const key = negocioId || 'giovanni';
-
-    // normalizeStudent acepta tanto {alumno, tutor,...} como {name, guardian,...}
-    const newStudent = normalizeStudent(
-        { ...formData, id: `esc-${Date.now()}` }
-    );
-
-    // 1. Guardar en localStorage inmediatamente
-    const currentLocal = getLocalStorageInscripciones(key);
-    saveLocalStorageInscripciones(key, [newStudent, ...currentLocal]);
-
-    // 2. Intentar guardar en Firestore
-    try {
-        const ref = doc(db, 'negocios', key, 'escuela_inscripciones', newStudent.id);
-        await setDoc(ref, {
-            ...newStudent,
-            createdAt: serverTimestamp(),
-        });
-    } catch (e) {
-        console.warn('Firestore save fallback → localStorage:', e);
-    }
-
-    return newStudent;
+    const student = normalizeStudent({ ...formData, id: `esc-${Date.now()}` });
+    return upsert(CONFIGS.alumnos, negocioId, student, { isNew: true });
 }
 
-/**
- * Actualiza el estado de pago o cualquier campo de un alumno.
- */
+/** Actualiza cualquier campo de un alumno (pago, estado, curso, datos personales...). */
 export async function updateInscripcionStatus(negocioId, studentId, updates) {
-    const key = negocioId || 'giovanni';
+    const current = readLocal(CONFIGS.alumnos, negocioId || 'giovanni').find(s => s.id === studentId);
+    return upsert(CONFIGS.alumnos, negocioId, normalizeStudent({ ...(current || {}), ...updates, id: studentId }, studentId));
+}
+export const updateInscripcion = updateInscripcionStatus;
 
-    const currentLocal = getLocalStorageInscripciones(key);
-    const updated = currentLocal.map(s => s.id === studentId ? { ...s, ...updates } : s);
-    saveLocalStorageInscripciones(key, updated);
+export const deleteInscripcion = (negocioId, studentId) => remove(CONFIGS.alumnos, negocioId, studentId);
 
-    try {
-        const ref = doc(db, 'negocios', key, 'escuela_inscripciones', studentId);
-        await updateDoc(ref, updates);
-    } catch (e) {
-        console.warn('Firestore update fallback → localStorage:', e);
-    }
+// ─── API: Cursos ───────────────────────────────────────────────────────────
+
+export const subscribeCursos = (negocioId, onData) =>
+    subscribe(CONFIGS.cursos, negocioId, onData, { sorted: true });
+
+export async function saveCurso(negocioId, data) {
+    const isNew = !data.id;
+    const curso = normalizeCourse({ ...data, id: data.id || `curso-${Date.now()}`, order: data.order ?? Date.now() });
+    return upsert(CONFIGS.cursos, negocioId, curso, { isNew });
 }
 
-/**
- * Elimina un alumno de la lista.
- */
-export async function deleteInscripcion(negocioId, studentId) {
-    const key = negocioId || 'giovanni';
+export const deleteCurso = (negocioId, cursoId) => remove(CONFIGS.cursos, negocioId, cursoId);
 
-    const currentLocal = getLocalStorageInscripciones(key);
-    saveLocalStorageInscripciones(key, currentLocal.filter(s => s.id !== studentId));
+// ─── API: Profesores ───────────────────────────────────────────────────────
 
-    try {
-        const ref = doc(db, 'negocios', key, 'escuela_inscripciones', studentId);
-        await deleteDoc(ref);
-    } catch (e) {
-        console.warn('Firestore delete fallback → localStorage:', e);
-    }
+export const subscribeProfesores = (negocioId, onData) =>
+    subscribe(CONFIGS.profesores, negocioId, onData, { sorted: true });
+
+export async function saveProfesor(negocioId, data) {
+    const isNew = !data.id;
+    const prof = normalizeTeacher({ ...data, id: data.id || `prof-${Date.now()}`, order: data.order ?? Date.now() });
+    return upsert(CONFIGS.profesores, negocioId, prof, { isNew });
 }
+
+export const deleteProfesor = (negocioId, profId) => remove(CONFIGS.profesores, negocioId, profId);
