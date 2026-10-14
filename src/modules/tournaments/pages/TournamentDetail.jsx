@@ -8,6 +8,7 @@ import {
     Sparkles, RefreshCw, Star, Phone, MessageCircle, FileText
 } from 'lucide-react';
 import { useTournament } from '../hooks/useTournament';
+import { useAuth } from '../../../context/AuthContext';
 import StandingsTable from '../components/StandingsTable';
 import MatchCard from '../components/MatchCard';
 import ScorersTable from '../components/ScorersTable';
@@ -22,11 +23,29 @@ export default function TournamentDetail() {
     const navigate = useNavigate();
     const location = useLocation();
     const negocioId = paramsNegocioId || 'giovanni';
+
+    const { user, isAuthenticated } = useAuth();
+    // Solo administradores y encargados pueden editar datos del torneo
+    const isAdminRole = isAuthenticated && Boolean(
+        user && ['admin', 'superadmin', 'encargado', 'admin_principal', 'administrativo'].includes(user.role)
+    );
+    const isAdminRoute = location.pathname.includes('/admin');
+    const canEdit = isAdminRole;
     
     const { tournaments, saveDetails, loading } = useTournament(negocioId);
     
     const [tournament, setTournament] = useState(null);
-    const [activeTab, setActiveTab] = useState('standings'); // standings, matches, teams, scorers, awards
+
+    // Sincronizar pestaña inicial con ?tab= de la URL
+    const getInitialTab = () => {
+        const queryTab = new URLSearchParams(location.search).get('tab');
+        if (queryTab && ['standings', 'matches', 'teams', 'scorers', 'awards'].includes(queryTab)) {
+            return queryTab;
+        }
+        return 'standings';
+    };
+
+    const [activeTab, setActiveTab] = useState(getInitialTab); // standings, matches, teams, scorers, awards
     const [standings, setStandings] = useState([]);
     const [matches, setMatches] = useState([]);
     const [teams, setTeams] = useState([]);
@@ -43,6 +62,21 @@ export default function TournamentDetail() {
     const showNotice = (msg) => {
         setNotification(msg);
         setTimeout(() => setNotification(''), 4000);
+    };
+
+    // Sincronizar activeTab cuando cambia el search en la URL
+    useEffect(() => {
+        const tabParam = new URLSearchParams(location.search).get('tab');
+        if (tabParam && ['standings', 'matches', 'teams', 'scorers', 'awards'].includes(tabParam)) {
+            setActiveTab(tabParam);
+        }
+    }, [location.search]);
+
+    const handleTabChange = (tabId) => {
+        setActiveTab(tabId);
+        const params = new URLSearchParams(location.search);
+        params.set('tab', tabId);
+        navigate({ search: params.toString() }, { replace: true });
     };
 
     // Cargar torneo seleccionado
@@ -69,6 +103,7 @@ export default function TournamentDetail() {
     // ─── Guardar partido y planilla ──────────────────────────────────────
     const handleSaveMatch = async (e) => {
         e.preventDefault();
+        if (!canEdit) return;
         setSaving(true);
         try {
             const isNew = !matches.some(m => m.id === matchModal.id);
@@ -104,6 +139,7 @@ export default function TournamentDetail() {
     };
 
     const handleDeleteMatch = async (matchId) => {
+        if (!canEdit) return;
         if (!window.confirm('¿Eliminar este partido del fixture?')) return;
         const updatedMatches = matches.filter(m => m.id !== matchId);
         const autoStandings = recalculateStandingsFromMatches(teams, updatedMatches);
@@ -119,6 +155,7 @@ export default function TournamentDetail() {
     // ─── Guardar equipo ──────────────────────────────────────────────────
     const handleSaveTeam = async (e) => {
         e.preventDefault();
+        if (!canEdit) return;
         setSaving(true);
         try {
             const isNew = !teams.some(t => t.id === teamModal.id);
@@ -157,6 +194,7 @@ export default function TournamentDetail() {
     };
 
     const handleDeleteTeam = async (teamId, teamName) => {
+        if (!canEdit) return;
         if (!window.confirm(`¿Eliminar al equipo "${teamName}" del torneo?`)) return;
         const updatedTeams = teams.filter(t => t.id !== teamId);
         const autoStandings = recalculateStandingsFromMatches(updatedTeams, matches);
@@ -172,6 +210,7 @@ export default function TournamentDetail() {
 
     // ─── Recalcular todo a mano ──────────────────────────────────────────
     const handleRecalculateAll = async () => {
+        if (!canEdit) return;
         const autoStandings = recalculateStandingsFromMatches(teams, matches);
         const autoScorers = recalculateScorersFromMatches(matches);
         const autoTarjetas = recalculateCardsFromMatches(matches);
@@ -189,6 +228,7 @@ export default function TournamentDetail() {
     // ─── Guardar Cuadro de Honor / Premios ────────────────────────────────
     const handleSaveAwards = async (e) => {
         e.preventDefault();
+        if (!canEdit) return;
         setSaving(true);
         try {
             await saveDetails(tournament.id, {
@@ -221,12 +261,34 @@ export default function TournamentDetail() {
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 pb-20">
             {/* Header del Torneo */}
             <div className="flex flex-col gap-6">
-                <button 
-                    onClick={() => navigate(`/${negocioId}/admin/torneos`)}
-                    className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors uppercase font-black text-[10px] tracking-widest w-fit"
-                >
-                    <ChevronLeft size={16} /> Volver al listado de torneos
-                </button>
+                <div className="flex items-center justify-between">
+                    <button 
+                        onClick={() => navigate(isAdminRoute ? `/${negocioId}/admin/torneos` : `/${negocioId}/torneos`)}
+                        className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors uppercase font-black text-[10px] tracking-widest w-fit"
+                    >
+                        <ChevronLeft size={16} /> {isAdminRoute ? 'Volver al panel de torneos' : 'Volver a torneos'}
+                    </button>
+
+                    {isAdminRole && (
+                        isAdminRoute ? (
+                            <button
+                                onClick={() => navigate(`/${negocioId}/torneos/${tournament.id}?tab=${activeTab}`)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-black uppercase tracking-wider hover:bg-indigo-500/20 transition-all"
+                                title="Ver vista pública para clientes"
+                            >
+                                <Share2 size={12} /> Ver Vista Pública
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => navigate(`/${negocioId}/admin/torneos/${tournament.id}?tab=${activeTab}`)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black uppercase tracking-wider hover:bg-amber-500/20 transition-all"
+                                title="Ir al panel de administración del torneo"
+                            >
+                                <Shield size={12} /> Panel de Administración
+                            </button>
+                        )
+                    )}
+                </div>
 
                 <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
                     <div className="space-y-4">
@@ -264,22 +326,24 @@ export default function TournamentDetail() {
                         </div>
                     </div>
 
-                    {/* Acciones principales de administración */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <button 
-                            onClick={handleRecalculateAll}
-                            className="bg-slate-900 border border-white/10 px-4 py-3.5 rounded-2xl text-slate-300 hover:text-white hover:border-indigo-500 transition-all text-xs font-black uppercase tracking-wider flex items-center gap-2"
-                            title="Recalcular tabla de posiciones automáticamente con los partidos finalizados"
-                        >
-                            <RefreshCw size={15} /> Recalcular Tablas
-                        </button>
-                        <button 
-                            onClick={() => setAwardsModal(true)}
-                            className="bg-amber-600/20 text-amber-400 border border-amber-500/30 px-5 py-3.5 rounded-2xl flex items-center gap-2 font-black uppercase tracking-wider text-xs hover:bg-amber-500 hover:text-white transition-all shadow-lg"
-                        >
-                            <Award size={16} /> Premiaciones
-                        </button>
-                    </div>
+                    {/* Acciones principales de administración - solo administradores */}
+                    {canEdit && (
+                        <div className="flex flex-wrap items-center gap-3">
+                            <button 
+                                onClick={handleRecalculateAll}
+                                className="bg-slate-900 border border-white/10 px-4 py-3.5 rounded-2xl text-slate-300 hover:text-white hover:border-indigo-500 transition-all text-xs font-black uppercase tracking-wider flex items-center gap-2"
+                                title="Recalcular tabla de posiciones automáticamente con los partidos finalizados"
+                            >
+                                <RefreshCw size={15} /> Recalcular Tablas
+                            </button>
+                            <button 
+                                onClick={() => setAwardsModal(true)}
+                                className="bg-amber-600/20 text-amber-400 border border-amber-500/30 px-5 py-3.5 rounded-2xl flex items-center gap-2 font-black uppercase tracking-wider text-xs hover:bg-amber-500 hover:text-white transition-all shadow-lg"
+                            >
+                                <Award size={16} /> Premiaciones
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -295,7 +359,7 @@ export default function TournamentDetail() {
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => handleTabChange(tab.id)}
                         className={`flex items-center gap-2 px-6 py-3.5 text-[11px] font-black uppercase tracking-widest border-b-2 -mb-px transition-all whitespace-nowrap ${
                             activeTab === tab.id 
                             ? 'border-indigo-500 text-white' 
@@ -318,15 +382,17 @@ export default function TournamentDetail() {
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                             Tabla actualizada en tiempo real según los resultados cargados
                         </p>
-                        <button 
-                            onClick={() => {
-                                const newTeam = { id: `eq-${Date.now()}`, nombre: '', logo: '', capitan: '', telefono: '', color: '#3b82f6', jugadores: [] };
-                                setTeamModal(newTeam);
-                            }}
-                            className="text-xs font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5"
-                        >
-                            <Plus size={14} /> Agregar Equipo
-                        </button>
+                        {canEdit && (
+                            <button 
+                                onClick={() => {
+                                    const newTeam = { id: `eq-${Date.now()}`, nombre: '', logo: '', capitan: '', telefono: '', color: '#3b82f6', jugadores: [] };
+                                    setTeamModal(newTeam);
+                                }}
+                                className="text-xs font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5"
+                            >
+                                <Plus size={14} /> Agregar Equipo
+                            </button>
+                        )}
                     </div>
                     <StandingsTable standings={standings} />
                 </div>
@@ -338,39 +404,41 @@ export default function TournamentDetail() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h3 className="text-lg font-black uppercase italic tracking-tight text-white">
-                                Fixture y Planillas de Partido
+                                Fixture y Partidos
                             </h3>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                Fechas, horarios, canchas asignadas, goles, tarjetas y mejores jugadores
+                                Fechas, horarios, canchas asignadas y resultados oficiales
                             </p>
                         </div>
-                        <button 
-                            onClick={() => {
-                                setMatchModal({
-                                    id: `m_${Date.now()}`,
-                                    jornada: `Fecha ${matches.length + 1}`,
-                                    fecha: new Date().toISOString().split('T')[0],
-                                    hora: '20:00',
-                                    cancha: 'Cancha 1 (Fútbol 5)',
-                                    local: teams[0]?.nombre || '',
-                                    visitante: teams[1]?.nombre || '',
-                                    localLogo: teams[0]?.logo || '',
-                                    visitanteLogo: teams[1]?.logo || '',
-                                    goles_local: null,
-                                    goles_visitante: null,
-                                    estado: 'pendiente',
-                                    goleadores: [],
-                                    amarillas: [],
-                                    rojas: [],
-                                    mvp: '',
-                                    mejorArquero: '',
-                                    notas: ''
-                                });
-                            }}
-                            className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
-                        >
-                            <Plus size={16} /> Programar Partido
-                        </button>
+                        {canEdit && (
+                            <button 
+                                onClick={() => {
+                                    setMatchModal({
+                                        id: `m_${Date.now()}`,
+                                        jornada: `Fecha ${matches.length + 1}`,
+                                        fecha: new Date().toISOString().split('T')[0],
+                                        hora: '20:00',
+                                        cancha: 'Cancha 1 (Fútbol 5)',
+                                        local: teams[0]?.nombre || '',
+                                        visitante: teams[1]?.nombre || '',
+                                        localLogo: teams[0]?.logo || '',
+                                        visitanteLogo: teams[1]?.logo || '',
+                                        goles_local: null,
+                                        goles_visitante: null,
+                                        estado: 'pendiente',
+                                        goleadores: [],
+                                        amarillas: [],
+                                        rojas: [],
+                                        mvp: '',
+                                        mejorArquero: '',
+                                        notas: ''
+                                    });
+                                }}
+                                className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
+                            >
+                                <Plus size={16} /> Programar Partido
+                            </button>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -378,15 +446,17 @@ export default function TournamentDetail() {
                             <MatchCard 
                                 key={m.id} 
                                 match={m} 
-                                isAdmin={true}
-                                onEditMatch={(match) => setMatchModal({ ...match })} 
+                                isAdmin={canEdit}
+                                onEditMatch={canEdit ? (match) => setMatchModal({ ...match }) : null} 
                             />
                         ))}
                     </div>
 
                     {matches.length === 0 && (
                         <div className="p-12 glass-premium rounded-[32px] border border-white/5 text-center text-slate-500 uppercase tracking-widest text-xs font-bold">
-                            No hay partidos programados todavía. Hacé clic en "Programar Partido" para armar el fixture.
+                            {canEdit 
+                                ? 'No hay partidos programados todavía. Hacé clic en "Programar Partido" para armar el fixture.' 
+                                : 'No hay partidos programados todavía para este torneo.'}
                         </div>
                     )}
                 </div>
@@ -398,28 +468,30 @@ export default function TournamentDetail() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h3 className="text-lg font-black uppercase italic tracking-tight text-white">
-                                Equipos Participantes y Delegados
+                                Equipos Participantes
                             </h3>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                {teams.length} equipos cargados con sus escudos y listas de buena fe
+                                {teams.length} equipos confirmados
                             </p>
                         </div>
-                        <button 
-                            onClick={() => {
-                                setTeamModal({
-                                    id: `eq-${Date.now()}`,
-                                    nombre: '',
-                                    logo: '',
-                                    capitan: '',
-                                    telefono: '',
-                                    color: '#3b82f6',
-                                    jugadores: []
-                                });
-                            }}
-                            className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
-                        >
-                            <Plus size={16} /> Cargar Equipo
-                        </button>
+                        {canEdit && (
+                            <button 
+                                onClick={() => {
+                                    setTeamModal({
+                                        id: `eq-${Date.now()}`,
+                                        nombre: '',
+                                        logo: '',
+                                        capitan: '',
+                                        telefono: '',
+                                        color: '#3b82f6',
+                                        jugadores: []
+                                    });
+                                }}
+                                className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
+                            >
+                                <Plus size={16} /> Cargar Equipo
+                            </button>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -456,7 +528,7 @@ export default function TournamentDetail() {
                                             </div>
                                         </div>
 
-                                        {t.telefono && (
+                                        {canEdit && t.telefono && (
                                             <div className="flex items-center gap-2 text-xs text-slate-300">
                                                 <Phone size={13} className="text-emerald-400" />
                                                 <span>{t.telefono}</span>
@@ -478,34 +550,36 @@ export default function TournamentDetail() {
                                         </div>
                                     </div>
 
-                                    {/* Botones de acción */}
-                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                                        <button 
-                                            onClick={() => setTeamModal({ ...t })} 
-                                            className="p-2 bg-slate-900 border border-white/5 rounded-lg text-indigo-400 hover:text-indigo-300 text-xs font-black uppercase flex items-center gap-1.5"
-                                        >
-                                            <Edit3 size={13} /> Editar
-                                        </button>
-                                        <div className="flex gap-2">
-                                            {digits && (
-                                                <a 
-                                                    href={`https://wa.me/${digits}?text=${encodeURIComponent(`Hola ${t.capitan || ''}, te contactamos de la organización del torneo.`)}`}
-                                                    target="_blank" rel="noreferrer"
-                                                    className="p-2 bg-slate-900 border border-white/5 rounded-lg text-emerald-400 hover:text-emerald-300"
-                                                    title="WhatsApp al Delegado"
-                                                >
-                                                    <MessageCircle size={14} />
-                                                </a>
-                                            )}
+                                    {/* Botones de acción - solo administración */}
+                                    {canEdit && (
+                                        <div className="flex items-center justify-between pt-4 border-t border-white/5">
                                             <button 
-                                                onClick={() => handleDeleteTeam(t.id, t.nombre)}
-                                                className="p-2 bg-slate-900 border border-white/5 rounded-lg text-rose-400 hover:text-rose-300"
-                                                title="Eliminar Equipo"
+                                                onClick={() => setTeamModal({ ...t })} 
+                                                className="p-2 bg-slate-900 border border-white/5 rounded-lg text-indigo-400 hover:text-indigo-300 text-xs font-black uppercase flex items-center gap-1.5"
                                             >
-                                                <Trash2 size={14} />
+                                                <Edit3 size={13} /> Editar
                                             </button>
+                                            <div className="flex gap-2">
+                                                {digits && (
+                                                    <a 
+                                                        href={`https://wa.me/${digits}?text=${encodeURIComponent(`Hola ${t.capitan || ''}, te contactamos de la organización del torneo.`)}`}
+                                                        target="_blank" rel="noreferrer"
+                                                        className="p-2 bg-slate-900 border border-white/5 rounded-lg text-emerald-400 hover:text-emerald-300"
+                                                        title="WhatsApp al Delegado"
+                                                    >
+                                                        <MessageCircle size={14} />
+                                                    </a>
+                                                )}
+                                                <button 
+                                                    onClick={() => handleDeleteTeam(t.id, t.nombre)}
+                                                    className="p-2 bg-slate-900 border border-white/5 rounded-lg text-rose-400 hover:text-rose-300"
+                                                    title="Eliminar Equipo"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -513,7 +587,9 @@ export default function TournamentDetail() {
 
                     {teams.length === 0 && (
                         <div className="p-12 glass-premium rounded-[32px] border border-white/5 text-center text-slate-500 uppercase tracking-widest text-xs font-bold">
-                            Todavía no hay equipos cargados. Hacé clic en "Cargar Equipo" para empezar.
+                            {canEdit 
+                                ? 'Todavía no hay equipos cargados. Hacé clic en "Cargar Equipo" para empezar.'
+                                : 'Todavía no hay equipos registrados para este torneo.'}
                         </div>
                     )}
                 </div>
@@ -543,12 +619,14 @@ export default function TournamentDetail() {
                                 Reconocimientos oficiales del torneo
                             </p>
                         </div>
-                        <button 
-                            onClick={() => setAwardsModal(true)}
-                            className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-slate-950 font-black uppercase text-xs tracking-widest rounded-xl transition-all shadow-lg"
-                        >
-                            Editar Premiaciones
-                        </button>
+                        {canEdit && (
+                            <button 
+                                onClick={() => setAwardsModal(true)}
+                                className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-slate-950 font-black uppercase text-xs tracking-widest rounded-xl transition-all shadow-lg"
+                            >
+                                Editar Premiaciones
+                            </button>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -612,7 +690,7 @@ export default function TournamentDetail() {
             {/* ═════════════════════════════════════════════════════════════════════
                 MODAL 1: PLANILLA DEL PARTIDO / CARGAR RESULTADO
                ═════════════════════════════════════════════════════════════════════ */}
-            {matchModal && (
+            {canEdit && matchModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
                     <div className="bg-slate-900 border border-white/10 rounded-[36px] w-full max-w-3xl my-8 p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -993,7 +1071,7 @@ export default function TournamentDetail() {
             {/* ═════════════════════════════════════════════════════════════════════
                 MODAL 2: CARGAR / EDITAR EQUIPO Y PLANTEL
                ═════════════════════════════════════════════════════════════════════ */}
-            {teamModal && (
+            {canEdit && teamModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
                     <div className="bg-slate-900 border border-white/10 rounded-[36px] w-full max-w-xl my-8 p-6 sm:p-8 space-y-6 shadow-2xl">
                         <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -1116,7 +1194,7 @@ export default function TournamentDetail() {
             {/* ═════════════════════════════════════════════════════════════════════
                 MODAL 3: CUADRO DE HONOR Y PREMIACIONES
                ═════════════════════════════════════════════════════════════════════ */}
-            {awardsModal && (
+            {canEdit && awardsModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
                     <div className="bg-slate-900 border border-white/10 rounded-[36px] w-full max-w-xl my-8 p-6 sm:p-8 space-y-6 shadow-2xl">
                         <div className="flex items-center justify-between border-b border-white/10 pb-4">

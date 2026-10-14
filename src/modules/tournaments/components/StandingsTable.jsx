@@ -90,7 +90,7 @@ export default function StandingsTable({ standings = [] }) {
 
             {standings.length === 0 && (
                 <div className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-xs">
-                    No hay equipos en la tabla de posiciones todavía. Cargá equipos en la pestaña de administración.
+                    No hay equipos en la tabla de posiciones todavía.
                 </div>
             )}
         </div>
