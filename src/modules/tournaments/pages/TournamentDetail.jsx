@@ -30,7 +30,8 @@ export default function TournamentDetail() {
         user && ['admin', 'superadmin', 'encargado', 'admin_principal', 'administrativo'].includes(user.role)
     );
     const isAdminRoute = location.pathname.includes('/admin');
-    const canEdit = isAdminRole;
+    // La edición SOLO está permitida dentro de las rutas /admin/ y con rol de administrador
+    const canEdit = isAdminRoute && isAdminRole;
     
     const { tournaments, saveDetails, loading } = useTournament(negocioId);
     
